@@ -1,0 +1,16 @@
+pandas
+numpy
+scipy
+numba
+matplotlib
+plotly
+streamlit
+yfinance
+ccxt
+ta
+tqdm
+python-dotenv
+requests
+rich
+ipykernel
+jupyterlab

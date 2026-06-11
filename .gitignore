@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+*~
+
+# Runtime and generated research output
+logs/
+data/cache/
+data/raw/
+data/processed/
+reports/*.csv
+reports/*.json
+reports/*.html
+reports/*.png
+reports/*.svg
+
+# Jupyter
+.ipynb_checkpoints/
