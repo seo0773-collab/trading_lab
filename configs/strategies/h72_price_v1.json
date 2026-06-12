@@ -16,5 +16,21 @@
   "exit_on_opposite": true,
   "long_only": false,
   "identification_frac": 0.4,
-  "validation_frac": 0.3
+  "validation_frac": 0.3,
+  "dashboard": {
+    "default_indicators": [
+      "mult_close",
+      "m_fast",
+      "m_filt",
+      "m_slow",
+      "expected_edge_pct",
+      "entry_threshold_pct"
+    ],
+    "indicator_labels": {
+      "mult_close": "Cycle multiple",
+      "m_fast": "Fast",
+      "m_filt": "Filtered",
+      "m_slow": "Slow"
+    }
+  }
 }

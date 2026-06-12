@@ -8,10 +8,11 @@ import pandas as pd
 from trading_lab.service import BacktestRequest, BacktestService
 from trading_lab.ui.presentation import (
     build_account_figure,
-    build_indicator_figure,
     build_price_figure,
     build_trade_overview,
     build_trade_report,
+    build_waveform_figure,
+    indicator_series,
 )
 
 
@@ -80,19 +81,43 @@ class TradeReportTests(unittest.TestCase):
         price = build_price_figure(
             forecast, self.trades, symbol="TEST", horizon=2
         )
-        indicators = build_indicator_figure(
-            forecast,
-            horizon=2,
-            confidence_quantile=0.5,
-            quantile_window=2,
-        )
         account = build_account_figure(
             self.equity, initial_capital=10_000.0, symbol="TEST"
         )
         self.assertGreaterEqual(len(price.data), 5)
-        self.assertEqual(len(indicators.data), 6)
         self.assertEqual(len(account.data), 2)
         self.assertEqual(float(account.data[0].y[-1]), 11_000.0)
+
+        series = indicator_series(
+            forecast, horizon=2, confidence_quantile=0.5, quantile_window=2
+        )
+        self.assertNotIn("close", series)
+        for name in (
+            "mult_close", "m_fast", "m_filt", "m_slow",
+            "expected_edge_pct", "entry_threshold_pct",
+        ):
+            self.assertIn(name, series)
+
+        selected = ("mult_close", "m_fast", "expected_edge_pct")
+        waveform = build_waveform_figure(
+            {name: series[name] for name in selected},
+            labels={"mult_close": "Cycle multiple"},
+        )
+        self.assertEqual(len(waveform.data), 3)
+        names = {trace.name for trace in waveform.data}
+        self.assertIn("Cycle multiple", names)
+        self.assertIn("예상 변동폭 %", names)
+        # 파생 % 지표는 원본 컬럼과 다른 패널(축)에 배치됩니다.
+        column_axes = {
+            trace.yaxis for trace in waveform.data
+            if trace.name in ("Cycle multiple", "m_fast")
+        }
+        derived_axes = {
+            trace.yaxis for trace in waveform.data
+            if trace.name == "예상 변동폭 %"
+        }
+        self.assertEqual(len(column_axes), 1)
+        self.assertTrue(column_axes.isdisjoint(derived_axes))
 
 
 class BacktestRequestTests(unittest.TestCase):

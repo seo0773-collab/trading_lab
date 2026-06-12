@@ -161,8 +161,8 @@ class BacktestService:
                 execution.trades,
                 execution.equity,
                 initial_capital=request.initial_capital,
-                horizon=int(config["horizon"]),
-                execution=str(config["execution"]),
+                horizon=int(config.get("horizon", 0)),
+                execution=str(config.get("execution", "next_open")),
             )
             self._register(
                 run_id,

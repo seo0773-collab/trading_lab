@@ -119,6 +119,7 @@ strategy_id ("h72-price-v1")
 
 ## 파일 배치
 
+- `DASHBOARD_GUIDE.md`: 대시보드(run_dashboard.sh) 연동 데이터 계약 — forecast/trades/equity 컬럼 규칙, 보조지표 자동 노출, config `dashboard` 블록
 - `STRATEGY_SPEC_TEMPLATE.md`: 전략 명세에 반드시 들어가야 하는 요소(기준) 정의
 - `STRATEGY_TEST_CHECKLIST.md`: 마스터 테스트 리스트 (Gate 0~5)
 - `specs/<strategy-id>.md`: 전략별 명세 (스캐폴딩이 생성)

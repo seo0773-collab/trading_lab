@@ -16,6 +16,21 @@ EXIT_REASON_LABELS = {
     "take_profit": "익절",
 }
 
+PRICE_COLUMNS = ("open", "high", "low", "close")
+
+DERIVED_EDGE = "expected_edge_pct"
+DERIVED_THRESHOLD = "entry_threshold_pct"
+
+DERIVED_LABELS = {
+    DERIVED_EDGE: "예상 변동폭 %",
+    DERIVED_THRESHOLD: "진입 임계값 %",
+}
+
+WAVEFORM_PALETTE = (
+    "#eceff1", "#26c6da", "#7e57c2", "#ffa726",
+    "#42a5f5", "#ef5350", "#66bb6a", "#ec407a",
+)
+
 
 def account_value_series(equity: pd.Series, initial_capital: float) -> pd.Series:
     return (equity.astype(float) * float(initial_capital)).rename("account_value")
@@ -173,57 +188,101 @@ def build_price_figure(
     return figure
 
 
-def build_indicator_figure(
+def indicator_series(
     forecast: pd.DataFrame,
     *,
     horizon: int,
     confidence_quantile: float,
     quantile_window: int,
-) -> go.Figure:
-    figure = make_subplots(
-        rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.08,
-        row_heights=[0.58, 0.42],
-        subplot_titles=("사이클/필터 파형", "예상 가격 변동폭과 진입 임계값"),
-    )
-    for column, label, color, width in [
-        ("mult_close", "Cycle multiple", "#eceff1", 1.0),
-        ("m_fast", "Fast", "#26c6da", 1.1),
-        ("m_filt", "Filtered", "#7e57c2", 1.4),
-        ("m_slow", "Slow", "#ffa726", 1.2),
-    ]:
-        if column in forecast:
-            figure.add_trace(go.Scatter(
-                x=forecast.index, y=forecast[column], mode="lines", name=label,
-                line={"color": color, "width": width},
-            ), row=1, col=1)
+) -> dict[str, pd.Series]:
+    """forecast 아티팩트에서 선택 가능한 보조지표 시리즈를 추출합니다.
+
+    OHLC를 제외한 모든 숫자 컬럼이 자동으로 노출되며, 전략이
+    price_mid_{horizon} 컬럼을 제공하면 파생 지표(예상 변동폭 %,
+    진입 임계값 %)가 추가됩니다.
+    """
+    series: dict[str, pd.Series] = {}
+    for column in forecast.columns:
+        if column in PRICE_COLUMNS:
+            continue
+        values = pd.to_numeric(forecast[column], errors="coerce")
+        if values.notna().any():
+            series[str(column)] = values
 
     mid = f"price_mid_{horizon}"
-    if mid in forecast:
+    if horizon > 0 and mid in forecast and "close" in forecast:
         edge = (forecast[mid] / forecast["close"] - 1.0).abs() * 100.0
-        threshold = (
+        series[DERIVED_EDGE] = edge
+        series[DERIVED_THRESHOLD] = (
             edge.rolling(quantile_window, min_periods=max(1, quantile_window // 2))
             .quantile(confidence_quantile).shift(1)
         )
-        figure.add_trace(go.Scatter(
-            x=forecast.index, y=edge, mode="lines", name="예상 변동폭 %",
-            line={"color": "#42a5f5", "width": 1.1},
-            fill="tozeroy", fillcolor="rgba(66,165,245,0.08)",
-        ), row=2, col=1)
-        figure.add_trace(go.Scatter(
-            x=forecast.index, y=threshold, mode="lines",
-            name=f"과거 기준 {confidence_quantile:.0%} 임계값",
-            line={"color": "#ef5350", "width": 1.3, "dash": "dot"},
-        ), row=2, col=1)
+    return series
+
+
+def build_waveform_figure(
+    series_map: dict[str, pd.Series],
+    *,
+    labels: dict[str, str] | None = None,
+) -> go.Figure:
+    """선택된 보조지표를 스케일이 비슷한 것끼리 같은 패널에 겹쳐 그립니다."""
+    display = {**DERIVED_LABELS, **(labels or {})}
+    panes: list[dict[str, Any]] = []
+    for name, values in series_map.items():
+        family = "derived" if name in DERIVED_LABELS else "column"
+        scale = _scale_of(values)
+        for pane in panes:
+            if pane["family"] != family:
+                continue
+            if family == "derived" or _same_scale(scale, pane["scale"]):
+                pane["names"].append(name)
+                break
+        else:
+            panes.append({"family": family, "scale": scale, "names": [name]})
+
+    rows = max(1, len(panes))
+    figure = make_subplots(
+        rows=rows, cols=1, shared_xaxes=True,
+        vertical_spacing=min(0.1, 0.3 / rows),
+    )
+    color_index = 0
+    for row, pane in enumerate(panes, start=1):
+        for name in pane["names"]:
+            values = series_map[name]
+            figure.add_trace(go.Scatter(
+                x=values.index, y=values, mode="lines",
+                name=display.get(name, name),
+                line={
+                    "color": WAVEFORM_PALETTE[color_index % len(WAVEFORM_PALETTE)],
+                    "width": 1.2,
+                },
+            ), row=row, col=1)
+            color_index += 1
+        if pane["family"] == "derived":
+            figure.update_yaxes(title_text="%", row=row, col=1)
 
     figure.update_layout(
-        height=650, hovermode="x unified",
+        height=max(360, 110 + 230 * rows), hovermode="x unified",
         legend={"orientation": "h", "y": 1.08, "x": 0},
         margin={"l": 45, "r": 25, "t": 85, "b": 40},
-        template="plotly_dark", uirevision=f"indicators-{horizon}",
+        template="plotly_dark",
+        uirevision="waveform-" + "|".join(series_map),
     )
-    figure.update_yaxes(title_text="배수", row=1, col=1)
-    figure.update_yaxes(title_text="변동폭 %", row=2, col=1)
     return figure
+
+
+def _scale_of(values: pd.Series) -> float:
+    finite = np.abs(values.to_numpy(dtype=float))
+    finite = finite[np.isfinite(finite) & (finite > 0)]
+    if finite.size == 0:
+        return float("nan")
+    return float(np.log10(np.median(finite)))
+
+
+def _same_scale(a: float, b: float) -> bool:
+    if np.isnan(a) or np.isnan(b):
+        return np.isnan(a) and np.isnan(b)
+    return abs(a - b) <= 1.0
 
 
 def build_account_figure(

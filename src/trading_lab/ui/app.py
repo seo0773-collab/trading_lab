@@ -19,11 +19,13 @@ from trading_lab.service import BacktestRequest, BacktestService
 from trading_lab.storage import RunStore
 from trading_lab.strategies import list_strategies
 from trading_lab.ui.presentation import (
+    DERIVED_LABELS,
     build_account_figure,
-    build_indicator_figure,
     build_price_figure,
     build_trade_overview,
     build_trade_report,
+    build_waveform_figure,
+    indicator_series,
 )
 
 
@@ -140,16 +142,43 @@ def render_run_result(run: dict[str, Any]) -> None:
         width="stretch",
         config={"scrollZoom": True, "displaylogo": False},
     )
-    st.plotly_chart(
-        build_indicator_figure(
-            forecast,
-            horizon=horizon,
-            confidence_quantile=confidence_quantile,
-            quantile_window=quantile_window,
-        ),
-        width="stretch",
-        config={"scrollZoom": True, "displaylogo": False},
+    st.subheader("보조지표 파형")
+    indicators = indicator_series(
+        forecast,
+        horizon=horizon,
+        confidence_quantile=confidence_quantile,
+        quantile_window=quantile_window,
     )
+    dashboard_config = config.get("dashboard") or {}
+    indicator_labels = {
+        **DERIVED_LABELS,
+        **{
+            str(key): str(value)
+            for key, value in (dashboard_config.get("indicator_labels") or {}).items()
+        },
+    }
+    default_indicators = [
+        name for name in dashboard_config.get("default_indicators", [])
+        if name in indicators
+    ] or list(indicators)[:4]
+    selected_indicators = st.multiselect(
+        "표시할 보조지표 (스케일이 비슷한 지표는 같은 패널에 겹쳐 표시)",
+        list(indicators),
+        default=default_indicators,
+        format_func=lambda name: indicator_labels.get(name, name),
+        key=f"indicators-{run['run_id']}",
+    )
+    if selected_indicators:
+        st.plotly_chart(
+            build_waveform_figure(
+                {name: indicators[name] for name in selected_indicators},
+                labels=indicator_labels,
+            ),
+            width="stretch",
+            config={"scrollZoom": True, "displaylogo": False},
+        )
+    else:
+        st.info("보조지표를 선택하면 파형이 표시됩니다.")
     st.plotly_chart(
         build_account_figure(
             equity, initial_capital=initial_capital, symbol=run["symbol"],
@@ -207,10 +236,11 @@ def render_run_result(run: dict[str, Any]) -> None:
             money_text
         )
         st.dataframe(display, width="stretch", hide_index=True, height=520)
-    st.caption(
-        "현재 h72-price-v1은 고정 손절/익절 주문을 사용하지 않습니다. "
-        "해당 가격은 임의 추정하지 않고 '미사용'으로 표시합니다."
-    )
+        if report[["stop_loss_price", "take_profit_price"]].isna().all().all():
+            st.caption(
+                "이 전략은 고정 손절/익절 주문을 사용하지 않습니다. "
+                "해당 가격은 임의 추정하지 않고 '미사용'으로 표시합니다."
+            )
 
     with st.expander("실행 정보 및 원본 아티팩트"):
         st.json({
@@ -350,12 +380,20 @@ if page == "새 백테스트":
                 initial_capital=float(initial_capital),
                 synthetic=synthetic,
             ))
-        result = store.get_run(run_id)
+        st.session_state["last_backtest_run_id"] = run_id
+
+    # 결과는 버튼 블록 밖에서 렌더링해야 결과 화면의 위젯(보조지표 선택 등)을
+    # 조작해도 Streamlit 재실행 후 결과가 유지됩니다.
+    last_run_id = st.session_state.get("last_backtest_run_id")
+    if last_run_id:
+        result = store.get_run(last_run_id)
         if result and result["status"] == "succeeded":
-            st.success(f"실행 완료: {result.get('run_name') or run_id}")
+            st.success(f"실행 완료: {result.get('run_name') or last_run_id}")
             render_run_result(result)
+        elif result:
+            st.error(result.get("error") or "실행이 실패했습니다.")
         else:
-            st.error(result["error"] if result else "실행 기록을 찾을 수 없습니다.")
+            st.error("실행 기록을 찾을 수 없습니다.")
 
 elif page == "결과":
     if not runs:
