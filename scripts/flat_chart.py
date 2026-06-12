@@ -252,6 +252,7 @@ def compute_features(df: pd.DataFrame, cfg: FlatChartConfig | None = None) -> pd
     feats = pd.DataFrame(out, columns=cols, index=df.index)
     feats["lower_price"] = feats["lower_mult"] * feats["cycle"]
     feats["upper_price"] = feats["upper_mult"] * feats["cycle"]
+    feats["open"] = o
     feats["close"] = c
     return feats
 

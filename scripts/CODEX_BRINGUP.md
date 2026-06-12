@@ -303,6 +303,65 @@ next-bar-execution, and untouched holdout tests pass.
 The implementation order, frozen rules, validation gates, artifact schema, and
 next-session prompt are defined in `CODEX_GENERALIZATION_PLAN.md`.
 
+## Generalization Progress
+
+First-session scope completed on 2026-06-11 UTC:
+
+- Added `open` to feature and forecast outputs.
+- Added separate close/next-open execution engine with required trade logs.
+- Added baseline, fee, opposite-exit, split, and no-look-ahead tests.
+- Added frozen configuration, asset manifest, chronological splits, and runner.
+- Completed BTC/ETH validation dry run without opening test-role assets.
+- Gate 0: PASS.
+- Gate 1: PASS.
+- Gate 2: not yet evaluated; only two crypto assets and 68 pooled trades.
+
+Current next-open validation dry run at 10bp/side:
+
+```text
+BTC-USD: 37 trades, -2.8bp/trade
+ETH-USD: 31 trades, +0.7bp/trade
+pooled:  68 trades, -1.2bp/trade
+```
+
+See `../reports/generalization/GENERALIZATION_REPORT.md`. The next exact step is
+to run at least three crypto and two non-crypto validation assets under the
+same frozen configuration and evaluate Gate 2.
+
+Entry-time PnL analysis was added after the first-session dry run. The baseline
+short leg was near break-even at 24h and deteriorated materially by 48-72h.
+The research-only conservative short candidate is:
+
+```text
+short q=0.90 + MULT/PRICE downside agreement
++ 24-bar maximum hold + 25% short size
+```
+
+This is not frozen or approved. BTC and ETH short-leg results were inconsistent.
+See `../reports/generalization/TRADE_PATH_REPORT.md`.
+
+Expanded validation completed on 2026-06-11 UTC:
+
+```text
+validation assets: BTC, ETH, SOL, XRP, SPY, QQQ, GLD, EURUSD
+asset classes: 4 crypto, 3 ETF, 1 FX
+pooled trades: 201
+positive assets: 5/8
+asset-equal average net: +11.1bp/trade
+trade-pooled average net: +2.3bp/trade
+long average net: +36.0bp/trade
+short average net: -59.3bp/trade
+```
+
+- Gate 2: PASS.
+- Gate 3: not evaluated.
+- The 25%-sized conservative short leg was positive in only 3/7 assets with
+  short trades, so it failed its promotion condition.
+- Test-role holdout assets remain unopened.
+
+See `../reports/generalization/EXPANDED_VALIDATION_REPORT.md`. Next work is
+random/placebo, bootstrap, and leave-one-asset-out validation before Gate 3.
+
 ## Suggested Next-Session Prompt
 
 ```text

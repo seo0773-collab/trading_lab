@@ -11,4 +11,5 @@ fi
 
 cd "$ROOT"
 source "$VENV_ACTIVATE"
-exec streamlit run dashboard/app.py "$@"
+export PYTHONPATH="$ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
+exec python -m trading_lab ui "$@"

@@ -1,0 +1,20 @@
+{
+  "version": "h72-price-v1",
+  "interval": "1h",
+  "period": "720d",
+  "horizon": 72,
+  "direction": "PRICE",
+  "confidence_quantile": 0.85,
+  "quantile_window": 2000,
+  "cycle_len": 200,
+  "fast_window": 120,
+  "slow_window": 720,
+  "slope_span": 24,
+  "slope_mode": "linear",
+  "fee_bps_per_side": 10.0,
+  "execution": "next_open",
+  "exit_on_opposite": true,
+  "long_only": false,
+  "identification_frac": 0.4,
+  "validation_frac": 0.3
+}

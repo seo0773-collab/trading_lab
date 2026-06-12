@@ -19,6 +19,12 @@ env/
 !.env.example
 *.pem
 *.key
+*.sqlite3
+*.sqlite
+*.db
+credentials*
+secrets*
+.claude/
 
 # Editors and OS
 .vscode/
@@ -36,6 +42,10 @@ reports/*.json
 reports/*.html
 reports/*.png
 reports/*.svg
+reports/generalization/*.csv
+reports/generalization/*.json
+
+var/
 
 # Jupyter
 .ipynb_checkpoints/

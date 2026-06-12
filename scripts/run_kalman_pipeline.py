@@ -392,7 +392,7 @@ def main():
     rep_dir = ROOT / "reports"; rep_dir.mkdir(exist_ok=True)
     (rep_dir / f"{name}_report.txt").write_text(
         f"params: {params}\nident: {info}\n\n{report}\n", encoding="utf-8")
-    fc_cols = ["close", "mult_close", "m_fast", "m_filt", "m_slow", "q_scale"] + \
+    fc_cols = ["open", "close", "mult_close", "m_fast", "m_filt", "m_slow", "q_scale"] + \
               [f"{p}_{k}" for k in HORIZONS for p in ("mhat", "sig", "pup", "price_mid", "price_lo", "price_hi")]
     res[fc_cols].to_csv(rep_dir / f"{name}_forecast.csv")
     make_plots(res, name, rep_dir / f"{name}_plots.png")

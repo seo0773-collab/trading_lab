@@ -1,0 +1,14 @@
+symbol,name,asset_class,role,bars_per_year,enabled
+BTC-USD,BTCUSD_GEN,crypto,validation,8760,true
+ETH-USD,ETHUSD_GEN,crypto,validation,8760,true
+SOL-USD,SOLUSD_GEN,crypto,validation,8760,true
+XRP-USD,XRPUSD_GEN,crypto,validation,8760,true
+SPY,SPY_GEN,etf,validation,1638,true
+QQQ,QQQ_GEN,etf,validation,1638,true
+GLD,GLD_GEN,etf,validation,1638,true
+EURUSD=X,EURUSD_GEN,fx,validation,6240,true
+LTC-USD,LTCUSD_HOLDOUT,crypto,test,8760,false
+LINK-USD,LINKUSD_HOLDOUT,crypto,test,8760,false
+AVAX-USD,AVAXUSD_HOLDOUT,crypto,test,8760,false
+IWM,IWM_HOLDOUT,etf,test,1638,false
+TLT,TLT_HOLDOUT,etf,test,1638,false

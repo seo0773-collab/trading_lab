@@ -11,4 +11,4 @@ fi
 cd "$TRADING_LAB_ROOT" || return 1 2>/dev/null || exit 1
 source "$VENV_ACTIVATE"
 echo "Trading Lab activated: $TRADING_LAB_ROOT"
-echo "Run dashboard: streamlit run dashboard/app.py"
+echo "Run dashboard: python -m trading_lab ui"
