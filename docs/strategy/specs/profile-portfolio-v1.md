@@ -49,16 +49,26 @@
 | Sharpe | equal-weight B&H 대비 −0.1 이내 |
 | CAGR | (참고) B&H 근접 — 방어로 일부 열위 허용 |
 
-## 5. 30종목 실데이터 결과 (phase=all, 기본 config)
+## 5. 30종목 실데이터 결과 (phase=all)
+
+파라미터 스윕(`reports/profile_sizing/portfolio_sweep.md`, top_k×리밸런스×floor)을
+**validation에서 선정 → test(holdout)에서 확인**(과적합 점검)한 결과, 검증 1위는
+top_k=20·monthly·floor=1.0이며 holdout에서도 견고했다(val Sharpe−B&H +0.029 →
+test −0.013). 이를 기본 config로 채택.
 
 | 구성 | 평균 노출 | CAGR | MDD | Sharpe |
 | --- | ---: | ---: | ---: | ---: |
 | top_k=10, floor=0(방어형) | 53% | 9.4% | -34.4% | 0.926 |
-| **top_k=10, floor=0.9(기본)** | **82%** | **16.0%** | **-40.7%** | **1.041** |
+| top_k=10, floor=0.9 | 82% | 16.0% | -40.7% | 1.041 |
+| **top_k=20, floor=1.0(기본·스윕 최선)** | **79%** | **14.1%** | **-32.5%** | **1.072** |
 | equal-weight B&H | 100% | 18.0% | -53.5% | 1.045 |
 
-기본 config는 **CAGR가 B&H에 2%p 차로 근접하면서 MDD는 13%p 얕고 Sharpe는 사실상
-동률** — 위험조정 동률 + 낙폭 감소. 합격선 충족.
+기본 config는 **Sharpe로 B&H를 추월(1.072 > 1.045)** 하면서 MDD는 21%p 얕다(-32.5%
+vs -53.5%). 분산(20종목)이 노출 79%에서도 낙폭을 억제. CAGR은 B&H 대비 -3.9%p로
+방어 비용. 합격선(MDD↓·Sharpe ≥ B&H−0.1) 충족.
+
+핵심 패턴: (1) 분산↑(top_k=20)일수록 위험조정↑, (2) 상승 추종↑(floor=1.0)일수록 좋음,
+(3) floor=0(방어형)·집중(top_k 5)은 하위권.
 
 ## 6. 산출물과 등록
 

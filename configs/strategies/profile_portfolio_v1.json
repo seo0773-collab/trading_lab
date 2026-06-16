@@ -8,7 +8,7 @@
     "KO", "PEP", "PG", "WMT", "MCD", "COST",
     "CAT", "DE", "HON", "GE", "XOM", "CVX", "NEE", "DIS"
   ],
-  "top_k": 10,
+  "top_k": 20,
   "rebalance_freq": "monthly",
   "synthetic_symbols": 6,
   "base_cycle": {
@@ -54,7 +54,7 @@
     "enabled": true,
     "boost_gain": 0.8,
     "max_boost": 0.40,
-    "floor": 0.9,
+    "floor": 1.0,
     "apply_regimes": ["NORMAL", "RECOVERY"]
   },
   "train_frac": 0.6,
