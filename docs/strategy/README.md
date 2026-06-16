@@ -1,5 +1,7 @@
 # 전략 수립 환경
 
+> **[갱신 노트]** 신호 생성을 `research_adapter.py`의 단일 디스패치 지점으로 설명한 아래 일부 내용(특히 "파이프라인 블럭 다이어그램"의 가운데 블럭, "전략을 구성하는 실제 파일" 표)은 **구식**입니다. 현재 전략별 코드 분기점은 `src/trading_lab/strategies/base.py`의 **`StrategyHandler` 프로토콜**이며, 각 전략은 `load_data` + `build_artifacts`를 구현해 `StrategyArtifacts`를 반환합니다. 권위 있는 최신 계약은 저장소 루트 `CLAUDE.md`와 `docs/strategy/DASHBOARD_GUIDE.md`를 따르세요. 아래 워크플로(명세→config→registry→게이트)와 원칙은 여전히 유효합니다.
+
 새 전략은 "명세 작성 → config 생성 → registry 등록 → 게이트 통과" 순서로만 플랫폼에 진입합니다. holdout test 구간과 live 거래는 게이트를 통과하기 전까지 잠겨 있습니다.
 
 ## 워크플로

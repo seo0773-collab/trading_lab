@@ -16,9 +16,8 @@ from .artifacts import ArtifactWriter
 from .models import RunRecord, utc_now
 from .paths import ROOT
 from .reporting import build_equity_html, build_markdown_report
-from .research_adapter import build_forecast, execute_strategy, load_market_data
 from .storage import RunStore
-from .strategies import get_strategy, list_strategies
+from .strategies import get_handler, get_strategy, list_strategies
 from .ui.presentation import (
     account_value_series,
     build_trade_overview,
@@ -29,7 +28,7 @@ from .ui.presentation import (
 CHART_TYPE_LABELS = {
     "crypto": "크립토",
     "stock": "주식",
-    "random": "랜덤",
+    "random": "합성",
 }
 
 
@@ -73,9 +72,9 @@ class BacktestService:
         )
         created_at = utc_now()
         run_name = self._run_name(
-            run_number, chart_type, chart_detail, created_at
+            run_number, strategy.strategy_id, chart_type, chart_detail, created_at
         )
-        writer = ArtifactWriter(run_id)
+        writer = ArtifactWriter(run_id, dir_name=run_name)
         record = RunRecord(
             run_id=run_id,
             run_number=run_number,
@@ -118,7 +117,8 @@ class BacktestService:
         )
 
         try:
-            raw = load_market_data(
+            handler = get_handler(strategy.strategy_id)
+            raw = handler.load_data(
                 request.symbol,
                 config,
                 csv_path=request.csv_path,
@@ -128,7 +128,21 @@ class BacktestService:
                 run_id, "data_loaded", f"Loaded {len(raw)} bars",
                 payload={"bars": len(raw)},
             )
-            forecast, metadata = build_forecast(raw, config)
+            artifacts = handler.build_artifacts(
+                raw,
+                config,
+                symbol=request.symbol,
+                phase=request.phase,
+                bars_per_year=request.bars_per_year,
+            )
+            forecast = artifacts.forecast
+            metadata = artifacts.metadata
+            trades = artifacts.trades
+            equity_series = artifacts.equity
+            metrics = artifacts.metrics
+            metrics.setdefault("symbol", request.symbol)
+            metrics.setdefault("phase", request.phase)
+
             self._register(
                 run_id, "forecast", writer.write_frame("forecast", forecast)
             )
@@ -136,21 +150,13 @@ class BacktestService:
                 run_id, "forecast_metadata",
                 writer.write_json("forecast_metadata.json", metadata),
             )
-
-            execution, metrics = execute_strategy(
-                forecast,
-                config,
-                symbol=request.symbol,
-                phase=request.phase,
-                bars_per_year=request.bars_per_year,
-            )
             self._register(
-                run_id, "trades", writer.write_frame("trades", execution.trades)
+                run_id, "trades", writer.write_frame("trades", trades)
             )
-            equity = execution.equity.rename("equity").to_frame()
+            equity = equity_series.rename("equity").to_frame()
             self._register(run_id, "equity", writer.write_frame("equity", equity))
             account_value = account_value_series(
-                execution.equity, request.initial_capital
+                equity_series, request.initial_capital
             ).to_frame()
             self._register(
                 run_id,
@@ -158,10 +164,10 @@ class BacktestService:
                 writer.write_frame("account_value", account_value),
             )
             trade_report = build_trade_report(
-                execution.trades,
-                execution.equity,
+                trades,
+                equity_series,
                 initial_capital=request.initial_capital,
-                horizon=int(config.get("horizon", 0)),
+                horizon=artifacts.horizon,
                 execution=str(config.get("execution", "next_open")),
             )
             self._register(
@@ -169,7 +175,14 @@ class BacktestService:
                 "trade_report",
                 writer.write_frame("trade_report", trade_report),
             )
-            trade_overview = build_trade_overview(execution.trades)
+            for kind, table in (artifacts.extras or {}).items():
+                self._register(
+                    run_id, kind,
+                    writer.write_json(
+                        f"{kind}.json", table.to_dict(orient="records")
+                    ),
+                )
+            trade_overview = build_trade_overview(trades)
             metrics.update({
                 **trade_overview,
                 "initial_capital": float(request.initial_capital),
@@ -194,7 +207,7 @@ class BacktestService:
                 run_id, "equity_chart",
                 writer.write_text(
                     "equity.html",
-                    build_equity_html(execution.equity, request.symbol),
+                    build_equity_html(equity_series, request.symbol),
                 ),
             )
             self.store.update_status(run_id, "succeeded", metrics=metrics)
@@ -251,11 +264,18 @@ class BacktestService:
 
     @staticmethod
     def _run_name(
-        run_number: int, chart_type: str, chart_detail: str, created_at: str,
+        run_number: int,
+        strategy_id: str,
+        chart_type: str,
+        chart_detail: str,
+        created_at: str,
     ) -> str:
         timestamp = datetime.fromisoformat(created_at).strftime("%y%d%H")
         type_label = CHART_TYPE_LABELS[chart_type]
-        return f"{run_number}_{type_label}_{chart_detail}_{timestamp}"
+        strategy_label = re.sub(r"[^0-9A-Za-z가-힣_-]+", "", strategy_id) or "strategy"
+        return (
+            f"{run_number}_{strategy_label}_{type_label}_{chart_detail}_{timestamp}"
+        )
 
     def _register(self, run_id: str, kind: str, path: Path) -> None:
         self.store.add_artifact(run_id, kind, path)

@@ -119,21 +119,29 @@ class BrokerTests(unittest.TestCase):
 
 
 class StrategyTests(unittest.TestCase):
-    def test_only_h72_price_is_active_and_not_live_eligible(self):
-        strategies = list_strategies()
-        self.assertEqual([item.strategy_id for item in strategies], ["h72-price-v1"])
-        strategy = get_strategy("h72-price-v1")
-        self.assertTrue(strategy.enabled)
-        self.assertFalse(strategy.live_eligible)
-        self.assertTrue(strategy.config_path.exists())
+    def test_registered_strategies_are_active_and_not_live_eligible(self):
+        ids = [item.strategy_id for item in list_strategies()]
+        self.assertIn("h72-price-v1", ids)
+        self.assertIn("di-kalman-mw-v1", ids)
+        for strategy in list_strategies():
+            with self.subTest(strategy=strategy.strategy_id):
+                self.assertTrue(strategy.enabled)
+                self.assertFalse(strategy.live_eligible)
+                self.assertTrue(strategy.config_path.exists())
 
 
 class RunNamingTests(unittest.TestCase):
-    def test_run_name_uses_number_type_detail_and_yyddhh(self):
+    def test_run_name_uses_number_strategy_type_detail_and_yyddhh(self):
         name = BacktestService._run_name(
-            12, "crypto", "BTC", "2026-06-12T14:30:00+00:00"
+            12, "h72-price-v1", "crypto", "BTC", "2026-06-12T14:30:00+00:00"
         )
-        self.assertEqual(name, "12_크립토_BTC_261214")
+        self.assertEqual(name, "12_h72-price-v1_크립토_BTC_261214")
+
+    def test_run_name_labels_synthetic_chart(self):
+        name = BacktestService._run_name(
+            3, "di-kalman-mw-v1", "random", "랜덤", "2026-06-12T09:00:00+00:00"
+        )
+        self.assertEqual(name, "3_di-kalman-mw-v1_합성_랜덤_261209")
 
     def test_crypto_detail_removes_quote_currency(self):
         self.assertEqual(

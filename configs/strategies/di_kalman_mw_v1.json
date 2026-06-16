@@ -1,0 +1,52 @@
+{
+  "version": "di-kalman-mw-v1",
+  "interval": "1d",
+  "period": "max",
+  "combo": "A",
+  "direction": "both",
+  "reversal_mult": 1.0,
+  "reversal_window": 50,
+  "kalman_q": 0.01,
+  "cost_mult": 1.0,
+  "di_len": 14,
+  "atr_len": 14,
+  "train_frac": 0.6,
+  "validation_frac": 0.2,
+  "similarity_ev": "off",
+  "similarity_entry_margin": 0.0,
+  "online_revaluation": "off",
+  "execution": "next_open",
+  "dashboard": {
+    "default_indicators": ["plus_di_kalman", "minus_di_kalman"],
+    "indicator_labels": {
+      "plus_di_kalman": "+DI Kalman",
+      "minus_di_kalman": "-DI Kalman",
+      "atr": "ATR"
+    },
+    "panels": [
+      {"kind": "split_breakdown", "type": "table",
+       "label": "구간별 성과 (train = in-sample)", "default": true}
+    ]
+  },
+  "tunables": [
+    {"name": "combo", "label": "조합 (plan 17)", "type": "select",
+     "options": ["A", "B", "C", "D"], "default": "A"},
+    {"name": "direction", "label": "방향", "type": "select",
+     "options": ["both", "long", "short"], "default": "both"},
+    {"name": "reversal_mult", "label": "reversal_mult", "type": "number",
+     "min": 0.1, "max": 3.0, "step": 0.05, "default": 1.0},
+    {"name": "reversal_window", "label": "reversal window", "type": "int",
+     "min": 5, "max": 120, "step": 5, "default": 50},
+    {"name": "kalman_q", "label": "kalman_q", "type": "number",
+     "min": 0.001, "max": 0.5, "step": 0.001, "default": 0.01},
+    {"name": "cost_mult", "label": "비용 배수", "type": "number",
+     "min": 1.0, "max": 3.0, "step": 0.5, "default": 1.0},
+    {"name": "similarity_ev", "label": "유사도 EV 진입 필터", "type": "select",
+     "options": ["off", "on"], "default": "off"},
+    {"name": "similarity_entry_margin", "label": "유사도 EV 하한 마진",
+     "type": "number", "min": -0.05, "max": 0.10, "step": 0.001,
+     "default": 0.0},
+    {"name": "online_revaluation", "label": "온라인 재평가 연구",
+     "type": "select", "options": ["off", "on"], "default": "off"}
+  ]
+}

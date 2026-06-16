@@ -1,0 +1,199 @@
+"""Handler for profile-portfolio-v1 (다종목 포트폴리오).
+
+여러 종목을 병렬로 평가해 상위 K개의 상승 종목을 러프하게 추종하되, 개별 종목의
+profile-sizing 방어 로직(regime cap·DEFENSE)이 합산되어 시장 전반 하락 시 현금 비중이
+자동으로 올라가는 포트폴리오 전략. 1 run = 1 포트폴리오(가상 심볼 PORTFOLIO)로,
+종목별 OHLCV를 MultiIndex wide 프레임으로 모아 단일 NAV equity로 환산해 공통
+대시보드 계약에 매핑한다. 벤치마크는 같은 유니버스의 equal-weight buy & hold.
+"""
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from trading_lab.strategies.base import StrategyArtifacts
+
+SCRIPTS = Path(__file__).resolve().parents[3] / "scripts"
+if str(SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS))
+
+from profile_sizing.config import config_from_dict  # noqa: E402
+from profile_sizing.engine import performance  # noqa: E402
+from profile_sizing.portfolio import (  # noqa: E402
+    compute_universe, simulate_portfolio,
+)
+from profile_sizing.run import slice_window  # noqa: E402
+from profile_sizing.synthetic import make_synthetic_ohlcv  # noqa: E402
+
+_DEFAULT_UNIVERSE = [
+    "MSFT", "AAPL", "NVDA", "GOOGL", "AMZN", "META", "AVGO", "TSLA",
+    "JPM", "BAC", "WFC", "GS", "JNJ", "PFE", "MRK", "UNH",
+    "KO", "PEP", "PG", "WMT", "MCD", "COST",
+    "CAT", "DE", "HON", "GE", "XOM", "CVX", "NEE", "DIS",
+]
+
+
+class ProfilePortfolioHandler:
+    def load_data(
+        self,
+        symbol: str,
+        config: dict[str, Any],
+        *,
+        csv_path: Path | None = None,
+        synthetic: bool = False,
+    ) -> pd.DataFrame:
+        cfg = config_from_dict(config)
+        if synthetic:
+            n = int(config.get("synthetic_symbols", 6))
+            panels = {
+                f"SYN{i+1}": make_synthetic_ohlcv(cfg.synthetic_bars,
+                                                  cfg.seed + i, cfg.interval)
+                for i in range(n)
+            }
+            return self._to_wide(panels)
+        from run_kalman_pipeline import load_yfinance  # noqa: E402
+        universe = list(config.get("universe") or _DEFAULT_UNIVERSE)
+        panels = {}
+        for sym in universe:
+            try:
+                panels[sym] = load_yfinance(sym, cfg.interval, cfg.period)
+            except Exception:  # noqa: BLE001 — 한 종목 실패는 건너뛰고 진행.
+                continue
+        if not panels:
+            raise RuntimeError("유니버스 종목 로드 실패")
+        return self._to_wide(panels)
+
+    def build_artifacts(
+        self,
+        raw: pd.DataFrame,
+        config: dict[str, Any],
+        *,
+        symbol: str,
+        phase: str,
+        bars_per_year: int,
+    ) -> StrategyArtifacts:
+        cfg = config_from_dict(config)
+        top_k = int(config.get("top_k", 10))
+        rebal_freq = str(config.get("rebalance_freq", "monthly"))
+        panels = self._from_wide(raw)
+
+        scores, prices = compute_universe(panels, cfg)
+        if prices.empty:
+            raise RuntimeError("유효한 종목 점수/가격이 없습니다")
+        sim = simulate_portfolio(scores, prices, cfg, top_k=top_k,
+                                 rebal_freq=rebal_freq)
+
+        window = slice_window(prices.index, phase, cfg)
+        forecast = sim["forecast"].loc[window]
+        nav = sim["nav"].reindex(window)
+        equity = (nav / nav.iloc[0]).rename("equity")
+        port_ret = nav.pct_change().fillna(0.0)
+        bench = sim["benchmark"].reindex(window)
+        bench_eq = (bench / bench.iloc[0]).rename("buy_hold")
+        bench_ret = bench.pct_change().fillna(0.0)
+        trades = self._slice_trades(sim["trades"], window)
+
+        perf = performance(equity, port_ret, cfg.interval)
+        bnh = performance(bench_eq, bench_ret, cfg.interval)
+        metrics = self._metrics(perf, bnh, trades, phase)
+        metadata = {
+            "n_symbols": int(sim["n_symbols"]),
+            "top_k": top_k,
+            "rebalance_freq": rebal_freq,
+            "timeframe": cfg.interval,
+            "avg_exposure": float(forecast["stock_exposure"].mean())
+            if len(forecast) else 0.0,
+            "avg_holdings": float(forecast["n_holdings"].mean())
+            if len(forecast) else 0.0,
+            "insufficient_train_data": len(window) < cfg.warmup,
+        }
+        extras = {
+            "perf_vs_bnh": self._perf_table(perf, bnh),
+            "top_contributors": self._contributors(trades),
+        }
+        return StrategyArtifacts(
+            forecast=forecast, trades=trades, equity=equity,
+            metrics=metrics, metadata=metadata, horizon=0, extras=extras,
+        )
+
+    # ----- wide panel <-> dict -----------------------------------------
+    @staticmethod
+    def _to_wide(panels: dict[str, pd.DataFrame]) -> pd.DataFrame:
+        return pd.concat(panels, axis=1)  # MultiIndex columns (symbol, field)
+
+    @staticmethod
+    def _from_wide(raw: pd.DataFrame) -> dict[str, pd.DataFrame]:
+        if not isinstance(raw.columns, pd.MultiIndex):
+            return {"ONLY": raw}
+        out = {}
+        for sym in raw.columns.get_level_values(0).unique():
+            sub = raw[sym].dropna(how="all")
+            if not sub.empty:
+                out[str(sym)] = sub
+        return out
+
+    # ----- helpers ------------------------------------------------------
+    @staticmethod
+    def _slice_trades(trades: pd.DataFrame, window) -> pd.DataFrame:
+        if trades.empty:
+            return trades
+        entries = pd.DatetimeIndex(pd.to_datetime(trades["entry_time"]))
+        lo, hi = window[0], window[-1]
+        mask = np.asarray((entries >= lo) & (entries <= hi))
+        return trades[mask].reset_index(drop=True)
+
+    @staticmethod
+    def _metrics(perf, bnh, trades, phase) -> dict:
+        n = int(len(trades))
+        rets = trades["net_return"].astype(float) if n else pd.Series(dtype=float)
+        total = perf.get("total_return")
+        bret = bnh.get("total_return")
+        excess = (total - bret) if (total is not None and bret is not None) else None
+        return {
+            "trades": n,
+            "hit_rate": float((rets > 0).mean()) if n else None,
+            "total_return": total,
+            "sharpe": perf.get("sharpe"),
+            "max_drawdown": perf.get("max_drawdown"),
+            "cagr": perf.get("cagr"),
+            "volatility": perf.get("volatility"),
+            "buy_hold_return": bret,
+            "buy_hold_sharpe": bnh.get("sharpe"),
+            "buy_hold_max_drawdown": bnh.get("max_drawdown"),
+            "buy_hold_cagr": bnh.get("cagr"),
+            "excess_return_vs_bnh": excess,
+            "phase": phase,
+        }
+
+    @staticmethod
+    def _perf_table(perf, bnh) -> pd.DataFrame:
+        def pct(v):
+            return None if v is None else round(float(v) * 100.0, 2)
+        rows = [
+            {"metric": "총수익률 %", "strategy": pct(perf.get("total_return")),
+             "buy_hold": pct(bnh.get("total_return"))},
+            {"metric": "CAGR %", "strategy": pct(perf.get("cagr")),
+             "buy_hold": pct(bnh.get("cagr"))},
+            {"metric": "MDD %", "strategy": pct(perf.get("max_drawdown")),
+             "buy_hold": pct(bnh.get("max_drawdown"))},
+            {"metric": "Sharpe",
+             "strategy": None if perf.get("sharpe") is None else round(perf["sharpe"], 3),
+             "buy_hold": None if bnh.get("sharpe") is None else round(bnh["sharpe"], 3)},
+        ]
+        return pd.DataFrame(rows)
+
+    @staticmethod
+    def _contributors(trades: pd.DataFrame) -> pd.DataFrame:
+        if trades.empty or "symbol" not in trades:
+            return pd.DataFrame(columns=["symbol", "trades", "avg_return", "win_rate"])
+        g = trades.groupby("symbol")["net_return"]
+        out = pd.DataFrame({
+            "trades": g.size(),
+            "avg_return": g.mean().round(4),
+            "win_rate": g.apply(lambda s: float((s > 0).mean())).round(3),
+        }).reset_index().sort_values("avg_return", ascending=False)
+        return out.head(15)

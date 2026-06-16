@@ -1,0 +1,1021 @@
+
+# Python Strategy Modularization Plan
+
+## Cumulative Profile Percentile 기반 비중 관리 전략
+
+## 0. 목표
+
+기존 Pine Script에서 사용하던 다음 개념을 Python 백테스트 전략으로 모듈화한다.
+
+* Base cycle
+* Cycle multiple price
+* Rolling profile
+* Cumulative profile
+* Cumulative profile percentile
+* Rolling profile 50% line
+* Cumulative profile 50% line
+* Regime-based position cap
+* Recovery-based re-entry
+
+이 전략은 단순 매수/매도 신호 전략이 아니라, **현재 시장 상태에 따라 목표 주식 비중을 계산하고, 기존 보유 비중을 조절하는 포지션 사이징 전략**으로 설계한다.
+
+핵심 원칙은 다음과 같다.
+
+```text
+cumulative profile = 장기 위치 판단
+rolling profile = 최근 분포 변화 판단
+base cycle = 추세 상태 판단
+regime cap = 하락장 생존 장치
+target weight = 최종 주식 비중
+```
+
+---
+
+## 1. 전체 모듈 구조
+
+다음 구조로 분리한다.
+
+```text
+strategy/
+  data/
+    loader.py
+    resampler.py
+
+  indicators/
+    base_cycle.py
+    profile.py
+    percentile.py
+
+  regime/
+    regime_detector.py
+
+  sizing/
+    profile_weight_model.py
+    regime_cap_model.py
+    target_weight.py
+
+  execution/
+    rebalancer.py
+    position_manager.py
+
+  backtest/
+    engine.py
+    metrics.py
+    report.py
+
+  config/
+    strategy_config.yaml
+
+  tests/
+    test_profile.py
+    test_regime.py
+    test_weight.py
+    test_backtest_no_lookahead.py
+```
+
+각 모듈은 독립적으로 테스트 가능해야 한다.
+
+---
+
+# 2. Data Module
+
+## 목적
+
+OHLCV 데이터를 불러오고, 전략 계산 기준 timeframe으로 정렬한다.
+
+## 입력
+
+* symbol
+* timeframe
+* start_date
+* end_date
+* OHLCV data
+
+## 출력
+
+표준화된 DataFrame.
+
+필수 컬럼:
+
+```text
+timestamp
+open
+high
+low
+close
+volume
+```
+
+## 요구사항
+
+* timestamp 정렬 보장
+* 결측치 처리
+* 중복 timestamp 제거
+* backtest 구간과 warmup 구간 구분
+* resample 기능 제공
+
+---
+
+# 3. Base Cycle Module
+
+## 목적
+
+가격의 기준선인 base cycle을 계산한다.
+
+## 입력
+
+* close
+* volume
+* base_length
+* base_type
+* base_scale
+
+## 지원할 base_type
+
+```text
+SMA
+EMA
+RMA
+WMA
+VWMA
+```
+
+## 출력
+
+```text
+base_cycle
+cycle_multiple_open
+cycle_multiple_high
+cycle_multiple_low
+cycle_multiple_close
+```
+
+계산식:
+
+```text
+base_cycle = moving_average(close, base_length, base_type) * base_scale
+
+cycle_multiple_close = close / base_cycle
+cycle_multiple_high  = high  / base_cycle
+cycle_multiple_low   = low   / base_cycle
+cycle_multiple_open  = open  / base_cycle
+```
+
+## 주의사항
+
+* base_cycle이 NaN이거나 0 이하인 구간은 profile 계산에서 제외한다.
+* 미래 데이터 사용 금지.
+
+---
+
+# 4. Profile Calculation Module
+
+## 목적
+
+cycle multiple 기준으로 rolling profile과 cumulative profile을 계산한다.
+
+가격 자체가 아니라 다음 값을 profile bin에 누적한다.
+
+```text
+price_multiple = price / base_cycle
+```
+
+## 입력
+
+* cycle_multiple_open
+* cycle_multiple_high
+* cycle_multiple_low
+* cycle_multiple_close
+* volume
+* profile_min_mult
+* profile_max_mult
+* profile_bin_count
+* rolling_window
+* weight_mode
+* accumulation_mode
+
+## weight_mode
+
+```text
+Time
+Volume
+Volume With 1 Fallback
+```
+
+## accumulation_mode
+
+```text
+Range Uniform
+OHLC
+Range + Close Weight
+```
+
+## 출력
+
+각 bar마다 다음 값 생성.
+
+```text
+rolling_profile_bins
+cumulative_profile_bins
+rolling_profile_total
+cumulative_profile_total
+rolling_profile_max_bin
+cumulative_profile_max_bin
+```
+
+## 구현 원칙
+
+### Rolling profile
+
+최근 N개 bar만 유지한다.
+
+```text
+현재 bar 추가
+rolling_window 밖으로 나간 bar 제거
+```
+
+### Cumulative profile
+
+시작 지점부터 현재 bar까지 누적한다.
+
+```text
+현재 bar만 계속 추가
+제거 없음
+```
+
+## 중요
+
+이 모듈은 전략의 핵심이므로 반드시 단위 테스트를 작성한다.
+
+테스트 항목:
+
+* bin index 계산이 정상인지
+* range uniform 분배가 정상인지
+* rolling window에서 오래된 bar가 제거되는지
+* cumulative profile은 제거되지 않는지
+* total weight 보존이 되는지
+* volume이 0일 때 fallback이 정상 동작하는지
+
+---
+
+# 5. Percentile Module
+
+## 목적
+
+profile bins에서 누적 percentile 위치를 계산한다.
+
+## 입력
+
+```text
+profile_bins
+profile_min_mult
+profile_max_mult
+profile_bin_count
+percentile_value
+```
+
+## 출력
+
+```text
+lower_percentile_mult
+upper_percentile_mult
+profile_mid_50_mult
+```
+
+## 계산 개념
+
+### lower percentile
+
+아래 bin부터 누적해서 target weight에 도달하는 위치.
+
+```text
+target = total_profile_weight * percentile_value
+```
+
+### upper percentile
+
+위 bin부터 누적해서 target weight에 도달하는 위치.
+
+### profile 50%
+
+아래 bin부터 누적해서 전체 weight의 50%에 도달하는 위치.
+
+이 값은 POC가 아니라 weighted median에 가깝다.
+
+## 산출할 값
+
+rolling profile 기준:
+
+```text
+rolling_lower_percentile
+rolling_upper_percentile
+rolling_mid_50
+```
+
+cumulative profile 기준:
+
+```text
+cumulative_lower_percentile
+cumulative_upper_percentile
+cumulative_mid_50
+```
+
+전략에서는 기본적으로 cumulative percentile과 rolling/cumulative 50%를 사용한다.
+
+---
+
+# 6. Regime Detector Module
+
+## 목적
+
+현재 시장 상태를 단순한 4단계로 분류한다.
+
+## regime 종류
+
+```text
+NORMAL
+CAUTION
+DEFENSE
+RECOVERY
+```
+
+## 입력
+
+```text
+close
+base_cycle
+cycle_multiple_close
+rolling_mid_50
+cumulative_mid_50
+cumulative_lower_percentile
+```
+
+## 기본 판정 규칙
+
+### NORMAL
+
+```text
+close > base_cycle
+```
+
+또는
+
+```text
+cycle_multiple_close > 1.0
+```
+
+### CAUTION
+
+```text
+close < base_cycle
+```
+
+단, rolling_mid_50이 cumulative_mid_50보다 아직 크게 낮지 않은 상태.
+
+### DEFENSE
+
+최근 분포 중심이 장기 분포 중심보다 아래로 내려간 상태.
+
+```text
+rolling_mid_50 < cumulative_mid_50
+```
+
+그리고 가격이 base_cycle 아래에 있으면 방어 강도를 높인다.
+
+### RECOVERY
+
+방어 상태 이후 가격이 rolling_mid_50을 회복한 상태.
+
+```text
+cycle_multiple_close > rolling_mid_50
+```
+
+추가 회복 조건:
+
+```text
+cycle_multiple_close > cumulative_lower_percentile
+cycle_multiple_close > 1.0
+```
+
+## 단순화 원칙
+
+처음부터 복잡한 regime score를 만들지 않는다.
+
+우선 4단계 분류만 구현한다.
+
+추후 필요하면 점수형 regime model로 확장한다.
+
+---
+
+# 7. Profile Weight Model
+
+## 목적
+
+cumulative profile percentile에 따라 기본 주식 비중을 계산한다.
+
+## 입력
+
+```text
+current_cumulative_percentile
+```
+
+## 출력
+
+```text
+base_target_weight
+```
+
+## 초기 버전은 구간형으로 구현
+
+```text
+0%  ~ 20%   -> 80%
+20% ~ 40%   -> 60%
+40% ~ 60%   -> 50%
+60% ~ 80%   -> 30%
+80% ~ 100%  -> 10%
+```
+
+## 확장 버전
+
+구간형이 안정적으로 동작하면 지수 곡선형으로 확장한다.
+
+예시 개념:
+
+```text
+percentile이 낮을수록 주식 비중 증가
+percentile이 높을수록 주식 비중 감소
+중립 구간에서는 변화 완만
+극단 구간에서는 변화 급격
+```
+
+초기 구현에서는 반드시 구간형과 지수형을 설정으로 선택할 수 있게 한다.
+
+```text
+weight_model = "bucket" | "exponential"
+```
+
+---
+
+# 8. Regime Cap Model
+
+## 목적
+
+시장 상태에 따라 최대 허용 주식 비중을 제한한다.
+
+## 입력
+
+```text
+regime
+```
+
+## 출력
+
+```text
+max_allowed_weight
+```
+
+## 기본값
+
+```text
+NORMAL   -> 100%
+CAUTION  -> 60%
+DEFENSE  -> 30%
+RECOVERY -> 50%
+```
+
+RECOVERY는 회복 단계에 따라 상향 가능해야 한다.
+
+```text
+RECOVERY_STAGE_1 -> 50%
+RECOVERY_STAGE_2 -> 70%
+RECOVERY_STAGE_3 -> 100%
+```
+
+## 핵심 원칙
+
+profile 기준으로는 80% 비중이 나와도, regime cap이 30%면 최종 목표 비중은 30%가 된다.
+
+```text
+final_target_weight = min(base_target_weight, max_allowed_weight)
+```
+
+---
+
+# 9. Target Weight Module
+
+## 목적
+
+profile 기준 비중과 regime cap을 합쳐 최종 목표 비중을 계산한다.
+
+## 입력
+
+```text
+base_target_weight
+max_allowed_weight
+current_regime
+current_position_weight
+```
+
+## 출력
+
+```text
+final_target_weight
+action_type
+```
+
+## 기본 규칙
+
+```text
+final_target_weight = min(base_target_weight, max_allowed_weight)
+```
+
+단, DEFENSE 상태에서는 신규 증액 금지.
+
+```text
+if regime == DEFENSE:
+    final_target_weight = min(current_position_weight, max_allowed_weight)
+```
+
+즉, 방어장에서는 싸다고 추가 매수하지 않는다.
+
+현재 비중이 cap보다 높으면 줄인다.
+
+현재 비중이 cap보다 낮아도 방어장에서는 늘리지 않는다.
+
+---
+
+# 10. Rebalancer Module
+
+## 목적
+
+현재 비중과 목표 비중 차이에 따라 실제 매매 주문을 생성한다.
+
+## 입력
+
+```text
+current_position_weight
+final_target_weight
+portfolio_value
+close_price
+rebalance_threshold
+max_trade_weight_per_bar
+```
+
+## 출력
+
+```text
+target_position_value
+trade_value
+trade_quantity
+side
+```
+
+## 규칙
+
+### 비중 차이가 작으면 거래하지 않음
+
+```text
+abs(final_target_weight - current_position_weight) < rebalance_threshold
+```
+
+이면 거래 없음.
+
+### 한 번에 너무 많이 줄이지 않음
+
+```text
+max_trade_weight_per_bar
+```
+
+를 설정한다.
+
+예시:
+
+```text
+현재 비중 80%
+목표 비중 30%
+max_trade_weight_per_bar 20%
+
+1차 조정: 80% -> 60%
+2차 조정: 60% -> 40%
+3차 조정: 40% -> 30%
+```
+
+## 방어장 처리
+
+DEFENSE 상태에서는 매수 주문 금지.
+
+```text
+if regime == DEFENSE and trade_value > 0:
+    trade_value = 0
+```
+
+---
+
+# 11. Position Manager Module
+
+## 목적
+
+기존 보유 비중을 core / tactical / trading으로 나눠 관리한다.
+
+초기 구현에서는 실제 계좌 분리까지 하지 않아도 되지만, report에는 구분해서 볼 수 있게 한다.
+
+## 비중 구조 예시
+
+```text
+core_weight
+tactical_weight
+trading_weight
+```
+
+## 우선 감축 순서
+
+```text
+1. trading
+2. tactical
+3. core
+```
+
+## 초기 단순화
+
+처음에는 전체 주식 비중 하나만 관리한다.
+
+이후 확장 단계에서 core/tactical/trading 분리 기능을 추가한다.
+
+---
+
+# 12. Backtest Engine
+
+## 목적
+
+전략을 과거 데이터에 적용하여 성과를 검증한다.
+
+## 반드시 포함할 요소
+
+```text
+initial_cash
+commission
+slippage
+spread
+position_size
+portfolio_value
+cash
+equity_curve
+drawdown
+```
+
+## 매 bar 처리 순서
+
+```text
+1. 데이터 업데이트
+2. base cycle 계산
+3. rolling/cumulative profile 업데이트
+4. percentile 계산
+5. regime 판정
+6. base target weight 계산
+7. regime cap 적용
+8. final target weight 산출
+9. rebalance 주문 생성
+10. 체결 반영
+11. portfolio value 기록
+```
+
+## 중요
+
+lookahead bias 금지.
+
+현재 bar의 close로 신호를 계산했다면, 실제 체결은 다음 bar open 또는 다음 bar close 기준으로 처리할 수 있게 설정으로 분리한다.
+
+```text
+execution_price = "next_open" | "next_close"
+```
+
+---
+
+# 13. Report Module
+
+## 목적
+
+단순 수익률뿐 아니라 전략이 의도대로 동작했는지 확인한다.
+
+## 필수 리포트
+
+```text
+total_return
+annual_return
+max_drawdown
+sharpe
+sortino
+win_rate
+turnover
+number_of_trades
+average_exposure
+max_exposure
+cash_ratio_avg
+```
+
+## 전략 전용 리포트
+
+```text
+time_in_NORMAL
+time_in_CAUTION
+time_in_DEFENSE
+time_in_RECOVERY
+
+average_weight_by_regime
+max_weight_by_regime
+drawdown_by_regime
+return_by_regime
+
+number_of_defense_entries
+number_of_recovery_entries
+```
+
+## 시각화
+
+필수 차트:
+
+```text
+1. price + base_cycle
+2. cycle_multiple_close + rolling_mid_50 + cumulative_mid_50
+3. cumulative percentile over time
+4. target weight vs actual weight
+5. equity curve
+6. drawdown curve
+7. regime background chart
+```
+
+---
+
+# 14. Config 설계
+
+모든 주요 파라미터는 config로 빼야 한다.
+
+예시:
+
+```yaml
+base_cycle:
+  type: SMA
+  length: 200
+  scale: 1.0
+
+profile:
+  min_mult: 0.0
+  max_mult: 5.0
+  bin_count: 120
+  rolling_window: 126
+  weight_mode: Volume With 1 Fallback
+  accumulation_mode: Range Uniform
+  percentile_value: 20
+
+weight_model:
+  type: bucket
+  buckets:
+    - [0, 20, 0.80]
+    - [20, 40, 0.60]
+    - [40, 60, 0.50]
+    - [60, 80, 0.30]
+    - [80, 100, 0.10]
+
+regime_cap:
+  NORMAL: 1.00
+  CAUTION: 0.60
+  DEFENSE: 0.30
+  RECOVERY: 0.50
+
+rebalance:
+  threshold: 0.03
+  max_trade_weight_per_bar: 0.20
+  defense_buy_allowed: false
+
+execution:
+  execution_price: next_open
+  commission: 0.001
+  slippage: 0.0005
+```
+
+---
+
+# 15. 테스트 기준
+
+## Unit Test
+
+다음은 반드시 테스트한다.
+
+```text
+base_cycle 계산
+cycle multiple 계산
+profile bin index 계산
+rolling profile add/remove
+cumulative profile add only
+percentile 계산
+regime 판정
+target weight 계산
+defense 상태에서 매수 금지
+regime cap 적용
+```
+
+## Integration Test
+
+단순한 인공 데이터를 만들어 다음을 검증한다.
+
+### 상승장
+
+* 가격이 base cycle 위
+* regime NORMAL
+* profile 비중 정상 작동
+
+### 하락장
+
+* 가격이 base cycle 아래
+* rolling_mid_50 < cumulative_mid_50
+* regime DEFENSE
+* target weight가 cap 이하로 제한됨
+* 신규 매수 없음
+
+### 회복장
+
+* DEFENSE 이후 가격이 rolling_mid_50 회복
+* regime RECOVERY
+* 제한적으로 비중 복구
+
+### no-lookahead
+
+* 미래 bar 값이 현재 signal 계산에 사용되지 않았는지 검증
+
+---
+
+# 16. 구현 우선순위
+
+## Phase 1
+
+전략 계산 모듈 구현.
+
+```text
+base_cycle
+cycle_multiple
+rolling_profile
+cumulative_profile
+percentile
+regime
+target_weight
+```
+
+이 단계에서는 실제 매매 체결보다 indicator와 target weight가 제대로 나오는지 확인한다.
+
+## Phase 2
+
+백테스트 엔진 구현.
+
+```text
+cash
+position
+portfolio_value
+rebalance
+commission
+slippage
+equity_curve
+drawdown
+```
+
+## Phase 3
+
+리포트와 차트 구현.
+
+```text
+equity curve
+drawdown
+target weight
+actual weight
+regime chart
+profile percentile chart
+```
+
+## Phase 4
+
+전략 개선 옵션 추가.
+
+```text
+exponential weight curve
+volatility cap
+core/tactical/trading bucket
+multi-asset portfolio
+walk-forward test
+parameter sweep
+```
+
+---
+
+# 17. 전략의 핵심 동작 예시
+
+## Case 1: 정상장 저가권
+
+```text
+cumulative percentile = 15%
+base target weight = 80%
+regime = NORMAL
+regime cap = 100%
+
+final target weight = 80%
+```
+
+결과:
+
+```text
+주식 비중 확대 가능
+```
+
+---
+
+## Case 2: 방어장 저가권
+
+```text
+cumulative percentile = 15%
+base target weight = 80%
+regime = DEFENSE
+regime cap = 30%
+current weight = 70%
+
+final target weight = 30%
+```
+
+결과:
+
+```text
+저가권이어도 추가 매수 금지
+기존 비중 70%에서 30%까지 축소
+```
+
+---
+
+## Case 3: 방어장인데 이미 비중이 낮음
+
+```text
+cumulative percentile = 10%
+base target weight = 80%
+regime = DEFENSE
+regime cap = 30%
+current weight = 20%
+
+final target weight = 20%
+```
+
+결과:
+
+```text
+비중이 이미 cap 이하이므로 유지
+방어장에서는 신규 매수하지 않음
+```
+
+---
+
+## Case 4: 회복장
+
+```text
+regime = RECOVERY
+cycle_multiple_close > rolling_mid_50
+base target weight = 80%
+recovery cap = 50%
+current weight = 20%
+
+final target weight = 50%
+```
+
+결과:
+
+```text
+회복 확인 후 50%까지 제한적으로 비중 복구
+```
+
+---
+
+# 18. 최종 목표
+
+이 전략은 가격 예측 모델이 아니다.
+
+목표는 다음과 같다.
+
+```text
+1. 장기 profile 기준으로 현재 가격 위치를 판단한다.
+2. 최근 rolling profile이 장기 cumulative profile보다 아래로 이동하면 방어장으로 본다.
+3. 방어장에서는 cumulative profile 저가권이어도 물타기를 금지한다.
+4. 현재 보유 비중이 regime cap보다 높으면 초과분을 줄인다.
+5. 회복이 확인될 때만 단계적으로 비중을 복구한다.
+6. 모든 과정은 target weight 기반으로 관리한다.
+```
+
+최종적으로 Python 전략은 다음 값을 매 bar마다 산출해야 한다.
+
+```text
+base_cycle
+cycle_multiple_close
+rolling_mid_50
+cumulative_mid_50
+cumulative_percentile
+regime
+base_target_weight
+regime_cap
+final_target_weight
+actual_weight
+trade_signal
+portfolio_value
+```

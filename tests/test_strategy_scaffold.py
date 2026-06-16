@@ -17,13 +17,19 @@ from trading_lab.strategies import list_strategies  # noqa: E402
 
 
 class RegisteredConfigTests(unittest.TestCase):
-    def test_registered_configs_have_required_keys(self):
+    def test_registered_configs_are_well_formed(self):
+        # Universal contract: every registered config loads as a dict with a
+        # "version" key. The full forecast-template schema (validate_config) is
+        # only required of forecast-family strategies (those with "horizon").
         for definition in list_strategies():
             with self.subTest(strategy=definition.strategy_id):
                 config = json.loads(
                     definition.config_path.read_text(encoding="utf-8")
                 )
-                self.assertEqual(new_strategy.validate_config(config), [])
+                self.assertIsInstance(config, dict)
+                self.assertIn("version", config)
+                if "horizon" in config:
+                    self.assertEqual(new_strategy.validate_config(config), [])
 
 
 class ScaffoldTests(unittest.TestCase):

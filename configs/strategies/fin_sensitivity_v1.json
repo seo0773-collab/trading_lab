@@ -1,0 +1,92 @@
+{
+  "version": "fin-sensitivity-v1",
+  "interval": "1d",
+  "period": "max",
+  "factors": [
+    "revenue_growth",
+    "operating_income",
+    "net_income",
+    "roe",
+    "operating_cashflow",
+    "debt_ratio",
+    "total_equity"
+  ],
+  "valuation_factors": ["per", "pbr", "psr"],
+  "train_quarters": 16,
+  "min_train_quarters": 12,
+  "ridge_alpha": 1.0,
+  "horizons": [20, 60],
+  "feature_set": "redesign",
+  "target_excess": true,
+  "availability_lag_quarter_days": 45,
+  "availability_lag_annual_days": 90,
+  "use_rate_feature": true,
+  "rate_symbol": "^IRX",
+  "rate_change_lookback": 63,
+  "pred20_min": 0.0,
+  "pred60_min": 0.0,
+  "stop_loss_pct": 0.25,
+  "fee_bps_per_side": 5.0,
+  "execution": "next_open",
+  "long_only": true,
+  "market_filter": {
+    "symbol": "SPY",
+    "ma_len": 200,
+    "fallback_self_ma": true
+  },
+  "exclusions": {
+    "operating_loss_streak": 2,
+    "ocf_decline_streak": 2,
+    "debt_ratio_jump": 0.20,
+    "valuation_overheat_z": 2.0,
+    "max_missing_ratio": 0.4
+  },
+  "train_frac": 0.6,
+  "validation_frac": 0.2,
+  "synthetic_bars": 2600,
+  "seed": 7,
+  "dashboard": {
+    "default_indicators": ["pred_ret_20d", "pred_ret_60d"],
+    "indicator_labels": {
+      "pred_ret_20d": "예상 20일 수익률",
+      "pred_ret_60d": "예상 60일 수익률",
+      "quality_score": "재무품질 점수",
+      "valuation_z": "밸류에이션 z",
+      "rate_level": "미국 금리 수준(z)",
+      "d_rate": "미국 금리 변화"
+    },
+    "learning_tab": {
+      "label": "재무·주가 학습",
+      "summary_kind": "learning_summary",
+      "predictions_kind": "pred_vs_real",
+      "sensitivity_kind": "sensitivity_table",
+      "events_kind": "learning_events"
+    },
+    "panels": [
+      {"kind": "pred_vs_real", "type": "scatter",
+       "label": "예측 vs 실제 (60일 초과수익)",
+       "x": "pred_ret_60d", "y": "ret_60d", "default": true},
+      {"kind": "sensitivity_table", "type": "bar",
+       "label": "팩터 민감도 (평균 계수)",
+       "x": "factor", "y": "sensitivity_mean", "default": true}
+    ]
+  },
+  "tunables": [
+    {"name": "train_quarters", "label": "학습 분기수", "type": "int",
+     "min": 12, "max": 16, "step": 1, "default": 16},
+    {"name": "ridge_alpha", "label": "Ridge alpha", "type": "number",
+     "min": 0.1, "max": 10.0, "step": 0.1, "default": 1.0},
+    {"name": "feature_set", "label": "피처 세트", "type": "select",
+     "options": ["redesign", "qoq"], "default": "redesign"},
+    {"name": "pred20_min", "label": "예상 20일 진입 하한", "type": "number",
+     "min": 0.0, "max": 0.03, "step": 0.001, "default": 0.0},
+    {"name": "pred60_min", "label": "예상 60일 진입 하한", "type": "number",
+     "min": 0.0, "max": 0.03, "step": 0.001, "default": 0.0},
+    {"name": "stop_loss_pct", "label": "손절 폭", "type": "number",
+     "min": 0.1, "max": 0.5, "step": 0.05, "default": 0.25},
+    {"name": "use_rate_feature", "label": "미국 금리 피처", "type": "select",
+     "options": ["true", "false"], "default": "true"},
+    {"name": "rate_change_lookback", "label": "금리 변화 측정일", "type": "int",
+     "min": 21, "max": 126, "step": 21, "default": 63}
+  ]
+}

@@ -18,7 +18,7 @@ class FailedRunTests(unittest.TestCase):
             with (
                 patch("trading_lab.artifacts.runs_dir", return_value=root / "runs"),
                 patch(
-                    "trading_lab.service.load_market_data",
+                    "trading_lab.strategies.h72.load_market_data",
                     side_effect=RuntimeError("provider unavailable"),
                 ),
             ):

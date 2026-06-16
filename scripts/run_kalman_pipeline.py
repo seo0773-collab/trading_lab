@@ -32,6 +32,7 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "src"))
 
 from flat_chart import FlatChartConfig, compute_features  # noqa: E402
 from kalman import AdaptiveKalman, KalmanParams           # noqa: E402
@@ -44,16 +45,9 @@ WARMUP = 300  # 파라미터 식별 후 필터 burn-in 봉 수
 # 1. Data loading
 # ----------------------------------------------------------------------
 def load_yfinance(symbol: str, interval: str, period: str) -> pd.DataFrame:
-    import yfinance as yf  # 미설치 시: pip install yfinance
+    from trading_lab.market_data import load_cumulative_yfinance
 
-    df = yf.download(symbol, interval=interval, period=period,
-                     auto_adjust=True, progress=False)
-    if df.empty:
-        raise RuntimeError(f"yfinance returned empty data for {symbol}")
-    if isinstance(df.columns, pd.MultiIndex):
-        df.columns = df.columns.get_level_values(0)
-    df = df.rename(columns=str.lower)[["open", "high", "low", "close", "volume"]]
-    return df.dropna(subset=["close"])
+    return load_cumulative_yfinance(symbol, interval, period)
 
 
 def load_csv(path: str) -> pd.DataFrame:

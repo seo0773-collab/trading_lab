@@ -1,0 +1,49 @@
+{
+  "buckets": {
+    "long|aligned=True": {
+      "n": 20,
+      "win_probability": 0.35,
+      "avg_win": 0.05939079926066371,
+      "avg_loss": 0.03500698190247032
+    },
+    "long|aligned=False": {
+      "n": 11,
+      "win_probability": 0.7272727272727273,
+      "avg_win": 0.05970749965817862,
+      "avg_loss": 0.031062706491339836
+    },
+    "short|aligned=True": {
+      "n": 19,
+      "win_probability": 0.42105263157894735,
+      "avg_win": 0.05604529243889554,
+      "avg_loss": 0.0307915664970273
+    },
+    "short|aligned=False": {
+      "n": 9,
+      "win_probability": 0.5555555555555556,
+      "avg_win": 0.0639980774351913,
+      "avg_loss": 0.030158211524121736
+    }
+  },
+  "directions": {
+    "long": {
+      "n": 31,
+      "win_probability": 0.4838709677419355,
+      "avg_win": 0.05955970613933833,
+      "avg_loss": 0.034267430262883355
+    },
+    "short": {
+      "n": 28,
+      "win_probability": 0.4642857142857143,
+      "avg_win": 0.05910405589900929,
+      "avg_loss": 0.030622671837585817
+    }
+  },
+  "global": {
+    "n": 59,
+    "win_probability": 0.4745762711864407,
+    "avg_win": 0.0593481542420427,
+    "avg_loss": 0.03250383747644906
+  },
+  "n_simulated": 59
+}

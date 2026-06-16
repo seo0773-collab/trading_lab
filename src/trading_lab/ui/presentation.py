@@ -14,6 +14,9 @@ EXIT_REASON_LABELS = {
     "end_of_data": "데이터 종료",
     "stop_loss": "손절",
     "take_profit": "익절",
+    "rebalance": "리밸런싱",
+    "signal_flip": "신호 반전",
+    "defense_cut": "방어 축소",
 }
 
 PRICE_COLUMNS = ("open", "high", "low", "close")
@@ -97,11 +100,14 @@ def build_trade_report(
         exit_index, method="ffill"
     ).to_numpy()
 
-    execution_label = "다음 시가" if execution == "next_open" else "신호 종가"
-    report["entry_reason"] = [
-        _entry_reason(trade, horizon, execution_label)
-        for _, trade in trades.iterrows()
-    ]
+    if "entry_reason" in trades:
+        report["entry_reason"] = trades["entry_reason"].astype(str).to_numpy()
+    else:
+        execution_label = "다음 시가" if execution == "next_open" else "신호 종가"
+        report["entry_reason"] = [
+            _entry_reason(trade, horizon, execution_label)
+            for _, trade in trades.iterrows()
+        ]
     return report[columns]
 
 
@@ -271,6 +277,69 @@ def build_waveform_figure(
     return figure
 
 
+def build_price_indicator_figure(
+    forecast: pd.DataFrame,
+    trades: pd.DataFrame,
+    *,
+    symbol: str,
+    horizon: int,
+    series_map: dict[str, pd.Series],
+    labels: dict[str, str] | None = None,
+) -> go.Figure:
+    """가격과 보조지표를 TradingView 형태의 공유 X축 패널로 구성합니다."""
+    price = build_price_figure(
+        forecast, trades, symbol=symbol, horizon=horizon,
+    )
+    waveform = (
+        build_waveform_figure(series_map, labels=labels)
+        if series_map else None
+    )
+    indicator_rows = len({
+        trace.yaxis or "y" for trace in waveform.data
+    }) if waveform else 0
+    rows = 1 + indicator_rows
+    row_heights = [0.62] + [0.38 / indicator_rows] * indicator_rows if indicator_rows else [1.0]
+    figure = make_subplots(
+        rows=rows,
+        cols=1,
+        shared_xaxes=True,
+        vertical_spacing=0.025 if indicator_rows else 0.0,
+        row_heights=row_heights,
+    )
+
+    for trace in price.data:
+        figure.add_trace(trace, row=1, col=1)
+    figure.update_yaxes(title_text="가격", row=1, col=1)
+
+    if waveform:
+        axis_rows: dict[str, int] = {}
+        for trace in waveform.data:
+            axis = trace.yaxis or "y"
+            row = axis_rows.setdefault(axis, len(axis_rows) + 2)
+            figure.add_trace(trace, row=row, col=1)
+        for axis, row in axis_rows.items():
+            axis_number = 1 if axis == "y" else int(axis[1:])
+            source_axis = waveform.layout[
+                "yaxis" if axis_number == 1 else f"yaxis{axis_number}"
+            ]
+            if source_axis.title and source_axis.title.text:
+                figure.update_yaxes(
+                    title_text=source_axis.title.text, row=row, col=1,
+                )
+
+    figure.update_layout(
+        title=f"{symbol} 가격 및 보조지표",
+        height=560 + 210 * indicator_rows,
+        hovermode="x unified",
+        legend={"orientation": "h", "y": 1.06, "x": 0},
+        margin={"l": 45, "r": 25, "t": 85, "b": 40},
+        template="plotly_dark",
+        uirevision=f"market-{symbol}-{horizon}-{'|'.join(series_map)}",
+    )
+    figure.update_xaxes(rangeslider_visible=False)
+    return figure
+
+
 def _scale_of(values: pd.Series) -> float:
     finite = np.abs(values.to_numpy(dtype=float))
     finite = finite[np.isfinite(finite) & (finite > 0)]
@@ -290,22 +359,41 @@ def build_account_figure(
     *,
     initial_capital: float,
     symbol: str,
+    benchmark_price: pd.Series | None = None,
 ) -> go.Figure:
     account = account_value_series(equity, initial_capital)
     drawdown = (equity / equity.cummax() - 1.0) * 100.0
+    strategy_return = float(equity.iloc[-1] / equity.iloc[0] - 1.0)
     figure = make_subplots(specs=[[{"secondary_y": True}]])
     figure.add_trace(go.Scatter(
-        x=account.index, y=account, mode="lines", name="계좌 금액",
+        x=account.index, y=account, mode="lines",
+        name=f"전략 계좌 ({strategy_return:+.2%})",
         line={"color": "#66bb6a", "width": 1.8},
-        fill="tozeroy", fillcolor="rgba(102,187,106,0.08)",
     ), secondary_y=False)
+    if benchmark_price is not None:
+        benchmark = pd.to_numeric(benchmark_price, errors="coerce").reindex(
+            account.index
+        ).ffill().bfill()
+        benchmark = benchmark.where(benchmark > 0)
+        if benchmark.notna().any():
+            first_price = float(benchmark.dropna().iloc[0])
+            buy_hold_equity = benchmark / first_price
+            buy_hold_account = buy_hold_equity * float(initial_capital)
+            buy_hold_return = float(buy_hold_equity.dropna().iloc[-1] - 1.0)
+            figure.add_trace(go.Scatter(
+                x=buy_hold_account.index,
+                y=buy_hold_account,
+                mode="lines",
+                name=f"Buy & Hold ({buy_hold_return:+.2%})",
+                line={"color": "#42a5f5", "width": 1.6, "dash": "dash"},
+            ), secondary_y=False)
     figure.add_trace(go.Scatter(
         x=drawdown.index, y=drawdown, mode="lines", name="낙폭 %",
         line={"color": "#ef5350", "width": 1.0},
         fill="tozeroy", fillcolor="rgba(239,83,80,0.12)",
     ), secondary_y=True)
     figure.update_layout(
-        title=f"{symbol} 계좌 금액 파형", height=430,
+        title=f"{symbol} 전략 vs Buy & Hold", height=430,
         hovermode="x unified",
         legend={"orientation": "h", "y": 1.12, "x": 0},
         margin={"l": 45, "r": 45, "t": 85, "b": 40},
@@ -313,6 +401,99 @@ def build_account_figure(
     )
     figure.update_yaxes(title_text="계좌 금액", tickprefix="$", secondary_y=False)
     figure.update_yaxes(title_text="낙폭 %", ticksuffix="%", secondary_y=True)
+    return figure
+
+
+# --- 범용 보조 패널 (전략별 extras 선언적 렌더) ------------------------------
+# 결과 화면이 전용 위젯으로 그리는 표준 아티팩트. 이외의 아티팩트는 전략이
+# config.dashboard.panels 로 선언하거나 자동 발견되어 "보조 패널"로 노출된다.
+# 이렇게 두면 전략마다 app.py 를 고치지 않고 config 만으로 add/delete 할 수 있다.
+_CORE_ARTIFACT_KINDS = frozenset({
+    "manifest", "config", "forecast", "forecast_metadata", "trades",
+    "equity", "account_value", "trade_report", "metrics", "report",
+    "equity_chart", "error",
+})
+
+
+def available_extra_kinds(run: dict[str, Any]) -> list[str]:
+    """표준 아티팩트가 아닌(=보조 패널 후보) 아티팩트 kind 목록(등록 순서)."""
+    seen: list[str] = []
+    for artifact in run.get("artifacts", []) or []:
+        kind = str(artifact.get("kind"))
+        if kind not in _CORE_ARTIFACT_KINDS and kind not in seen:
+            seen.append(kind)
+    return seen
+
+
+def resolve_extra_panels(
+    dashboard_config: dict[str, Any], available_kinds: list[str],
+) -> list[dict[str, Any]]:
+    """config 선언과 실제 존재하는 아티팩트를 합쳐 패널 스펙 목록을 만든다.
+
+    선언(``dashboard.panels``)에 ``label``/``type``(table|scatter|bar|line)/축
+    (``x``/``y``)/``default`` 를 줄 수 있다. 선언이 없는 아티팩트는 표(table)로
+    자동 노출돼, 새 extras를 추가해도 별도 코드 없이 화면에 뜬다.
+    """
+    declared = {
+        str(panel.get("kind")): dict(panel)
+        for panel in (dashboard_config.get("panels") or [])
+        if panel.get("kind")
+    }
+    panels: list[dict[str, Any]] = []
+    for kind in available_kinds:
+        spec = declared.get(kind, {})
+        panels.append({
+            "kind": kind,
+            "type": str(spec.get("type", "table")),
+            "label": str(spec.get("label", kind)),
+            "x": spec.get("x"),
+            "y": spec.get("y"),
+            "default": bool(spec.get("default", True)),
+        })
+    return panels
+
+
+def build_scatter_figure(
+    frame: pd.DataFrame, x: str, y: str, *, label: str,
+) -> go.Figure:
+    """예측 vs 실제 같은 산점도 + y=x 기준선(가능 시)."""
+    fx = pd.to_numeric(frame[x], errors="coerce")
+    fy = pd.to_numeric(frame[y], errors="coerce")
+    figure = go.Figure()
+    figure.add_trace(go.Scatter(
+        x=fx, y=fy, mode="markers", name=label,
+        marker=dict(size=7, color=WAVEFORM_PALETTE[1], opacity=0.75),
+    ))
+    finite = fx.replace([np.inf, -np.inf], np.nan).dropna()
+    finite_y = fy.replace([np.inf, -np.inf], np.nan).dropna()
+    if len(finite) and len(finite_y):
+        lo = float(min(finite.min(), finite_y.min()))
+        hi = float(max(finite.max(), finite_y.max()))
+        figure.add_trace(go.Scatter(
+            x=[lo, hi], y=[lo, hi], mode="lines", name="y = x",
+            line=dict(color="#888", dash="dash"),
+        ))
+    figure.update_layout(
+        title=label, height=420, template="plotly_dark",
+        xaxis_title=x, yaxis_title=y, showlegend=True,
+    )
+    return figure
+
+
+def build_bar_figure(
+    frame: pd.DataFrame, x: str, y: str, *, label: str,
+) -> go.Figure:
+    """팩터 민감도 같은 막대 그래프(부호별 색)."""
+    fy = pd.to_numeric(frame[y], errors="coerce")
+    colors = [
+        WAVEFORM_PALETTE[6] if v >= 0 else WAVEFORM_PALETTE[5]
+        for v in fy.fillna(0.0)
+    ]
+    figure = go.Figure(go.Bar(x=frame[x].astype(str), y=fy, marker_color=colors))
+    figure.update_layout(
+        title=label, height=420, template="plotly_dark",
+        xaxis_title=x, yaxis_title=y,
+    )
     return figure
 
 

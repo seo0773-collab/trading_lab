@@ -1,0 +1,80 @@
+{
+  "version": "profile-sizing-v1",
+  "interval": "1d",
+  "period": "max",
+  "base_cycle": {
+    "type": "SMA",
+    "length": 200,
+    "scale": 1.0
+  },
+  "profile": {
+    "min_mult": 0.0,
+    "max_mult": 3.0,
+    "bin_count": 120,
+    "rolling_window": 126,
+    "weight_mode": "volume_fallback",
+    "accumulation_mode": "range_uniform",
+    "percentile_value": 20.0
+  },
+  "weight_model": "bucket",
+  "buckets": [
+    [0, 20, 0.80],
+    [20, 40, 0.60],
+    [40, 60, 0.50],
+    [60, 80, 0.30],
+    [80, 100, 0.10]
+  ],
+  "exp_max_weight": 1.0,
+  "exp_k": 2.0,
+  "regime_cap": {
+    "NORMAL": 1.0,
+    "CAUTION": 0.6,
+    "DEFENSE": 0.3,
+    "RECOVERY": 0.5,
+    "recovery_stage_bars": 21,
+    "recovery_stage_caps": [0.5, 0.7, 1.0]
+  },
+  "rebalance": {
+    "threshold": 0.03,
+    "max_trade_weight_per_bar": 0.20,
+    "defense_buy_allowed": false
+  },
+  "costs": {
+    "fee_bps_per_side": 5.0,
+    "slippage_bps": 5.0
+  },
+  "train_frac": 0.6,
+  "validation_frac": 0.2,
+  "synthetic_bars": 3000,
+  "seed": 7,
+  "dashboard": {
+    "default_indicators": ["actual_weight", "final_target_weight", "cumulative_percentile"],
+    "indicator_labels": {
+      "base_cycle": "base cycle(기준선)",
+      "cm_close": "cycle multiple(종가)",
+      "cumulative_percentile": "누적 percentile",
+      "cumulative_mid_50": "누적 분포 50%",
+      "rolling_mid_50": "최근 분포 50%",
+      "cumulative_lower_percentile": "누적 하위 percentile",
+      "cumulative_upper_percentile": "누적 상위 percentile",
+      "regime_code": "국면(0=정상 3=방어)",
+      "base_target_weight": "기본 목표비중",
+      "regime_cap": "국면 비중상한",
+      "final_target_weight": "최종 목표비중",
+      "actual_weight": "실제 비중"
+    },
+    "panels": [
+      {"kind": "perf_vs_bnh", "type": "table",
+       "label": "Buy&Hold 대비 성과", "default": true},
+      {"kind": "regime_breakdown", "type": "bar",
+       "label": "국면별 평균 비중",
+       "x": "regime", "y": "avg_weight", "default": true}
+    ]
+  },
+  "tunables": [
+    {"name": "weight_model", "label": "비중 모델", "type": "select",
+     "options": ["bucket", "exponential"], "default": "bucket"},
+    {"name": "exp_k", "label": "지수형 민감도 k", "type": "number",
+     "min": 0.5, "max": 5.0, "step": 0.5, "default": 2.0}
+  ]
+}

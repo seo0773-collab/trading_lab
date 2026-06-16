@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
-import plotly.graph_objects as go
 import streamlit as st
 
 from trading_lab.execution import DisabledBrokerAdapter
@@ -17,21 +16,30 @@ from trading_lab.market_catalog import (
 from trading_lab.paths import database_path, var_dir
 from trading_lab.service import BacktestRequest, BacktestService
 from trading_lab.storage import RunStore
-from trading_lab.strategies import list_strategies
+from trading_lab.strategies import get_strategy, list_strategies
 from trading_lab.ui.presentation import (
     DERIVED_LABELS,
+    available_extra_kinds,
     build_account_figure,
-    build_price_figure,
+    build_bar_figure,
+    build_price_indicator_figure,
+    build_scatter_figure,
     build_trade_overview,
     build_trade_report,
-    build_waveform_figure,
     indicator_series,
+    resolve_extra_panels,
 )
+from trading_lab.ui.research import render_research_page
 
 
 st.set_page_config(page_title="Trading Lab", layout="wide")
 store = RunStore()
 service = BacktestService(store)
+
+# yfinance가 받는 타임프레임/기간 후보. 전략 config의 기본값이 목록에 없으면
+# render 시점에 맨 앞에 끼워 넣어 선택 상태를 유지한다.
+TF_OPTIONS = ["1m", "2m", "5m", "15m", "30m", "60m", "90m", "1h", "1d", "5d", "1wk", "1mo", "3mo"]
+PERIOD_OPTIONS = ["5d", "1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "ytd", "max"]
 
 
 def metric_text(value: Any, *, percent: bool = False) -> str:
@@ -80,6 +88,50 @@ def cached_market_options(chart_type: str):
     return load_market_options(chart_type)
 
 
+def strategy_config_dict(strategy_id: str) -> dict[str, Any]:
+    path = get_strategy(strategy_id).config_path
+    return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+def render_strategy_tunables(strategy_id: str) -> dict[str, Any]:
+    """config의 tunables 스키마로 파라미터 위젯을 자동 렌더하고 override를 모읍니다."""
+    tunables = strategy_config_dict(strategy_id).get("tunables") or []
+    overrides: dict[str, Any] = {}
+    if not tunables:
+        return overrides
+    with st.expander("전략 파라미터", expanded=False):
+        for spec in tunables:
+            name = spec["name"]
+            label = spec.get("label", name)
+            kind = spec.get("type", "number")
+            key = f"tunable-{strategy_id}-{name}"
+            if kind == "select":
+                options = spec["options"]
+                default = spec.get("default", options[0])
+                index = options.index(default) if default in options else 0
+                overrides[name] = st.selectbox(label, options, index=index, key=key)
+            elif kind == "int":
+                overrides[name] = int(st.number_input(
+                    label,
+                    min_value=int(spec["min"]),
+                    max_value=int(spec["max"]),
+                    value=int(spec["default"]),
+                    step=int(spec.get("step", 1)),
+                    key=key,
+                ))
+            else:
+                overrides[name] = float(st.number_input(
+                    label,
+                    min_value=float(spec["min"]),
+                    max_value=float(spec["max"]),
+                    value=float(spec["default"]),
+                    step=float(spec.get("step", 0.01)),
+                    format="%.4f",
+                    key=key,
+                ))
+    return overrides
+
+
 def run_inputs(run: dict[str, Any]) -> tuple[dict[str, Any], float]:
     config = load_json(artifact_path(run, "config"))
     manifest = load_json(artifact_path(run, "manifest"))
@@ -90,59 +142,167 @@ def run_inputs(run: dict[str, Any]) -> tuple[dict[str, Any], float]:
     return config, initial_capital
 
 
-def render_run_result(run: dict[str, Any]) -> None:
-    st.title("백테스트 결과")
-    st.caption(
-        f"{run.get('run_name') or run['run_id']} · {run['symbol']} · "
-        f"{run['strategy_id']} · {run['phase']}"
-    )
-    if run["status"] != "succeeded":
-        message = run.get("error") or "완료된 결과가 없습니다."
-        st.error(message)
-        return
+def render_extra_panels(run: dict[str, Any], dashboard_config: dict[str, Any]) -> None:
+    """전략별 보조 패널을 config 선언으로 렌더하고, multiselect로 add/delete.
 
-    metrics = run.get("metrics") or {}
-    config, initial_capital = run_inputs(run)
-    final_account = metrics.get(
-        "final_account_value",
-        initial_capital * (1.0 + float(metrics.get("total_return", 0.0))),
-    )
-    values = [
-        ("거래 수", str(metrics.get("trades", 0))),
-        ("승률", metric_text(metrics.get("hit_rate"), percent=True)),
-        ("누적 수익률", metric_text(metrics.get("total_return"), percent=True)),
-        ("최종 계좌", money_text(final_account)),
-        ("순손익", money_text(float(final_account) - initial_capital)),
-        ("Sharpe", metric_text(metrics.get("sharpe"))),
-        ("최대 낙폭", metric_text(metrics.get("max_drawdown"), percent=True)),
-    ]
-    for column, (label, value) in zip(st.columns(len(values)), values):
-        column.metric(label, value)
-
-    required = {
-        kind: artifact_path(run, kind) for kind in ("forecast", "trades", "equity")
+    전략은 ``dashboard.panels``(kind/type/label/x/y/default)만 선언하면 되고
+    app.py 는 더 이상 전략별로 수정하지 않는다(공통 인프라). 선언 없는 extras도
+    표로 자동 노출된다.
+    """
+    learning = dashboard_config.get("learning_tab") or {}
+    learning_kinds = {
+        str(learning[key])
+        for key in (
+            "summary_kind", "predictions_kind",
+            "sensitivity_kind", "events_kind",
+        )
+        if learning.get(key)
     }
-    missing = [kind for kind, path in required.items() if not path or not Path(path).exists()]
-    if missing:
-        st.error(f"결과 아티팩트 누락: {', '.join(missing)}")
+    available = [
+        kind for kind in available_extra_kinds(run)
+        if kind not in learning_kinds
+    ]
+    if not available:
         return
+    panels = resolve_extra_panels(dashboard_config, available)
+    spec_by_kind = {panel["kind"]: panel for panel in panels}
+    labels = {panel["kind"]: panel["label"] for panel in panels}
 
-    forecast = load_frame(required["forecast"])
-    trades = load_frame(required["trades"])
-    equity_frame = load_frame(required["equity"])
-    equity = equity_frame["equity"].astype(float)
+    st.subheader("보조 패널")
+    chosen = st.multiselect(
+        "표시할 보조 패널 (전략별 추가 자료 — 선택해서 추가/삭제)",
+        [panel["kind"] for panel in panels],
+        default=[panel["kind"] for panel in panels if panel["default"]],
+        format_func=lambda kind: labels.get(kind, kind),
+        key=f"panels-{run['run_id']}",
+    )
+    for kind in chosen:
+        spec = spec_by_kind[kind]
+        path = artifact_path(run, kind)
+        records = load_json(path) if path and Path(path).exists() else None
+        if not records:
+            continue
+        frame = pd.DataFrame(records)
+        if frame.empty:
+            continue
+        ptype, x, y = spec["type"], spec.get("x"), spec.get("y")
+        st.markdown(f"**{spec['label']}**")
+        if ptype == "scatter" and x in frame and y in frame:
+            st.plotly_chart(
+                build_scatter_figure(frame, x, y, label=spec["label"]),
+                width="stretch", config={"displaylogo": False},
+            )
+        elif ptype == "bar" and x in frame and y in frame:
+            st.plotly_chart(
+                build_bar_figure(frame, x, y, label=spec["label"]),
+                width="stretch", config={"displaylogo": False},
+            )
+        else:
+            st.dataframe(frame, width="stretch", hide_index=True)
+
+
+def load_json_frame(run: dict[str, Any], kind: str | None) -> pd.DataFrame:
+    path = artifact_path(run, kind) if kind else None
+    records = load_json(path) if path and Path(path).exists() else []
+    return pd.DataFrame(records or [])
+
+
+def render_learning_result(
+    run: dict[str, Any], learning_config: dict[str, Any]
+) -> None:
+    st.subheader("재무 변화로 학습한 주가 반응")
+    st.caption(
+        "각 재무 발표 시점에 과거에 이미 실현된 사례만 사용해 모델을 다시 "
+        "학습합니다. 실제 수익률은 진입 판단이 아니라 사후 예측력 평가에 사용됩니다."
+    )
+
+    summary = load_json_frame(run, learning_config.get("summary_kind"))
+    if summary.empty:
+        st.info("표본이 부족해 학습 진단값이 생성되지 않았습니다.")
+    else:
+        for _, row in summary.sort_values("horizon_days").iterrows():
+            horizon = int(row["horizon_days"])
+            st.markdown(f"**{horizon}일 예측 성능**")
+            values = [
+                ("평가 표본", f"{int(row['samples'])}건"),
+                ("Spearman IC", metric_text(row.get("spearman_ic"))),
+                ("평균 절대오차", metric_text(row.get("mae"), percent=True)),
+                (
+                    "방향 적중률",
+                    metric_text(row.get("direction_accuracy"), percent=True),
+                ),
+                (
+                    "평균 예상수익률",
+                    metric_text(row.get("mean_predicted_return"), percent=True),
+                ),
+                (
+                    "평균 실제수익률",
+                    metric_text(row.get("mean_actual_return"), percent=True),
+                ),
+            ]
+            for column, (label, value) in zip(st.columns(6), values):
+                column.metric(label, value)
+
+    predictions = load_json_frame(
+        run, learning_config.get("predictions_kind")
+    )
+    if not predictions.empty:
+        st.markdown("**예상수익률과 실제수익률**")
+        columns = st.columns(2)
+        for column, horizon in zip(columns, (20, 60)):
+            x, y = f"pred_ret_{horizon}d", f"ret_{horizon}d"
+            if x in predictions and y in predictions:
+                column.plotly_chart(
+                    build_scatter_figure(
+                        predictions, x, y,
+                        label=f"{horizon}일 예상 vs 실제",
+                    ),
+                    width="stretch",
+                    config={"displaylogo": False},
+                )
+
+    sensitivity = load_json_frame(
+        run, learning_config.get("sensitivity_kind")
+    )
+    if (
+        not sensitivity.empty
+        and "factor" in sensitivity
+        and "sensitivity_mean" in sensitivity
+    ):
+        st.markdown("**재무 팩터별 평균 민감도**")
+        st.plotly_chart(
+            build_bar_figure(
+                sensitivity,
+                "factor",
+                "sensitivity_mean",
+                label="20일 수익률에 대한 평균 민감도",
+            ),
+            width="stretch",
+            config={"displaylogo": False},
+        )
+        st.caption(
+            "양수는 해당 재무 변화가 클수록 예상수익률이 높아지는 관계, "
+            "음수는 반대 관계를 뜻합니다. 인과관계를 증명하는 값은 아닙니다."
+        )
+
+    events = load_json_frame(run, learning_config.get("events_kind"))
+    if not events.empty:
+        st.markdown("**발표 이벤트별 학습 데이터**")
+        st.dataframe(events, width="stretch", hide_index=True, height=520)
+
+
+def render_backtest_detail(
+    run: dict[str, Any],
+    config: dict[str, Any],
+    initial_capital: float,
+    forecast: pd.DataFrame,
+    trades: pd.DataFrame,
+    equity: pd.Series,
+) -> None:
     horizon = int(config.get("horizon", 72))
     confidence_quantile = float(config.get("confidence_quantile", 0.85))
     quantile_window = int(config.get("quantile_window", 2000))
 
-    st.plotly_chart(
-        build_price_figure(
-            forecast, trades, symbol=run["symbol"], horizon=horizon,
-        ),
-        width="stretch",
-        config={"scrollZoom": True, "displaylogo": False},
-    )
-    st.subheader("보조지표 파형")
     indicators = indicator_series(
         forecast,
         horizon=horizon,
@@ -168,20 +328,26 @@ def render_run_result(run: dict[str, Any]) -> None:
         format_func=lambda name: indicator_labels.get(name, name),
         key=f"indicators-{run['run_id']}",
     )
-    if selected_indicators:
-        st.plotly_chart(
-            build_waveform_figure(
-                {name: indicators[name] for name in selected_indicators},
-                labels=indicator_labels,
-            ),
-            width="stretch",
-            config={"scrollZoom": True, "displaylogo": False},
-        )
-    else:
-        st.info("보조지표를 선택하면 파형이 표시됩니다.")
+    st.plotly_chart(
+        build_price_indicator_figure(
+            forecast,
+            trades,
+            symbol=run["symbol"],
+            horizon=horizon,
+            series_map={
+                name: indicators[name] for name in selected_indicators
+            },
+            labels=indicator_labels,
+        ),
+        width="stretch",
+        config={"scrollZoom": True, "displaylogo": False},
+    )
     st.plotly_chart(
         build_account_figure(
-            equity, initial_capital=initial_capital, symbol=run["symbol"],
+            equity,
+            initial_capital=initial_capital,
+            symbol=run["symbol"],
+            benchmark_price=forecast["close"],
         ),
         width="stretch",
         config={"scrollZoom": True, "displaylogo": False},
@@ -242,6 +408,68 @@ def render_run_result(run: dict[str, Any]) -> None:
                 "해당 가격은 임의 추정하지 않고 '미사용'으로 표시합니다."
             )
 
+    render_extra_panels(run, dashboard_config)
+
+
+def render_run_result(run: dict[str, Any]) -> None:
+    st.title("백테스트 결과")
+    st.caption(
+        f"{run.get('run_name') or run['run_id']} · {run['symbol']} · "
+        f"{run['strategy_id']} · {run['phase']}"
+    )
+    if run["status"] != "succeeded":
+        message = run.get("error") or "완료된 결과가 없습니다."
+        st.error(message)
+        return
+
+    metrics = run.get("metrics") or {}
+    config, initial_capital = run_inputs(run)
+    final_account = metrics.get(
+        "final_account_value",
+        initial_capital * (1.0 + float(metrics.get("total_return", 0.0))),
+    )
+    values = [
+        ("거래 수", str(metrics.get("trades", 0))),
+        ("승률", metric_text(metrics.get("hit_rate"), percent=True)),
+        ("누적 수익률", metric_text(metrics.get("total_return"), percent=True)),
+        ("최종 계좌", money_text(final_account)),
+        ("순손익", money_text(float(final_account) - initial_capital)),
+        ("Sharpe", metric_text(metrics.get("sharpe"))),
+        ("최대 낙폭", metric_text(metrics.get("max_drawdown"), percent=True)),
+    ]
+    for column, (label, value) in zip(st.columns(len(values)), values):
+        column.metric(label, value)
+
+    required = {
+        kind: artifact_path(run, kind) for kind in ("forecast", "trades", "equity")
+    }
+    missing = [kind for kind, path in required.items() if not path or not Path(path).exists()]
+    if missing:
+        st.error(f"결과 아티팩트 누락: {', '.join(missing)}")
+        return
+
+    forecast = load_frame(required["forecast"])
+    trades = load_frame(required["trades"])
+    equity_frame = load_frame(required["equity"])
+    equity = equity_frame["equity"].astype(float)
+    dashboard_config = config.get("dashboard") or {}
+    learning_config = dashboard_config.get("learning_tab") or {}
+    if learning_config:
+        performance_tab, learning_tab = st.tabs([
+            "성과 및 거래",
+            str(learning_config.get("label", "학습 결과")),
+        ])
+        with performance_tab:
+            render_backtest_detail(
+                run, config, initial_capital, forecast, trades, equity
+            )
+        with learning_tab:
+            render_learning_result(run, learning_config)
+    else:
+        render_backtest_detail(
+            run, config, initial_capital, forecast, trades, equity
+        )
+
     with st.expander("실행 정보 및 원본 아티팩트"):
         st.json({
             "상태": run["status"],
@@ -255,68 +483,8 @@ def render_run_result(run: dict[str, Any]) -> None:
         st.dataframe(pd.DataFrame(run["events"]), width="stretch", hide_index=True)
 
 
-def render_compare(comparable: list[dict[str, Any]]) -> None:
-    st.title("실행 결과 비교")
-    st.caption("성과 지표와 동일 기준 누적 수익률 파형을 함께 비교합니다.")
-    if len(comparable) < 2:
-        st.info("비교하려면 성공한 실행이 두 개 이상 필요합니다.")
-        return
-
-    labels = {run_label(run): run for run in comparable}
-    selected = st.multiselect(
-        "비교할 실행",
-        list(labels),
-        default=list(labels)[:2],
-        max_selections=6,
-    )
-    rows: list[dict[str, Any]] = []
-    figure = go.Figure()
-    for label in selected:
-        run = labels[label]
-        metrics = run["metrics"]
-        _, initial_capital = run_inputs(run)
-        final_account = metrics.get(
-            "final_account_value",
-            initial_capital * (1.0 + metrics["total_return"]),
-        )
-        rows.append({
-            "실행": run.get("run_name") or run["run_id"][:8],
-            "심볼": run["symbol"],
-            "구간": run["phase"],
-            "거래 수": metrics["trades"],
-            "승률 %": metrics["hit_rate"] * 100.0,
-            "수익률 %": metrics["total_return"] * 100.0,
-            "Sharpe": metrics["sharpe"],
-            "MDD %": metrics["max_drawdown"] * 100.0,
-            "초기 계좌": initial_capital,
-            "최종 계좌": final_account,
-        })
-        equity_path = artifact_path(run, "equity")
-        if equity_path and Path(equity_path).exists():
-            equity = load_frame(equity_path)["equity"]
-            figure.add_trace(go.Scatter(
-                x=equity.index,
-                y=(equity - 1.0) * 100.0,
-                mode="lines",
-                name=run.get("run_name") or f"{run['symbol']} {run['run_id'][:8]}",
-            ))
-
-    if not rows:
-        return
-    st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
-    figure.update_layout(
-        title="누적 수익률 비교",
-        height=520,
-        hovermode="x unified",
-        yaxis_title="누적 수익률 %",
-        template="plotly_dark",
-        legend={"orientation": "h"},
-    )
-    st.plotly_chart(figure, width="stretch", config={"scrollZoom": True})
-
-
 st.sidebar.title("Trading Lab")
-page = st.sidebar.radio("메뉴", ["새 백테스트", "결과", "비교", "시스템"])
+page = st.sidebar.radio("메뉴", ["새 백테스트", "연구", "결과", "시스템"])
 runs = store.list_runs(200)
 
 if page == "새 백테스트":
@@ -324,6 +492,7 @@ if page == "새 백테스트":
     st.caption("전략 실행 후 같은 화면 아래에 전체 결과를 표시합니다.")
     strategies = [item for item in list_strategies() if item.enabled]
     strategy_id = st.selectbox("전략", [item.strategy_id for item in strategies])
+    config_overrides = render_strategy_tunables(strategy_id)
     chart_label = st.selectbox("차트 타입", ["크립토", "주식", "랜덤"])
     chart_type = {"크립토": "crypto", "주식": "stock", "랜덤": "random"}[
         chart_label
@@ -361,6 +530,35 @@ if page == "새 백테스트":
             "시가총액은 Yahoo Finance 조회값으로 정렬하며, 조회 실패 시 내장 순서를 사용합니다."
         )
 
+    base_config = strategy_config_dict(strategy_id)
+    default_tf = str(base_config.get("interval", "1d"))
+    default_period = str(base_config.get("period", "max"))
+    tf_choices = list(dict.fromkeys([default_tf, *TF_OPTIONS]))
+    period_choices = list(dict.fromkeys([default_period, *PERIOD_OPTIONS]))
+
+    st.subheader("데이터 설정")
+    tf_col, period_col = st.columns(2)
+    interval = tf_col.selectbox(
+        "타임프레임 (TF)", tf_choices, index=tf_choices.index(default_tf),
+        key=f"tf-{strategy_id}",
+    )
+    if chart_type == "random":
+        period = default_period
+        period_col.caption("합성 차트는 기간 대신 합성 봉 수를 사용합니다.")
+    else:
+        period = period_col.selectbox(
+            "데이터 기간", period_choices,
+            index=period_choices.index(default_period),
+            key=f"period-{strategy_id}",
+        )
+    st.caption(
+        "yfinance는 짧은 TF에서 받을 수 있는 기간이 제한됩니다 "
+        "(예: 1h는 약 730일, 1m은 약 7일)."
+    )
+    config_overrides["interval"] = interval
+    if chart_type != "random":
+        config_overrides["period"] = period
+
     phase = st.selectbox("평가 구간", ["validation", "all"])
     initial_capital = st.number_input(
         "초기 계좌 금액", min_value=100.0, value=10_000.0, step=1_000.0,
@@ -379,6 +577,7 @@ if page == "새 백테스트":
                 bars_per_year=bars_per_year,
                 initial_capital=float(initial_capital),
                 synthetic=synthetic,
+                config_overrides=config_overrides or None,
             ))
         st.session_state["last_backtest_run_id"] = run_id
 
@@ -395,6 +594,9 @@ if page == "새 백테스트":
         else:
             st.error("실행 기록을 찾을 수 없습니다.")
 
+elif page == "연구":
+    render_research_page()
+
 elif page == "결과":
     if not runs:
         st.title("백테스트 결과")
@@ -407,9 +609,6 @@ elif page == "결과":
             st.error("선택한 실행을 찾을 수 없습니다.")
         else:
             render_run_result(run)
-
-elif page == "비교":
-    render_compare([run for run in runs if run.get("metrics")])
 
 else:
     st.title("시스템")
