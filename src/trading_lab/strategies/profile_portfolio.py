@@ -86,11 +86,15 @@ class ProfilePortfolioHandler:
             raise RuntimeError("유효한 종목 점수/가격이 없습니다")
         mk = self._market_close(config, cfg, panels)
         mf = config.get("market_filter") or {}
+        ef = config.get("exposure_floor") or {}
+        ef_level = float(ef.get("level", 0.0)) if ef.get("enabled") else 0.0
         sim = simulate_portfolio(
             scores, prices, cfg, top_k=top_k, rebal_freq=rebal_freq,
             market_close=mk,
             market_ma_len=int(mf.get("ma_len", 200)),
             market_off_scale=float(mf.get("off_scale", 0.5)),
+            exposure_floor=ef_level,
+            exposure_floor_breadth=float(ef.get("breadth", 0.0)),
         )
 
         window = slice_window(prices.index, phase, cfg)
@@ -117,6 +121,7 @@ class ProfilePortfolioHandler:
             if len(forecast) else 0.0,
             "avg_holdings": float(forecast["n_holdings"].mean())
             if len(forecast) else 0.0,
+            "exposure_floor": ef_level,
             "insufficient_train_data": len(window) < cfg.warmup,
         }
         extras = {

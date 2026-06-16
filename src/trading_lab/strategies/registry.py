@@ -91,6 +91,15 @@ _STRATEGIES = {
         live_eligible=False,
         handler_factory="trading_lab.strategies.profile_portfolio:ProfilePortfolioHandler",
     ),
+    "yoon2": StrategyDefinition(
+        strategy_id="yoon2",
+        version="1",
+        description="yoon1 + 확정 강세장 노출 floor(현금 버퍼 소진으로 상승장 추종 강화, 하락 방어 유지)",
+        config_path=ROOT / "configs" / "strategies" / "yoon2.json",
+        enabled=True,
+        live_eligible=False,
+        handler_factory="trading_lab.strategies.profile_portfolio:ProfilePortfolioHandler",
+    ),
 }
 
 

@@ -82,12 +82,20 @@ def simulate_portfolio(
     market_close: pd.Series | None = None,
     market_ma_len: int = 200,
     market_off_scale: float = 0.5,
+    exposure_floor: float = 0.0,
+    exposure_floor_breadth: float = 0.0,
 ) -> dict:
     """월간(기본) 리밸런스 다종목 시뮬레이션 → NAV·노출·trades·벤치마크.
 
     market_close가 주어지면 시장 레짐 필터를 켠다: 시장 지수가 장기 MA(market_ma_len)
     아래면 리밸런스 시 전체 목표 노출을 market_off_scale배로 줄여(전면 약세장 회피)
     낙폭을 추가로 억제한다. MA warmup 구간은 정상으로 본다.
+
+    exposure_floor > 0 이면(yoon2 방안1) **확정 강세장**(시장 레짐 정상)에서 top-K 평균
+    점수로 정해진 전체 노출이 exposure_floor 미만일 때 현금 버퍼를 소진해 노출을
+    exposure_floor까지 상향한다. 단 raw 노출이 exposure_floor_breadth 이상일 때만
+    적용해(=강세 종목 breadth가 충분할 때만), 방어 국면·약세 시장에는 손대지 않는다.
+    floor ≤ 1.0 이므로 레버리지는 없다(현금 버퍼만 사용).
     """
     fee = (cfg.costs.fee_bps_per_side + cfg.costs.slippage_bps) / 10_000.0
     idx = prices.index
@@ -121,6 +129,15 @@ def simulate_portfolio(
             market_flag[i] = market_off_scale
         if t in rebal:
             target_w = _target_weights(sig.loc[t], px, top_k)
+            raw_exp = sum(target_w.values())  # = mean(top-K 점수) = 포트폴리오 주식 노출
+            # 방안1(yoon2): 확정 강세장 + breadth 충분 시 현금 버퍼를 써서 전체 노출을
+            # exposure_floor까지 상향. 방어 국면(breadth 낮음)·약세 시장(market_flag<1)
+            # 에는 적용하지 않아 하락 방어 엣지를 보존한다. floor ≤ 1.0 → 레버리지 없음.
+            if (exposure_floor > 0.0 and market_flag[i] >= 1.0
+                    and raw_exp >= exposure_floor_breadth
+                    and 0.0 < raw_exp < exposure_floor):
+                scale = exposure_floor / raw_exp
+                target_w = {s: w * scale for s, w in target_w.items()}
             if market_flag[i] < 1.0:  # 약세 시장: 전체 노출 축소
                 target_w = {s: w * market_flag[i] for s, w in target_w.items()}
             account = cash + sum(
