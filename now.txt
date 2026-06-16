@@ -1,0 +1,88 @@
+===============================================================================
+ trading_lab 현황 요약 (now.txt)
+ 작성: 2026-06-16 / 최신 commit: 57679f5 (main)
+===============================================================================
+
+■ 한 줄 요약
+  profile_plan.txt(프로파일 percentile 사이징)를 코드화 → 단일종목 5종 + 다종목
+  포트폴리오로 발전. 가장 성공적인 전략을 "yoon1"으로 명명. 공정 벤치마크 기준
+  "수익은 일부 양보, 위험조정 소폭 우위, 낙폭은 절반"이 확정 결론.
+
+-------------------------------------------------------------------------------
+■ 가장 성공적인 전략 = yoon1 (구 profile-portfolio-v1)
+-------------------------------------------------------------------------------
+  - 정체: 다종목 포트폴리오. 매월 종목별 점수(profile-sizing target weight) 상위
+    K=20 상승종목을 점수 비례로 담고, 전체 노출 = mean(top-K 점수)라 시장이 약하면
+    자동 현금화. 추가로 SPY 200일선 아래면 노출 절반(시장 레짐 필터).
+  - 기본 파라미터(configs/strategies/yoon1.json): top_k=20, monthly,
+    trend floor=1.0, 시장필터 on(SPY/200MA/off_scale 0.5).
+  - 성과 (30종목, phase=all, 공정 벤치마크=상시완전투자 EW지수):
+        지표        전략        EW지수(공정)
+        CAGR        13.9%       18.0%
+        MDD         -29%        -54%
+        Sharpe      1.13        1.05
+    → 수익률은 EW지수에 못 미치나, 위험조정(Sharpe) 소폭 우위 + 낙폭 절반.
+  - 견고성 점검 통과:
+      · 체결 무누수 수정 영향 미미(1.132→1.133) = 룩어헤드 덕 아님
+      · holdout(test): 스윕 최선조합이 B&H 위 유지(val +0.055 → test +0.009)
+      · 생존편향: 부진종목 섞을수록 전략 우위 확대(+0.095 → +0.144)
+
+-------------------------------------------------------------------------------
+■ 등록된 전략 (registry)
+-------------------------------------------------------------------------------
+  단일종목 사이징(profile_plan 계열):
+    profile-sizing-v1        기본 방어형(percentile 버킷 사이징)
+    profile-sizing-trend-v1  상승추세 boost
+    profile-sizing-trend-v2  상승추세 floor(거의 풀투자 + 하락만 방어)
+    profile-sizing-exp-v1    지수형 비중 + cap 상향
+  다종목:
+    yoon1                    ★최선. 상위 K 추종 + 개별 방어 + 시장필터
+  기타(이전 작업):
+    h72-price-v1, di-kalman-mw-v1, fin-sensitivity-v1
+
+-------------------------------------------------------------------------------
+■ 코드 위치
+-------------------------------------------------------------------------------
+  연구 파이프라인: scripts/profile_sizing/
+    config·indicators(base_cycle)·profile(rolling/cumulative percentile)·
+    regime(4국면)·sizing(weight/cap/target/rebalance/trend overlay)·
+    engine·account(재투자 시뮬)·portfolio(다종목)·run·batch·
+    portfolio_sweep·survivorship
+  핸들러: src/trading_lab/strategies/
+    profile_sizing.py(단일종목), profile_portfolio.py(yoon1)
+  config: configs/strategies/{profile_sizing_*,yoon1}.json
+  명세: docs/strategy/specs/{profile-sizing-v1,profile-portfolio-v1}.md
+        docs/strategy/checklists/profile-sizing-v1.md
+  리포트: reports/profile_sizing/{perf_*,compare,portfolio_sweep,survivorship}.md
+  테스트: tests/test_profile_sizing.py (전체 101개 통과)
+  백업: backups/profile_portfolio_v1_20260616/, backups/yoon1_20260616/
+
+-------------------------------------------------------------------------------
+■ 실행 방법
+-------------------------------------------------------------------------------
+  대시보드:   ./run_dashboard.sh  (결과화면에서 yoon1 등 선택)
+  전체 테스트: PYTHONPATH=src .venv/bin/python -m unittest discover tests -q
+  단일종목 30종목 배치:
+    PYTHONPATH=src .venv/bin/python scripts/profile_sizing/batch.py --phase all
+  파라미터 스윕:
+    PYTHONPATH=src .venv/bin/python scripts/profile_sizing/portfolio_sweep.py
+  생존편향 점검:
+    PYTHONPATH=src .venv/bin/python scripts/profile_sizing/survivorship.py
+
+-------------------------------------------------------------------------------
+■ 검증/방법론 메모 (중요)
+-------------------------------------------------------------------------------
+  - 공정 벤치마크 = 상시 완전투자 EW지수(benchmark_ew, RSP류). "진짜 buy&hold"는
+    유니버스가 1962 시작·당시 10/30만 상장이라 미상장 자본을 수십년 현금화하는
+    cash-drag 편향이 있어 참고용(buy_hold_true_*)으로만 병기.
+  - 무누수: 신호는 전봉 종가 기준, 당봉 종가 체결(1봉 지연). cumulative profile은
+    과거·현재만 사용(테스트로 강제).
+  - 파라미터 선택은 validation에서만, test(holdout)는 확인용.
+
+-------------------------------------------------------------------------------
+■ 남은 과제
+-------------------------------------------------------------------------------
+  1. 거래비용 2배 민감도(수수료 보수적으로 높여도 우위 유지되는지)
+  2. test(holdout) 최종 개봉 후 live 가능 판정
+  3. (선택) 유니버스 확장/시총가중 벤치마크 비교
+===============================================================================
