@@ -45,7 +45,8 @@ def _phase_perf(sim: dict, prices_index, phase: str, cfg) -> dict:
     nav = sim["nav"].reindex(window)
     eq = (nav / nav.iloc[0])
     ret = nav.pct_change().fillna(0.0)
-    bench = sim["benchmark"].reindex(window)
+    # 공정 벤치마크 = 상시 완전투자 EW 지수(진짜 buy&hold는 cash-drag 편향).
+    bench = sim["benchmark_ew"].reindex(window)
     beq = (bench / bench.iloc[0])
     bret = bench.pct_change().fillna(0.0)
     p = performance(eq, ret, cfg.interval)
