@@ -76,7 +76,7 @@ def main(argv=None) -> int:
 
     from run_kalman_pipeline import load_yfinance
     base_raw = json.loads(
-        (ROOT / "configs" / "strategies" / "profile_portfolio_v1.json").read_text()
+        (ROOT / "configs" / "strategies" / "yoon1.json").read_text()
     )
     base_cfg = config_from_dict(base_raw)
 

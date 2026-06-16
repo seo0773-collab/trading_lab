@@ -82,11 +82,11 @@ _STRATEGIES = {
         live_eligible=False,
         handler_factory="trading_lab.strategies.profile_sizing:ProfileSizingHandler",
     ),
-    "profile-portfolio-v1": StrategyDefinition(
-        strategy_id="profile-portfolio-v1",
+    "yoon1": StrategyDefinition(
+        strategy_id="yoon1",
         version="1",
-        description="다종목 포트폴리오: 상위 K개 상승종목 추종 + 개별 방어 합산(현금화)",
-        config_path=ROOT / "configs" / "strategies" / "profile_portfolio_v1.json",
+        description="다종목 포트폴리오(구 profile-portfolio-v1): 상위 K개 상승종목 추종 + 개별 방어 합산(현금화)",
+        config_path=ROOT / "configs" / "strategies" / "yoon1.json",
         enabled=True,
         live_eligible=False,
         handler_factory="trading_lab.strategies.profile_portfolio:ProfilePortfolioHandler",

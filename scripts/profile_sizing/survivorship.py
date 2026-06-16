@@ -72,9 +72,9 @@ def _p(v, pct=False):
 
 
 def main() -> int:
-    handler = get_handler("profile-portfolio-v1")
+    handler = get_handler("yoon1")
     base_cfg = json.loads(
-        (ROOT / "configs" / "strategies" / "profile_portfolio_v1.json").read_text()
+        (ROOT / "configs" / "strategies" / "yoon1.json").read_text()
     )
     print("우량주 30 평가 ...", flush=True)
     a = evaluate(handler, base_cfg, BASE30, "우량주 30")
