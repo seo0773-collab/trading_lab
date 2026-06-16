@@ -98,14 +98,16 @@ class ProfilePortfolioHandler:
         nav = sim["nav"].reindex(window)
         equity = (nav / nav.iloc[0]).rename("equity")
         port_ret = nav.pct_change().fillna(0.0)
-        bench = sim["benchmark"].reindex(window)
-        bench_eq = (bench / bench.iloc[0]).rename("buy_hold")
-        bench_ret = bench.pct_change().fillna(0.0)
         trades = self._slice_trades(sim["trades"], window)
 
         perf = performance(equity, port_ret, cfg.interval)
-        bnh = performance(bench_eq, bench_ret, cfg.interval)
-        metrics = self._metrics(perf, bnh, trades, phase)
+        # 주 벤치마크 = EW 지수(상시 완전투자, 공정). 진짜 buy&hold는 신규상장 자본을
+        # 현금으로 묶는 cash-drag 편향이 있어 참고용으로만 병기한다.
+        ew_perf = self._bench_perf(sim["benchmark_ew"], window, cfg.interval)
+        bh_perf = self._bench_perf(sim["benchmark"], window, cfg.interval)
+        metrics = self._metrics(perf, ew_perf, trades, phase)
+        metrics["buy_hold_true_cagr"] = bh_perf.get("cagr")
+        metrics["buy_hold_true_sharpe"] = bh_perf.get("sharpe")
         metadata = {
             "n_symbols": int(sim["n_symbols"]),
             "top_k": top_k,
@@ -118,7 +120,7 @@ class ProfilePortfolioHandler:
             "insufficient_train_data": len(window) < cfg.warmup,
         }
         extras = {
-            "perf_vs_bnh": self._perf_table(perf, bnh),
+            "perf_vs_bnh": self._perf_table(perf, ew_perf, bh_perf),
             "top_contributors": self._contributors(trades),
         }
         return StrategyArtifacts(
@@ -164,6 +166,13 @@ class ProfilePortfolioHandler:
 
     # ----- helpers ------------------------------------------------------
     @staticmethod
+    def _bench_perf(series: pd.Series, window, interval: str) -> dict:
+        b = series.reindex(window)
+        eq = b / b.iloc[0]
+        ret = b.pct_change().fillna(0.0)
+        return performance(eq, ret, interval)
+
+    @staticmethod
     def _slice_trades(trades: pd.DataFrame, window) -> pd.DataFrame:
         if trades.empty:
             return trades
@@ -196,19 +205,21 @@ class ProfilePortfolioHandler:
         }
 
     @staticmethod
-    def _perf_table(perf, bnh) -> pd.DataFrame:
+    def _perf_table(perf, ew, bh) -> pd.DataFrame:
+        """전략 vs EW지수(공정·상시완전투자) vs 진짜 buy&hold(현금드래그 주의)."""
         def pct(v):
             return None if v is None else round(float(v) * 100.0, 2)
+
+        def shp(d):
+            return None if d.get("sharpe") is None else round(d["sharpe"], 3)
         rows = [
-            {"metric": "총수익률 %", "strategy": pct(perf.get("total_return")),
-             "buy_hold": pct(bnh.get("total_return"))},
             {"metric": "CAGR %", "strategy": pct(perf.get("cagr")),
-             "buy_hold": pct(bnh.get("cagr"))},
+             "ew_index": pct(ew.get("cagr")), "buy_hold_true": pct(bh.get("cagr"))},
             {"metric": "MDD %", "strategy": pct(perf.get("max_drawdown")),
-             "buy_hold": pct(bnh.get("max_drawdown"))},
-            {"metric": "Sharpe",
-             "strategy": None if perf.get("sharpe") is None else round(perf["sharpe"], 3),
-             "buy_hold": None if bnh.get("sharpe") is None else round(bnh["sharpe"], 3)},
+             "ew_index": pct(ew.get("max_drawdown")),
+             "buy_hold_true": pct(bh.get("max_drawdown"))},
+            {"metric": "Sharpe", "strategy": shp(perf),
+             "ew_index": shp(ew), "buy_hold_true": shp(bh)},
         ]
         return pd.DataFrame(rows)
 
