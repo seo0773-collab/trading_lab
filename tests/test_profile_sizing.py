@@ -231,6 +231,36 @@ class AccountSimTests(unittest.TestCase):
         self.assertTrue((acct["account_value"] > 0).all())
 
 
+class PortfolioTests(unittest.TestCase):
+    def setUp(self) -> None:
+        from profile_sizing.portfolio import compute_universe
+        self.cfg = config_from_dict({})
+        panels = {f"SYN{i}": make_synthetic_ohlcv(1500, 7 + i) for i in range(4)}
+        self.scores, self.prices = compute_universe(panels, self.cfg)
+
+    def test_exposure_bounded(self) -> None:
+        from profile_sizing.portfolio import simulate_portfolio
+        sim = simulate_portfolio(self.scores, self.prices, self.cfg,
+                                 top_k=2, rebal_freq="monthly")
+        exp = sim["forecast"]["stock_exposure"]
+        self.assertTrue(((exp >= -1e-9) & (exp <= 1.0 + 1e-9)).all())
+        self.assertGreater(float(sim["nav"].iloc[-1]), 0.0)
+
+    def test_market_filter_reduces_exposure_in_downtrend(self) -> None:
+        from profile_sizing.portfolio import simulate_portfolio
+        # 단조 하락 시장 → 항상 MA 아래 → 필터가 노출을 축소해야 한다.
+        down = pd.Series(np.linspace(100.0, 50.0, len(self.prices)),
+                         index=self.prices.index)
+        off = simulate_portfolio(self.scores, self.prices, self.cfg,
+                                 top_k=2, rebal_freq="monthly")
+        on = simulate_portfolio(self.scores, self.prices, self.cfg,
+                                top_k=2, rebal_freq="monthly",
+                                market_close=down, market_ma_len=50,
+                                market_off_scale=0.5)
+        self.assertLess(float(on["forecast"]["stock_exposure"].mean()),
+                        float(off["forecast"]["stock_exposure"].mean()))
+
+
 class EngineTests(unittest.TestCase):
     def test_buy_hold_equals_price_growth(self) -> None:
         raw = make_synthetic_ohlcv(500, 5)

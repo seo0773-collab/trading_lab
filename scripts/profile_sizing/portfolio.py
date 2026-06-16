@@ -79,12 +79,28 @@ def simulate_portfolio(
     top_k: int,
     rebal_freq: str,
     initial_capital: float = 10_000.0,
+    market_close: pd.Series | None = None,
+    market_ma_len: int = 200,
+    market_off_scale: float = 0.5,
 ) -> dict:
-    """월간(기본) 리밸런스 다종목 시뮬레이션 → NAV·노출·trades·벤치마크."""
+    """월간(기본) 리밸런스 다종목 시뮬레이션 → NAV·노출·trades·벤치마크.
+
+    market_close가 주어지면 시장 레짐 필터를 켠다: 시장 지수가 장기 MA(market_ma_len)
+    아래면 리밸런스 시 전체 목표 노출을 market_off_scale배로 줄여(전면 약세장 회피)
+    낙폭을 추가로 억제한다. MA warmup 구간은 정상으로 본다.
+    """
     fee = (cfg.costs.fee_bps_per_side + cfg.costs.slippage_bps) / 10_000.0
     idx = prices.index
     syms = list(prices.columns)
     rebal = rebalance_dates(idx, rebal_freq)
+
+    market_ok = None
+    if market_close is not None:
+        m = pd.Series(market_close).reindex(idx).ffill()
+        ma = m.rolling(market_ma_len, min_periods=market_ma_len).mean()
+        market_ok = (m > ma).to_numpy()  # True=정상, NaN비교는 False
+        market_nan = ma.isna().to_numpy()  # warmup은 정상 취급
+    market_flag = np.ones(len(idx))
 
     shares = {s: 0.0 for s in syms}
     prev_w = {s: 0.0 for s in syms}
@@ -97,8 +113,12 @@ def simulate_portfolio(
 
     for i, t in enumerate(idx):
         px = prices.loc[t]
+        if market_ok is not None and not market_nan[i] and not market_ok[i]:
+            market_flag[i] = market_off_scale
         if t in rebal:
             target_w = _target_weights(scores.loc[t], px, top_k)
+            if market_flag[i] < 1.0:  # 약세 시장: 전체 노출 축소
+                target_w = {s: w * market_flag[i] for s, w in target_w.items()}
             account = cash + sum(
                 shares[s] * px[s] for s in syms if pd.notna(px[s])
             )
@@ -137,6 +157,7 @@ def simulate_portfolio(
         "stock_exposure": exposure,
         "cash_ratio": cash_ratio,
         "n_holdings": n_hold,
+        "market_ok": market_flag,  # 1=정상, market_off_scale=약세 회피
     }, index=idx)
     bench = benchmark_equal_weight(prices) * initial_capital
     return {

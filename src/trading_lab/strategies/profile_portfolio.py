@@ -84,8 +84,14 @@ class ProfilePortfolioHandler:
         scores, prices = compute_universe(panels, cfg)
         if prices.empty:
             raise RuntimeError("유효한 종목 점수/가격이 없습니다")
-        sim = simulate_portfolio(scores, prices, cfg, top_k=top_k,
-                                 rebal_freq=rebal_freq)
+        mk = self._market_close(config, cfg, panels)
+        mf = config.get("market_filter") or {}
+        sim = simulate_portfolio(
+            scores, prices, cfg, top_k=top_k, rebal_freq=rebal_freq,
+            market_close=mk,
+            market_ma_len=int(mf.get("ma_len", 200)),
+            market_off_scale=float(mf.get("off_scale", 0.5)),
+        )
 
         window = slice_window(prices.index, phase, cfg)
         forecast = sim["forecast"].loc[window]
@@ -119,6 +125,26 @@ class ProfilePortfolioHandler:
             forecast=forecast, trades=trades, equity=equity,
             metrics=metrics, metadata=metadata, horizon=0, extras=extras,
         )
+
+    @staticmethod
+    def _market_close(config, cfg, panels) -> pd.Series | None:
+        """시장 레짐 필터용 지수 종가. 합성 유니버스거나 비활성/실패면 None."""
+        mf = config.get("market_filter") or {}
+        if not mf.get("enabled"):
+            return None
+        is_synth = all(
+            str(s).upper().startswith(("SYN", "RANDOM")) for s in panels
+        )
+        if is_synth:
+            return None
+        symbol = str(mf.get("symbol", "SPY"))
+        if symbol in panels:  # 유니버스에 이미 있으면 재사용
+            return panels[symbol]["close"]
+        try:
+            from run_kalman_pipeline import load_yfinance  # noqa: E402
+            return load_yfinance(symbol, cfg.interval, cfg.period)["close"]
+        except Exception:  # noqa: BLE001
+            return None
 
     # ----- wide panel <-> dict -----------------------------------------
     @staticmethod
