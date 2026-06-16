@@ -94,12 +94,16 @@ def simulate_portfolio(
     syms = list(prices.columns)
     rebal = rebalance_dates(idx, rebal_freq)
 
+    # 무누수: 신호(점수·시장레짐)는 전봉 종가 기준으로 판단하고 당봉 종가에 체결한다.
+    sig = scores.shift(1).fillna(0.0)
+
     market_ok = None
     if market_close is not None:
         m = pd.Series(market_close).reindex(idx).ffill()
         ma = m.rolling(market_ma_len, min_periods=market_ma_len).mean()
-        market_ok = (m > ma).to_numpy()  # True=정상, NaN비교는 False
-        market_nan = ma.isna().to_numpy()  # warmup은 정상 취급
+        ok = (m > ma).shift(1)       # 전봉 레짐으로 판단(무누수)
+        market_ok = ok.to_numpy()    # True=정상, NaN비교는 False
+        market_nan = ma.shift(1).isna().to_numpy()  # warmup은 정상 취급
     market_flag = np.ones(len(idx))
 
     shares = {s: 0.0 for s in syms}
@@ -116,7 +120,7 @@ def simulate_portfolio(
         if market_ok is not None and not market_nan[i] and not market_ok[i]:
             market_flag[i] = market_off_scale
         if t in rebal:
-            target_w = _target_weights(scores.loc[t], px, top_k)
+            target_w = _target_weights(sig.loc[t], px, top_k)
             if market_flag[i] < 1.0:  # 약세 시장: 전체 노출 축소
                 target_w = {s: w * market_flag[i] for s, w in target_w.items()}
             account = cash + sum(
@@ -159,12 +163,13 @@ def simulate_portfolio(
         "n_holdings": n_hold,
         "market_ok": market_flag,  # 1=정상, market_off_scale=약세 회피
     }, index=idx)
-    bench = benchmark_equal_weight(prices) * initial_capital
     return {
         "nav": nav_s,
         "forecast": forecast,
         "trades": _trades_frame(trades),
-        "benchmark": bench,
+        # 기본 벤치마크 = 진짜 buy & hold(초기 균등 후 보유). 1.0 기준 → 자본 환산.
+        "benchmark": benchmark_buy_hold(prices) * initial_capital,
+        "benchmark_ew": benchmark_equal_weight(prices) * initial_capital,
         "n_symbols": len(syms),
     }
 
@@ -215,10 +220,29 @@ def _trades_frame(trades: list[dict]) -> pd.DataFrame:
 
 
 def benchmark_equal_weight(prices: pd.DataFrame) -> pd.Series:
-    """유니버스 equal-weight buy & hold NAV(1.0 기준). 각 종목 상장 후 균등 편입.
+    """**매일** 균등비중으로 재조정하는 지수 NAV(1.0 기준) — 참고용.
 
-    매 봉 가용 종목의 단순수익률 평균을 누적한다(상장 시점부터 자동 편입).
+    매 봉 가용 종목의 단순수익률 평균을 누적한다. 진짜 buy & hold가 아니라
+    상시 리밸런싱 equal-weight라는 점에 유의(승자를 매일 덜어냄).
     """
     rets = prices.pct_change()
     eq = rets.mean(axis=1, skipna=True).fillna(0.0)
-    return (1.0 + eq).cumprod().rename("buy_hold")
+    return (1.0 + eq).cumprod().rename("equal_weight_index")
+
+
+def benchmark_buy_hold(prices: pd.DataFrame) -> pd.Series:
+    """진짜 buy & hold NAV(1.0 기준): 각 종목 첫 상장일에 1/N 자본을 넣고 보유.
+
+    상장 전 자본 조각은 현금으로 둔다(성장 없음). 리밸런싱 없음 = "사서 묻어두기".
+    """
+    n = prices.shape[1]
+    if n == 0:
+        return pd.Series(dtype=float, name="buy_hold")
+    alloc = 1.0 / n
+    first_px = prices.apply(
+        lambda c: c.dropna().iloc[0] if c.notna().any() else float("nan")
+    )
+    shares = alloc / first_px
+    listed = prices.notna()
+    value = prices.mul(shares, axis=1).where(listed, other=alloc)
+    return value.sum(axis=1).rename("buy_hold")
