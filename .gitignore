@@ -45,7 +45,11 @@ reports/*.svg
 reports/generalization/*.csv
 reports/generalization/*.json
 
-var/
+var/*
+# 페이퍼 트레이딩 저널은 전진 기록이라 추적(영속화). 그 외 var/는 무시.
+!var/paper_trading/
+var/paper_trading/*
+!var/paper_trading/*.jsonl
 
 # Jupyter
 .ipynb_checkpoints/
