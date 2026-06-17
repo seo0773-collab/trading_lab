@@ -58,10 +58,12 @@ def evaluate(handler, base_cfg, universe, label) -> dict:
         "loaded": len(loaded),
         "exposure": art.metadata["avg_exposure"],
         "cagr": m["cagr"], "mdd": m["max_drawdown"], "sharpe": m["sharpe"],
-        "bnh_cagr": m["buy_hold_cagr"], "bnh_mdd": m["buy_hold_max_drawdown"],
-        "bnh_sharpe": m["buy_hold_sharpe"],
-        "sharpe_vs_bnh": (m["sharpe"] - m["buy_hold_sharpe"])
-        if (m["sharpe"] is not None and m["buy_hold_sharpe"] is not None) else None,
+        # 생존편향 점검은 '유니버스 EW B&H가 부진종목을 떠안는가'를 보므로 EW 지수 기준.
+        # (주 벤치마크가 SPY로 바뀌어도 여기서는 ew_index_* 사용)
+        "bnh_cagr": m["ew_index_cagr"], "bnh_mdd": m["ew_index_max_drawdown"],
+        "bnh_sharpe": m["ew_index_sharpe"],
+        "sharpe_vs_bnh": (m["sharpe"] - m["ew_index_sharpe"])
+        if (m["sharpe"] is not None and m["ew_index_sharpe"] is not None) else None,
     }
 
 

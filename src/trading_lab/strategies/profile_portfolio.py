@@ -95,15 +95,25 @@ class ProfilePortfolioHandler:
         trades = self._slice_trades(sim["trades"], window)
 
         perf = performance(equity, port_ret, cfg.interval)
-        # 주 벤치마크 = EW 지수(상시 완전투자, 공정). 진짜 buy&hold는 신규상장 자본을
-        # 현금으로 묶는 cash-drag 편향이 있어 참고용으로만 병기한다.
+        # 주 벤치마크 = 시총가중 시장(SPY) — 실제 투자 가능한 패시브 대안.
+        # 합성/SPY 미가용 시 EW 지수로 폴백. EW 지수·진짜 buy&hold는 보조로 병기한다.
         ew_perf = self._bench_perf(sim["benchmark_ew"], window, cfg.interval)
         bh_perf = self._bench_perf(sim["benchmark"], window, cfg.interval)
-        benchmark_raw = sim["benchmark_ew"].reindex(window).ffill().bfill()
+        spy_perf = self._market_perf(mk, window, cfg.interval)
+        if spy_perf:
+            bench_perf, bench_label = spy_perf, "SPY"
+            benchmark_raw = pd.Series(mk).reindex(window).ffill()
+        else:
+            bench_perf, bench_label = ew_perf, "EW지수"
+            benchmark_raw = sim["benchmark_ew"].reindex(window).ffill().bfill()
         benchmark = (benchmark_raw / benchmark_raw.dropna().iloc[0]).rename(
             "benchmark"
         )
-        metrics = self._metrics(perf, ew_perf, trades, phase)
+        metrics = self._metrics(perf, bench_perf, trades, phase)
+        metrics["benchmark_kind"] = bench_label
+        metrics["ew_index_cagr"] = ew_perf.get("cagr")
+        metrics["ew_index_sharpe"] = ew_perf.get("sharpe")
+        metrics["ew_index_max_drawdown"] = ew_perf.get("max_drawdown")
         metrics["buy_hold_true_cagr"] = bh_perf.get("cagr")
         metrics["buy_hold_true_sharpe"] = bh_perf.get("sharpe")
         metadata = {
@@ -111,6 +121,7 @@ class ProfilePortfolioHandler:
             "top_k": top_k,
             "rebalance_freq": rebal_freq,
             "exposure_gain": float(config.get("exposure_gain", 1.0)),
+            "benchmark": bench_label,
             "timeframe": cfg.interval,
             "avg_exposure": float(forecast["stock_exposure"].mean())
             if len(forecast) else 0.0,
@@ -119,7 +130,7 @@ class ProfilePortfolioHandler:
             "insufficient_train_data": len(window) < cfg.warmup,
         }
         extras = {
-            "perf_vs_bnh": self._perf_table(perf, ew_perf, bh_perf),
+            "perf_vs_bnh": self._perf_table(perf, spy_perf, ew_perf, bh_perf),
             "top_contributors": self._contributors(trades),
         }
         return StrategyArtifacts(
@@ -173,6 +184,20 @@ class ProfilePortfolioHandler:
         return performance(eq, ret, interval)
 
     @staticmethod
+    def _market_perf(series: pd.Series | None, window, interval: str) -> dict:
+        """SPY 등 외부 시장 시리즈 성과. 데이터 존재 구간(dropna)만으로 계산해
+        유니버스보다 늦게 시작한 시장의 CAGR이 왜곡(긴 기간에 짧은 성장)되지 않게 한다.
+        시리즈가 없거나(합성) 윈도우에 데이터가 없으면 빈 dict → EW 폴백 신호."""
+        if series is None:
+            return {}
+        s = pd.Series(series).reindex(window).dropna()
+        if s.empty:
+            return {}
+        eq = s / s.iloc[0]
+        ret = s.pct_change().fillna(0.0)
+        return performance(eq, ret, interval)
+
+    @staticmethod
     def _slice_trades(trades: pd.DataFrame, window) -> pd.DataFrame:
         if trades.empty:
             return trades
@@ -205,8 +230,10 @@ class ProfilePortfolioHandler:
         }
 
     @staticmethod
-    def _perf_table(perf, ew, bh) -> pd.DataFrame:
-        """전략 vs EW지수(공정·상시완전투자) vs 진짜 buy&hold(현금드래그 주의)."""
+    def _perf_table(perf, spy, ew, bh) -> pd.DataFrame:
+        """전략 vs 시장(SPY, 주 벤치마크) vs EW지수 vs 진짜 buy&hold(보조)."""
+        spy = spy or {}
+
         def pct(v):
             return None if v is None else round(float(v) * 100.0, 2)
 
@@ -214,12 +241,14 @@ class ProfilePortfolioHandler:
             return None if d.get("sharpe") is None else round(d["sharpe"], 3)
         rows = [
             {"metric": "CAGR %", "strategy": pct(perf.get("cagr")),
-             "ew_index": pct(ew.get("cagr")), "buy_hold_true": pct(bh.get("cagr"))},
+             "market_spy": pct(spy.get("cagr")), "ew_index": pct(ew.get("cagr")),
+             "buy_hold_true": pct(bh.get("cagr"))},
             {"metric": "MDD %", "strategy": pct(perf.get("max_drawdown")),
+             "market_spy": pct(spy.get("max_drawdown")),
              "ew_index": pct(ew.get("max_drawdown")),
              "buy_hold_true": pct(bh.get("max_drawdown"))},
             {"metric": "Sharpe", "strategy": shp(perf),
-             "ew_index": shp(ew), "buy_hold_true": shp(bh)},
+             "market_spy": shp(spy), "ew_index": shp(ew), "buy_hold_true": shp(bh)},
         ]
         return pd.DataFrame(rows)
 

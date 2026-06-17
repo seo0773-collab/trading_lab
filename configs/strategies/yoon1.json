@@ -77,7 +77,7 @@
     },
     "panels": [
       {"kind": "perf_vs_bnh", "type": "table",
-       "label": "Equal-weight B&H 대비 성과", "default": true},
+       "label": "시장(SPY) 대비 성과", "default": true},
       {"kind": "top_contributors", "type": "bar",
        "label": "종목별 평균 수익(상위)", "x": "symbol", "y": "avg_return",
        "default": true}

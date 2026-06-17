@@ -137,7 +137,7 @@
       {
         "kind": "perf_vs_bnh",
         "type": "table",
-        "label": "Equal-weight B&H 대비 성과",
+        "label": "시장(SPY) 대비 성과",
         "default": true
       },
       {
