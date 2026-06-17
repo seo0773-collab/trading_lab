@@ -51,5 +51,10 @@ var/*
 var/paper_trading/*
 !var/paper_trading/*.jsonl
 
+# 비밀키(실거래) — 절대 커밋 금지. .env.example만 추적.
+.env
+*.env
+!.env.example
+
 # Jupyter
 .ipynb_checkpoints/
