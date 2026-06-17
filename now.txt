@@ -80,6 +80,22 @@
   리포트: reports/profile_sizing/walk_forward.md
 
 -------------------------------------------------------------------------------
+■ 페이퍼 트레이딩(전진 검증) + 멜트업 약점 분석
+-------------------------------------------------------------------------------
+  페이퍼: scripts/profile_sizing/paper_trade.py --strategy yoon1b|yoon1c
+    최신 데이터 기준 '지금 들고 있어야 할' 목표 포트폴리오(마지막 월말 리밸런스 비중)
+    + 레짐 출력, var/paper_trading/<전략>_journal.jsonl에 스냅샷 적립(전진 기록).
+    엔진 sim["last_target"]/["last_rebal_date"]로 백테스트와 100% 일치. 저널은 gitignore.
+    현재(2026-06): 강세장이라 floor=1.0 포화 → 상위 20종목 균등 5% 풀투자.
+  멜트업 분석(reports/profile_sizing/meltup_analysis.md): 갭(전략−SPY)=폭(EW−SPY)+
+    전략고유(전략−EW)로 분해.
+    - 멜트업(2019/2023/2026YTD): 갭이 거의 전부 '전략고유'(−8.7/−11.2/−22.9%p), 폭은
+      +. 즉 시장 쏠림 탓 아니라 균등배분이 SPY의 메가캡 시총집중을 구조적 저비중한 탓.
+      노출은 ~91%로 현금드래그 아님(2026YTD는 부분구간 연율화라 크기 과장 주의).
+    - 대조 약세장(2008): 같은 방어가 +18%p(전략 -13 vs SPY -36). 멜트업 열위=약세 우위의
+      동전 양면. 대장집중(동적 top_k·시총가중)은 수익↑이나 방어↓ 트레이드오프(비채택).
+
+-------------------------------------------------------------------------------
 ■ 등록된 전략 (registry)
 -------------------------------------------------------------------------------
   단일종목 사이징(profile_plan 계열):
@@ -110,7 +126,8 @@
         docs/strategy/checklists/profile-sizing-v1.md
   리포트: reports/profile_sizing/{perf_*,compare,portfolio_sweep,survivorship,
           final_validation,return_boost_sweep,benchmark_compare,
-          sector_regime_compare}.md
+          sector_regime_compare,walk_forward,meltup_analysis}.md
+  페이퍼: scripts/profile_sizing/paper_trade.py (저널 var/paper_trading/)
   테스트: tests/test_profile_sizing.py (전체 103개 통과)
   백업: backups/profile_portfolio_v1_20260616/, backups/yoon1_20260616/
 
@@ -150,7 +167,10 @@
   [완료] 섹터 레짐 필터 실험 → 하이브리드 yoon1c(방어 우선) 채택
   [참고] 동적 top_k(강세장 집중)는 강력한 '수익↔위험 다이얼'이나 규율상 미채택
          (val Sharpe 보존 못함). 섹터 분산 제약은 효과 무 → 폐기.
-  1. (선택) yoon1b/yoon1c 페이퍼트레이딩(실거래 검증) → live 판정
+  [완료] 워크포워드 견고성 검증 통과(연도 78%·롤링 96% SPY 우위)
+  [완료] 페이퍼 트레이딩 셋업(paper_trade.py + 저널) — 주기적 실행으로 전진기록 적립만 남음
+  [완료] 멜트업 약점 진단(원인=균등배분의 메가캡 저비중, 방어의 비용)
+  1. (선택) 페이퍼 저널을 수주~수개월 굴려 실제 vs 백테스트 괴리 측정 → live 최종판정
   2. (선택) 하이브리드 off_scale 튜닝(섹터 0.5 vs 0.7 등 이중축소 강도 조절)
   3. (선택) 유니버스 확장(섹터 다양화: 원자재 XLB·리츠 등) 후 재평가
 ===============================================================================

@@ -136,6 +136,8 @@ def simulate_portfolio(
     cash = float(initial_capital)
     holding: dict[str, tuple] = {}
     trades: list[dict] = []
+    last_target: dict = {}        # 가장 최근 리밸런스의 목표 비중(페이퍼 트레이딩용)
+    last_rebal_date = None
 
     nav = np.empty(len(idx)); exposure = np.empty(len(idx))
     n_hold = np.empty(len(idx)); cash_ratio = np.empty(len(idx))
@@ -169,6 +171,8 @@ def simulate_portfolio(
                     _track_trade(trades, holding, s, prev_w[s], target_w[s],
                                  t, px[s], top_k, fee)
                 prev_w = target_w
+            last_target = {s: w for s, w in target_w.items() if w > 1e-9}
+            last_rebal_date = t
 
         pos_val = sum(shares[s] * px[s] for s in syms if pd.notna(px[s]))
         account = cash + pos_val
@@ -202,6 +206,8 @@ def simulate_portfolio(
         "benchmark": benchmark_buy_hold(prices) * initial_capital,
         "benchmark_ew": benchmark_equal_weight(prices) * initial_capital,
         "n_symbols": len(syms),
+        "last_target": last_target,
+        "last_rebal_date": last_rebal_date,
     }
 
 
