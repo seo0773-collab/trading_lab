@@ -83,6 +83,9 @@ def simulate_portfolio(
     market_ma_len: int = 200,
     market_off_scale: float = 0.5,
     exposure_gain: float = 1.0,
+    sector_close: dict | None = None,
+    symbol_sector: dict | None = None,
+    sector_off_scale: float | None = None,
 ) -> dict:
     """월간(기본) 리밸런스 다종목 시뮬레이션 → NAV·노출·trades·벤치마크.
 
@@ -93,6 +96,11 @@ def simulate_portfolio(
     exposure_gain>1.0이면 전체 주식 노출(=mean top-K 점수)에 게인을 곱한 뒤 1.0으로
     클립한다. 평범한 상승장(점수가 중간)에서 풀투자에 가깝게 끌어올려 수익 갭을 줄이되,
     약세장(점수 낮음)에서는 곱해도 낮게 남아 방어 성격을 유지한다(기본 1.0=불변).
+
+    sector_close(섹터지수→종가)와 symbol_sector(종목→섹터)가 주어지면 **종목별 섹터
+    레짐 필터**를 켠다(yoon1c): 한 종목의 섹터 지수가 자기 장기 MA 아래면 그 종목의 목표
+    비중만 sector_off_scale배로 줄인다(SPY 단일 필터와 달리 섹터별로 방어). 무누수를 위해
+    섹터 신호도 전봉 기준이며 MA warmup은 정상 취급. 둘 중 하나라도 None이면 불변.
     """
     fee = (cfg.costs.fee_bps_per_side + cfg.costs.slippage_bps) / 10_000.0
     idx = prices.index
@@ -111,6 +119,18 @@ def simulate_portfolio(
         market_nan = ma.shift(1).isna().to_numpy()  # warmup은 정상 취급
     market_flag = np.ones(len(idx))
 
+    # 종목별 섹터 레짐 필터: 섹터지수가 자기 MA 아래(전봉)면 약세 → 해당 종목만 축소.
+    sector_weak: dict | None = None
+    soff = market_off_scale if sector_off_scale is None else float(sector_off_scale)
+    if sector_close is not None and symbol_sector is not None:
+        sector_weak = {}
+        for sec, ser in sector_close.items():
+            sm = pd.Series(ser).reindex(idx).ffill()
+            sma = sm.rolling(market_ma_len, min_periods=market_ma_len).mean()
+            below = (sm <= sma).shift(1).to_numpy()      # 약세=True(전봉 기준)
+            warm = sma.shift(1).isna().to_numpy()        # warmup은 정상
+            sector_weak[sec] = np.where(warm, False, below == True)  # noqa: E712
+
     shares = {s: 0.0 for s in syms}
     prev_w = {s: 0.0 for s in syms}
     cash = float(initial_capital)
@@ -128,6 +148,12 @@ def simulate_portfolio(
             target_w = _target_weights(sig.loc[t], px, top_k, exposure_gain)
             if market_flag[i] < 1.0:  # 약세 시장: 전체 노출 축소
                 target_w = {s: w * market_flag[i] for s, w in target_w.items()}
+            if sector_weak is not None:  # 종목별 섹터 약세: 해당 종목만 축소
+                for s in target_w:
+                    sec = symbol_sector.get(s)
+                    if sec is not None and sector_weak.get(sec) is not None \
+                            and sector_weak[sec][i]:
+                        target_w[s] *= soff
             account = cash + sum(
                 shares[s] * px[s] for s in syms if pd.notna(px[s])
             )

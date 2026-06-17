@@ -77,14 +77,21 @@ class ProfilePortfolioHandler:
         scores, prices = compute_universe(panels, cfg)
         if prices.empty:
             raise RuntimeError("유효한 종목 점수/가격이 없습니다")
-        mk = self._market_close(config, cfg, panels)
+        synth = self._is_synth(panels)
+        # 벤치마크용 시장 종가(SPY): 시장필터 on/off와 무관하게 비교용으로 로드.
+        bench_close = None if synth else self._load_close("SPY", cfg, panels)
+        mk = self._market_close(config, cfg, panels)   # SPY 단일 시장필터(옵션)
         mf = config.get("market_filter") or {}
+        sf = config.get("sector_filter") or {}
+        sec_close, sym_sec, sec_off = self._sector_filter(config, cfg, panels, synth)
+        ma_len = int(mf.get("ma_len", sf.get("ma_len", 200)))
         sim = simulate_portfolio(
             scores, prices, cfg, top_k=top_k, rebal_freq=rebal_freq,
             market_close=mk,
-            market_ma_len=int(mf.get("ma_len", 200)),
+            market_ma_len=ma_len,
             market_off_scale=float(mf.get("off_scale", 0.5)),
             exposure_gain=float(config.get("exposure_gain", 1.0)),
+            sector_close=sec_close, symbol_sector=sym_sec, sector_off_scale=sec_off,
         )
 
         window = slice_window(prices.index, phase, cfg)
@@ -99,10 +106,10 @@ class ProfilePortfolioHandler:
         # 합성/SPY 미가용 시 EW 지수로 폴백. EW 지수·진짜 buy&hold는 보조로 병기한다.
         ew_perf = self._bench_perf(sim["benchmark_ew"], window, cfg.interval)
         bh_perf = self._bench_perf(sim["benchmark"], window, cfg.interval)
-        spy_perf = self._market_perf(mk, window, cfg.interval)
+        spy_perf = self._market_perf(bench_close, window, cfg.interval)
         if spy_perf:
             bench_perf, bench_label = spy_perf, "SPY"
-            benchmark_raw = pd.Series(mk).reindex(window).ffill()
+            benchmark_raw = pd.Series(bench_close).reindex(window).ffill()
         else:
             bench_perf, bench_label = ew_perf, "EW지수"
             benchmark_raw = sim["benchmark_ew"].reindex(window).ffill().bfill()
@@ -122,6 +129,8 @@ class ProfilePortfolioHandler:
             "rebalance_freq": rebal_freq,
             "exposure_gain": float(config.get("exposure_gain", 1.0)),
             "benchmark": bench_label,
+            "sector_filter": sec_close is not None,
+            "market_filter": mk is not None,
             "timeframe": cfg.interval,
             "avg_exposure": float(forecast["stock_exposure"].mean())
             if len(forecast) else 0.0,
@@ -140,24 +149,48 @@ class ProfilePortfolioHandler:
         )
 
     @staticmethod
-    def _market_close(config, cfg, panels) -> pd.Series | None:
-        """시장 레짐 필터용 지수 종가. 합성 유니버스거나 비활성/실패면 None."""
-        mf = config.get("market_filter") or {}
-        if not mf.get("enabled"):
-            return None
-        is_synth = all(
+    def _is_synth(panels) -> bool:
+        return all(
             str(s).upper().startswith(("SYN", "RANDOM")) for s in panels
         )
-        if is_synth:
-            return None
-        symbol = str(mf.get("symbol", "SPY"))
-        if symbol in panels:  # 유니버스에 이미 있으면 재사용
+
+    @staticmethod
+    def _load_close(symbol, cfg, panels) -> pd.Series | None:
+        """심볼 종가 로드. 유니버스에 있으면 재사용, 없으면 yfinance, 실패 시 None."""
+        if symbol in panels:
             return panels[symbol]["close"]
         try:
             from run_kalman_pipeline import load_yfinance  # noqa: E402
             return load_yfinance(symbol, cfg.interval, cfg.period)["close"]
         except Exception:  # noqa: BLE001
             return None
+
+    @classmethod
+    def _market_close(cls, config, cfg, panels) -> pd.Series | None:
+        """시장 레짐 필터용 지수 종가. 합성 유니버스거나 비활성/실패면 None."""
+        mf = config.get("market_filter") or {}
+        if not mf.get("enabled") or cls._is_synth(panels):
+            return None
+        return cls._load_close(str(mf.get("symbol", "SPY")), cfg, panels)
+
+    @classmethod
+    def _sector_filter(cls, config, cfg, panels, synth):
+        """yoon1c용 종목별 섹터 레짐 필터 입력. 비활성/합성/실패면 (None,None,None).
+
+        반환: (섹터지수→종가 dict, 종목→섹터 dict, off_scale)."""
+        sf = config.get("sector_filter") or {}
+        if not sf.get("enabled") or synth:
+            return None, None, None
+        from trading_lab.portfolio_universes import SECTOR_INDEX  # noqa: E402
+        sym_sec = sf.get("map") or SECTOR_INDEX
+        closes = {}
+        for tk in sorted(set(sym_sec.values())):
+            c = cls._load_close(tk, cfg, panels)
+            if c is not None:
+                closes[tk] = c
+        if not closes:
+            return None, None, None
+        return closes, sym_sec, float(sf.get("off_scale", 0.5))
 
     # ----- wide panel <-> dict -----------------------------------------
     @staticmethod

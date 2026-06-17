@@ -100,6 +100,15 @@ _STRATEGIES = {
         live_eligible=False,
         handler_factory="trading_lab.strategies.profile_portfolio:ProfilePortfolioHandler",
     ),
+    "yoon1c": StrategyDefinition(
+        strategy_id="yoon1c",
+        version="1",
+        description="yoon1b + 종목별 섹터 레짐 필터(SPY 단일 대신 SOXX/XLV/XLE 등 자기 섹터 추세로 방어)",
+        config_path=ROOT / "configs" / "strategies" / "yoon1c.json",
+        enabled=True,
+        live_eligible=False,
+        handler_factory="trading_lab.strategies.profile_portfolio:ProfilePortfolioHandler",
+    ),
 }
 
 
