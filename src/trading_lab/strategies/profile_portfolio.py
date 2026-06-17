@@ -15,6 +15,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from trading_lab.portfolio_universes import STOCK_UNIVERSE
 from trading_lab.strategies.base import StrategyArtifacts
 
 SCRIPTS = Path(__file__).resolve().parents[3] / "scripts"
@@ -28,14 +29,6 @@ from profile_sizing.portfolio import (  # noqa: E402
 )
 from profile_sizing.run import slice_window  # noqa: E402
 from profile_sizing.synthetic import make_synthetic_ohlcv  # noqa: E402
-
-_DEFAULT_UNIVERSE = [
-    "MSFT", "AAPL", "NVDA", "GOOGL", "AMZN", "META", "AVGO", "TSLA",
-    "JPM", "BAC", "WFC", "GS", "JNJ", "PFE", "MRK", "UNH",
-    "KO", "PEP", "PG", "WMT", "MCD", "COST",
-    "CAT", "DE", "HON", "GE", "XOM", "CVX", "NEE", "DIS",
-]
-
 
 class ProfilePortfolioHandler:
     def load_data(
@@ -56,7 +49,7 @@ class ProfilePortfolioHandler:
             }
             return self._to_wide(panels)
         from run_kalman_pipeline import load_yfinance  # noqa: E402
-        universe = list(config.get("universe") or _DEFAULT_UNIVERSE)
+        universe = list(config.get("universe") or STOCK_UNIVERSE)
         panels = {}
         for sym in universe:
             try:
@@ -91,6 +84,7 @@ class ProfilePortfolioHandler:
             market_close=mk,
             market_ma_len=int(mf.get("ma_len", 200)),
             market_off_scale=float(mf.get("off_scale", 0.5)),
+            exposure_gain=float(config.get("exposure_gain", 1.0)),
         )
 
         window = slice_window(prices.index, phase, cfg)
@@ -105,6 +99,10 @@ class ProfilePortfolioHandler:
         # 현금으로 묶는 cash-drag 편향이 있어 참고용으로만 병기한다.
         ew_perf = self._bench_perf(sim["benchmark_ew"], window, cfg.interval)
         bh_perf = self._bench_perf(sim["benchmark"], window, cfg.interval)
+        benchmark_raw = sim["benchmark_ew"].reindex(window).ffill().bfill()
+        benchmark = (benchmark_raw / benchmark_raw.dropna().iloc[0]).rename(
+            "benchmark"
+        )
         metrics = self._metrics(perf, ew_perf, trades, phase)
         metrics["buy_hold_true_cagr"] = bh_perf.get("cagr")
         metrics["buy_hold_true_sharpe"] = bh_perf.get("sharpe")
@@ -112,6 +110,7 @@ class ProfilePortfolioHandler:
             "n_symbols": int(sim["n_symbols"]),
             "top_k": top_k,
             "rebalance_freq": rebal_freq,
+            "exposure_gain": float(config.get("exposure_gain", 1.0)),
             "timeframe": cfg.interval,
             "avg_exposure": float(forecast["stock_exposure"].mean())
             if len(forecast) else 0.0,
@@ -125,7 +124,8 @@ class ProfilePortfolioHandler:
         }
         return StrategyArtifacts(
             forecast=forecast, trades=trades, equity=equity,
-            metrics=metrics, metadata=metadata, horizon=0, extras=extras,
+            metrics=metrics, metadata=metadata, horizon=0,
+            benchmark=benchmark, extras=extras,
         )
 
     @staticmethod

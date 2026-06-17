@@ -82,12 +82,17 @@ def simulate_portfolio(
     market_close: pd.Series | None = None,
     market_ma_len: int = 200,
     market_off_scale: float = 0.5,
+    exposure_gain: float = 1.0,
 ) -> dict:
     """월간(기본) 리밸런스 다종목 시뮬레이션 → NAV·노출·trades·벤치마크.
 
     market_close가 주어지면 시장 레짐 필터를 켠다: 시장 지수가 장기 MA(market_ma_len)
     아래면 리밸런스 시 전체 목표 노출을 market_off_scale배로 줄여(전면 약세장 회피)
     낙폭을 추가로 억제한다. MA warmup 구간은 정상으로 본다.
+
+    exposure_gain>1.0이면 전체 주식 노출(=mean top-K 점수)에 게인을 곱한 뒤 1.0으로
+    클립한다. 평범한 상승장(점수가 중간)에서 풀투자에 가깝게 끌어올려 수익 갭을 줄이되,
+    약세장(점수 낮음)에서는 곱해도 낮게 남아 방어 성격을 유지한다(기본 1.0=불변).
     """
     fee = (cfg.costs.fee_bps_per_side + cfg.costs.slippage_bps) / 10_000.0
     idx = prices.index
@@ -120,7 +125,7 @@ def simulate_portfolio(
         if market_ok is not None and not market_nan[i] and not market_ok[i]:
             market_flag[i] = market_off_scale
         if t in rebal:
-            target_w = _target_weights(sig.loc[t], px, top_k)
+            target_w = _target_weights(sig.loc[t], px, top_k, exposure_gain)
             if market_flag[i] < 1.0:  # 약세 시장: 전체 노출 축소
                 target_w = {s: w * market_flag[i] for s, w in target_w.items()}
             account = cash + sum(
@@ -174,15 +179,16 @@ def simulate_portfolio(
     }
 
 
-def _target_weights(score_row: pd.Series, px: pd.Series, top_k: int) -> dict:
-    """top-K 선택 + 노출=mean(top-K 점수) + 점수 비례 배분."""
+def _target_weights(score_row: pd.Series, px: pd.Series, top_k: int,
+                    exposure_gain: float = 1.0) -> dict:
+    """top-K 선택 + 노출=mean(top-K 점수)*게인(클립 1.0) + 점수 비례 배분."""
     syms = list(score_row.index)
     out = {s: 0.0 for s in syms}
     avail = score_row[(score_row > 0) & px.reindex(score_row.index).notna()]
     if avail.empty:
         return out
     topk = avail.nlargest(min(top_k, len(avail)))
-    exposure = float(topk.mean())          # 0~1: 전체 주식 노출(방어 신호)
+    exposure = min(float(topk.mean()) * exposure_gain, 1.0)  # 0~1: 전체 주식 노출
     ssum = float(topk.sum())
     if ssum <= 0:
         return out

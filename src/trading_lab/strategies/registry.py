@@ -91,6 +91,15 @@ _STRATEGIES = {
         live_eligible=False,
         handler_factory="trading_lab.strategies.profile_portfolio:ProfilePortfolioHandler",
     ),
+    "yoon1b": StrategyDefinition(
+        strategy_id="yoon1b",
+        version="1",
+        description="yoon1 + 노출 게인 1.25(평상장 풀투자 근접). 방어 유지하며 수익 갭 축소(val→test 검증)",
+        config_path=ROOT / "configs" / "strategies" / "yoon1b.json",
+        enabled=True,
+        live_eligible=False,
+        handler_factory="trading_lab.strategies.profile_portfolio:ProfilePortfolioHandler",
+    ),
 }
 
 
