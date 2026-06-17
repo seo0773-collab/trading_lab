@@ -11,6 +11,7 @@ ta
 tqdm
 python-dotenv
 requests
+lxml
 rich
 ipykernel
 jupyterlab
