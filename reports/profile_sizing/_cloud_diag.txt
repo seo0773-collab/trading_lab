@@ -1,0 +1,76 @@
+Cloud Environment Diagnostics
+Generated: 2026-06-17T12:35:58Z (UTC)
+
+=== a. Python / pip versions ===
+[python3 --version]
+Python 3.11.15
+(exit 0)
+
+[python --version]
+Python 3.11.15
+(exit 0)
+
+[pip3 --version]
+pip 24.0 from /usr/lib/python3/dist-packages/pip (python 3.11)
+(exit 0)
+
+=== b. Yahoo Finance reachability ===
+[python3 -c "import urllib.request as u; u.urlopen('https://query1.finance.yahoo.com/v8/finance/chart/AAPL', timeout=15); print('YAHOO_OK')"]
+FAILED (exit 1)
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "/usr/lib/python3.11/urllib/request.py", line 216, in urlopen
+    return opener.open(url, data, timeout)
+  File "/usr/lib/python3.11/urllib/request.py", line 525, in open
+    response = meth(req, response)
+  File "/usr/lib/python3.11/urllib/request.py", line 634, in http_response
+    response = self.parent.error(
+  File "/usr/lib/python3.11/urllib/request.py", line 563, in error
+    return self._call_chain(*args)
+  File "/usr/lib/python3.11/urllib/request.py", line 496, in _call_chain
+    result = func(*args)
+  File "/usr/lib/python3.11/urllib/request.py", line 643, in http_error_default
+    raise HTTPError(req.full_url, code, msg, hdrs, fp)
+urllib.error.HTTPError: HTTP Error 403: Forbidden
+
+Note: network path itself works (TCP/TLS reached query1.finance.yahoo.com),
+but Yahoo returned HTTP 403 Forbidden — likely blocking the request
+(no User-Agent header / datacenter IP / bot detection), not a network outage.
+
+=== c. General internet reachability (pypi.org) ===
+[python3 -c "import urllib.request as u; u.urlopen('https://pypi.org', timeout=15); print('PYPI_OK')"]
+PYPI_OK
+(exit 0)
+
+=== d. Git remote / branch / identity ===
+[git remote -v]
+origin	http://local_proxy@127.0.0.1:44855/git/seo0773-collab/trading_lab (fetch)
+origin	http://local_proxy@127.0.0.1:44855/git/seo0773-collab/trading_lab (push)
+(exit 0)
+
+[git rev-parse --abbrev-ref HEAD]
+HEAD
+(exit 0)
+Note: "HEAD" output means the repo is currently in a DETACHED HEAD state
+(not on a named branch).
+
+[git config user.name]
+Claude
+(exit 0)
+
+[git config user.email]
+noreply@anthropic.com
+(exit 0)
+
+=== Summary ===
+- Python/pip: OK, Python 3.11.15, pip 24.0.
+- General internet egress: OK (pypi.org reachable).
+- Yahoo Finance API: reachable at the network layer but returns HTTP 403
+  Forbidden — requests are being blocked/rejected by Yahoo (likely bot/UA
+  filtering), not a connectivity outage. Live data pulls via this endpoint
+  will fail until this is addressed (e.g. proper headers/session, or use of
+  a library that handles this, or an alternative data source).
+- Git: remote points to a local proxy
+  (http://local_proxy@127.0.0.1:44855/git/seo0773-collab/trading_lab),
+  not directly to GitHub. Repo is in a detached HEAD state at diagnostic
+  time. Commit identity is configured (Claude / noreply@anthropic.com).
