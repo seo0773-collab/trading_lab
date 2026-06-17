@@ -151,6 +151,60 @@ class TradeReportTests(unittest.TestCase):
         self.assertEqual(combined.layout.xaxis.matches, "x3")
         self.assertEqual(combined.layout.xaxis2.matches, "x3")
 
+    def test_portfolio_forecast_uses_nav_axis_and_no_synthetic_buy_hold(self):
+        forecast = pd.DataFrame({
+            "close": [10_000, 10_200, 10_100, 10_500, 10_800],
+            "stock_exposure": [0.8, 0.7, 0.7, 0.9, 0.9],
+            "cash_ratio": [0.2, 0.3, 0.3, 0.1, 0.1],
+            "n_holdings": [20, 20, 20, 20, 20],
+        }, index=self.index)
+        trades = pd.DataFrame([{
+            "entry_time": self.index[1],
+            "entry_price": 150.0,
+            "exit_time": self.index[3],
+            "exit_price": 180.0,
+            "direction": 1,
+            "exit_reason": "rebalance_out",
+            "net_return": 0.18,
+            "symbol": "AAPL",
+        }])
+
+        price = build_price_figure(
+            forecast, trades, symbol="PORT", horizon=0
+        )
+        self.assertEqual(price.data[0].name, "포트폴리오 NAV")
+        self.assertEqual(price.layout.yaxis.title.text, "NAV")
+        self.assertEqual(float(price.data[1].y[0]), 10_200.0)
+        self.assertIn("진입가", price.data[1].hovertemplate)
+        self.assertEqual(price.data[1].customdata[0][1], "AAPL")
+
+        account = build_account_figure(
+            self.equity,
+            initial_capital=10_000.0,
+            symbol="PORT",
+            benchmark_price=None,
+        )
+        self.assertEqual(len(account.data), 2)
+        self.assertEqual(account.layout.title.text, "PORT 전략 계좌")
+
+        benchmark = pd.Series(
+            [1.0, 1.01, 1.02, 1.03, 1.04],
+            index=self.index,
+            name="benchmark",
+        )
+        account_with_benchmark = build_account_figure(
+            self.equity,
+            initial_capital=10_000.0,
+            symbol="PORT",
+            benchmark_equity=benchmark,
+        )
+        self.assertEqual(len(account_with_benchmark.data), 3)
+        self.assertEqual(account_with_benchmark.data[1].name, "Buy & Hold (+4.00%)")
+        self.assertEqual(
+            account_with_benchmark.layout.title.text,
+            "PORT 전략 vs Buy & Hold",
+        )
+
 
 class ExtraPanelTests(unittest.TestCase):
     """전략별 보조 패널 선언/렌더의 공통 인프라 계약 (config add/delete 구조)."""
@@ -206,6 +260,14 @@ class BacktestRequestTests(unittest.TestCase):
         )
         with self.assertRaisesRegex(ValueError, "initial_capital"):
             BacktestService._validate_request(request, True)
+
+    def test_mixed_chart_type_is_allowed_for_portfolios(self):
+        request = BacktestRequest(
+            strategy_id="yoon1",
+            symbol="PORTFOLIO",
+            chart_type="mixed",
+        )
+        BacktestService._validate_request(request, True)
 
 
 if __name__ == "__main__":

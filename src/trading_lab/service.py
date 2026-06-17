@@ -28,6 +28,7 @@ from .ui.presentation import (
 CHART_TYPE_LABELS = {
     "crypto": "크립토",
     "stock": "주식",
+    "mixed": "크립토주식",
     "random": "합성",
 }
 
@@ -155,6 +156,11 @@ class BacktestService:
             )
             equity = equity_series.rename("equity").to_frame()
             self._register(run_id, "equity", writer.write_frame("equity", equity))
+            if artifacts.benchmark is not None:
+                benchmark = artifacts.benchmark.rename("benchmark").to_frame()
+                self._register(
+                    run_id, "benchmark", writer.write_frame("benchmark", benchmark)
+                )
             account_value = account_value_series(
                 equity_series, request.initial_capital
             ).to_frame()
@@ -233,8 +239,8 @@ class BacktestService:
             raise ValueError("phase must be validation, test, or all")
         if request.phase == "test":
             raise ValueError("test phase is locked in platform v1")
-        if request.chart_type not in {None, "crypto", "stock", "random"}:
-            raise ValueError("chart_type must be crypto, stock, or random")
+        if request.chart_type not in {None, "crypto", "stock", "mixed", "random"}:
+            raise ValueError("chart_type must be crypto, stock, mixed, or random")
         if request.chart_type == "random" and not request.synthetic:
             raise ValueError("random chart_type requires synthetic data")
         if request.bars_per_year <= 0:

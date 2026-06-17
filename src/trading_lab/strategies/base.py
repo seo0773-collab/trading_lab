@@ -27,6 +27,9 @@ class StrategyArtifacts:
     - ``equity``: 1.0-based cumulative growth series.
     - ``metrics``: at least ``trades``, ``hit_rate``, ``total_return``,
       ``sharpe``, ``max_drawdown`` (dashboard metric row + service enrichment).
+    - ``benchmark``: optional 1.0-based buy & hold growth series for account
+      chart comparison, mainly for portfolio handlers where one price column is
+      not enough to derive a fair benchmark in the UI.
     - ``extras``: optional render hints, e.g. ``{"split_breakdown": DataFrame}``
       shown as an expander in the result view.
     """
@@ -37,6 +40,7 @@ class StrategyArtifacts:
     metrics: dict[str, Any]
     metadata: dict[str, Any] = field(default_factory=dict)
     horizon: int = 0
+    benchmark: pd.Series | None = None
     extras: dict[str, Any] = field(default_factory=dict)
 
 

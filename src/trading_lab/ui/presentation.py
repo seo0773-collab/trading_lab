@@ -118,9 +118,12 @@ def build_price_figure(
     symbol: str,
     horizon: int,
 ) -> go.Figure:
+    portfolio_view = forecast_is_portfolio(forecast)
+    close_label = "포트폴리오 NAV" if portfolio_view else "종가"
+    y_title = "NAV" if portfolio_view else "가격"
     figure = go.Figure()
     figure.add_trace(go.Scatter(
-        x=forecast.index, y=forecast["close"], mode="lines", name="종가",
+        x=forecast.index, y=forecast["close"], mode="lines", name=close_label,
         line={"color": "#d7e3f4", "width": 1.2},
     ))
 
@@ -159,38 +162,76 @@ def build_price_figure(
             selected = numbered[numbered["direction"] == direction]
             if selected.empty:
                 continue
-            figure.add_trace(go.Scatter(
-                x=selected["entry_time"], y=selected["entry_price"],
-                mode="markers", name=label,
-                marker={"color": color, "size": 10, "symbol": marker_symbol},
-                customdata=selected[["trade_number"]].to_numpy(),
-                hovertemplate=(
+            entry_y = (
+                _values_at_times(forecast["close"], selected["entry_time"])
+                if portfolio_view else selected["entry_price"]
+            )
+            if portfolio_view:
+                customdata = np.column_stack([
+                    selected["trade_number"],
+                    selected.get("symbol", pd.Series("", index=selected.index)).astype(str),
+                    selected["entry_price"].astype(float),
+                ])
+                hovertemplate = (
+                    f"{label} #%{{customdata[0]}}<br>%{{x|%Y-%m-%d %H:%M}}"
+                    "<br>%{customdata[1]} 진입가 %{customdata[2]:,.4f}"
+                    "<br>NAV %{y:,.2f}<extra></extra>"
+                )
+            else:
+                customdata = selected[["trade_number"]].to_numpy()
+                hovertemplate = (
                     f"{label} #%{{customdata[0]}}<br>%{{x|%Y-%m-%d %H:%M}}"
                     "<br>%{y:,.4f}<extra></extra>"
-                ),
+                )
+            figure.add_trace(go.Scatter(
+                x=selected["entry_time"], y=entry_y,
+                mode="markers", name=label,
+                marker={"color": color, "size": 10, "symbol": marker_symbol},
+                customdata=customdata,
+                hovertemplate=hovertemplate,
             ))
-        figure.add_trace(go.Scatter(
-            x=numbered["exit_time"], y=numbered["exit_price"],
-            mode="markers", name="청산",
-            marker={"color": "#ef5350", "size": 9, "symbol": "x"},
-            customdata=np.column_stack([
+        exit_y = (
+            _values_at_times(forecast["close"], numbered["exit_time"])
+            if portfolio_view else numbered["exit_price"]
+        )
+        if portfolio_view:
+            exit_customdata = np.column_stack([
+                numbered["trade_number"],
+                numbered.get("symbol", pd.Series("", index=numbered.index)).astype(str),
+                numbered["exit_price"].astype(float),
+                numbered["net_return"] * 100.0,
+            ])
+            exit_hovertemplate = (
+                "청산 #%{customdata[0]}<br>%{x|%Y-%m-%d %H:%M}"
+                "<br>%{customdata[1]} 청산가 %{customdata[2]:,.4f}"
+                "<br>NAV %{y:,.2f}<br>손익 %{customdata[3]:+.2f}%<extra></extra>"
+            )
+        else:
+            exit_customdata = np.column_stack([
                 numbered["trade_number"], numbered["net_return"] * 100.0,
-            ]),
-            hovertemplate=(
+            ])
+            exit_hovertemplate = (
                 "청산 #%{customdata[0]}<br>%{x|%Y-%m-%d %H:%M}"
                 "<br>%{y:,.4f}<br>손익 %{customdata[1]:+.2f}%<extra></extra>"
-            ),
+            )
+        figure.add_trace(go.Scatter(
+            x=numbered["exit_time"], y=exit_y,
+            mode="markers", name="청산",
+            marker={"color": "#ef5350", "size": 9, "symbol": "x"},
+            customdata=exit_customdata,
+            hovertemplate=exit_hovertemplate,
         ))
 
     figure.update_layout(
-        title=f"{symbol} 테스트 가격 및 예측 파형", height=560,
+        title=f"{symbol} {'포트폴리오' if portfolio_view else '테스트 가격'} 및 예측 파형",
+        height=560,
         hovermode="x unified",
         legend={"orientation": "h", "y": 1.08, "x": 0},
         margin={"l": 45, "r": 25, "t": 85, "b": 40},
         template="plotly_dark", uirevision=f"price-{symbol}-{horizon}",
     )
     figure.update_xaxes(rangeslider_visible=False)
-    figure.update_yaxes(title_text="가격")
+    figure.update_yaxes(title_text=y_title)
     return figure
 
 
@@ -309,7 +350,11 @@ def build_price_indicator_figure(
 
     for trace in price.data:
         figure.add_trace(trace, row=1, col=1)
-    figure.update_yaxes(title_text="가격", row=1, col=1)
+    figure.update_yaxes(
+        title_text="NAV" if forecast_is_portfolio(forecast) else "가격",
+        row=1,
+        col=1,
+    )
 
     if waveform:
         axis_rows: dict[str, int] = {}
@@ -328,7 +373,7 @@ def build_price_indicator_figure(
                 )
 
     figure.update_layout(
-        title=f"{symbol} 가격 및 보조지표",
+        title=f"{symbol} {'포트폴리오' if forecast_is_portfolio(forecast) else '가격'} 및 보조지표",
         height=560 + 210 * indicator_rows,
         hovermode="x unified",
         legend={"orientation": "h", "y": 1.06, "x": 0},
@@ -360,6 +405,7 @@ def build_account_figure(
     initial_capital: float,
     symbol: str,
     benchmark_price: pd.Series | None = None,
+    benchmark_equity: pd.Series | None = None,
 ) -> go.Figure:
     account = account_value_series(equity, initial_capital)
     drawdown = (equity / equity.cummax() - 1.0) * 100.0
@@ -370,30 +416,33 @@ def build_account_figure(
         name=f"전략 계좌 ({strategy_return:+.2%})",
         line={"color": "#66bb6a", "width": 1.8},
     ), secondary_y=False)
-    if benchmark_price is not None:
-        benchmark = pd.to_numeric(benchmark_price, errors="coerce").reindex(
-            account.index
-        ).ffill().bfill()
-        benchmark = benchmark.where(benchmark > 0)
-        if benchmark.notna().any():
-            first_price = float(benchmark.dropna().iloc[0])
-            buy_hold_equity = benchmark / first_price
-            buy_hold_account = buy_hold_equity * float(initial_capital)
-            buy_hold_return = float(buy_hold_equity.dropna().iloc[-1] - 1.0)
-            figure.add_trace(go.Scatter(
-                x=buy_hold_account.index,
-                y=buy_hold_account,
-                mode="lines",
-                name=f"Buy & Hold ({buy_hold_return:+.2%})",
-                line={"color": "#42a5f5", "width": 1.6, "dash": "dash"},
-            ), secondary_y=False)
+    buy_hold_equity = _benchmark_equity(
+        account.index,
+        benchmark_price=benchmark_price,
+        benchmark_equity=benchmark_equity,
+    )
+    if buy_hold_equity is not None and buy_hold_equity.notna().any():
+        buy_hold_account = buy_hold_equity * float(initial_capital)
+        buy_hold_return = float(buy_hold_equity.dropna().iloc[-1] - 1.0)
+        figure.add_trace(go.Scatter(
+            x=buy_hold_account.index,
+            y=buy_hold_account,
+            mode="lines",
+            name=f"Buy & Hold ({buy_hold_return:+.2%})",
+            line={"color": "#42a5f5", "width": 1.6, "dash": "dash"},
+        ), secondary_y=False)
     figure.add_trace(go.Scatter(
         x=drawdown.index, y=drawdown, mode="lines", name="낙폭 %",
         line={"color": "#ef5350", "width": 1.0},
         fill="tozeroy", fillcolor="rgba(239,83,80,0.12)",
     ), secondary_y=True)
+    has_benchmark = buy_hold_equity is not None and buy_hold_equity.notna().any()
+    title = (
+        f"{symbol} 전략 vs Buy & Hold"
+        if has_benchmark else f"{symbol} 전략 계좌"
+    )
     figure.update_layout(
-        title=f"{symbol} 전략 vs Buy & Hold", height=430,
+        title=title, height=430,
         hovermode="x unified",
         legend={"orientation": "h", "y": 1.12, "x": 0},
         margin={"l": 45, "r": 45, "t": 85, "b": 40},
@@ -404,13 +453,52 @@ def build_account_figure(
     return figure
 
 
+def _benchmark_equity(
+    index: pd.Index,
+    *,
+    benchmark_price: pd.Series | None,
+    benchmark_equity: pd.Series | None,
+) -> pd.Series | None:
+    if benchmark_equity is not None:
+        benchmark = pd.to_numeric(benchmark_equity, errors="coerce").reindex(
+            index
+        ).ffill().bfill()
+        benchmark = benchmark.where(benchmark > 0)
+        if benchmark.notna().any():
+            first_value = float(benchmark.dropna().iloc[0])
+            return benchmark / first_value
+    if benchmark_price is None:
+        return None
+    benchmark = pd.to_numeric(benchmark_price, errors="coerce").reindex(
+        index
+    ).ffill().bfill()
+    benchmark = benchmark.where(benchmark > 0)
+    if not benchmark.notna().any():
+        return None
+    first_price = float(benchmark.dropna().iloc[0])
+    return benchmark / first_price
+
+
+def forecast_is_portfolio(forecast: pd.DataFrame) -> bool:
+    """포트폴리오 전략은 close에 종목 가격 대신 NAV를 담아 공통 계약을 맞춘다."""
+    portfolio_columns = {"stock_exposure", "cash_ratio", "n_holdings"}
+    return portfolio_columns.issubset(set(forecast.columns))
+
+
+def _values_at_times(series: pd.Series, times: pd.Series) -> np.ndarray:
+    source = pd.Series(series).copy()
+    source.index = pd.DatetimeIndex(pd.to_datetime(source.index))
+    lookup = pd.DatetimeIndex(pd.to_datetime(times))
+    return source.reindex(lookup, method="ffill").to_numpy(dtype=float)
+
+
 # --- 범용 보조 패널 (전략별 extras 선언적 렌더) ------------------------------
 # 결과 화면이 전용 위젯으로 그리는 표준 아티팩트. 이외의 아티팩트는 전략이
 # config.dashboard.panels 로 선언하거나 자동 발견되어 "보조 패널"로 노출된다.
 # 이렇게 두면 전략마다 app.py 를 고치지 않고 config 만으로 add/delete 할 수 있다.
 _CORE_ARTIFACT_KINDS = frozenset({
     "manifest", "config", "forecast", "forecast_metadata", "trades",
-    "equity", "account_value", "trade_report", "metrics", "report",
+    "equity", "benchmark", "account_value", "trade_report", "metrics", "report",
     "equity_chart", "error",
 })
 
