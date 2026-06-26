@@ -37,6 +37,10 @@ class Profile:
     weight_mode: str = "time"        # time | volume | volume_fallback
     accumulation_mode: str = "range_uniform"  # range_uniform | ohlc | range_close
     percentile_value: float = 20.0   # lower/upper percentile 산출용(%)
+    # yoon1h 매물대 사이징: True면 rolling profile에서 POC/VAH/VAL + va_position 산출.
+    # 기본 off → 기존 전략(yoon1b 등) 동작·성능 불변.
+    compute_va: bool = False
+    va_pct: float = 0.70             # Value Area 비율(POC 좌우 누적 도달 목표)
 
 
 @dataclass(frozen=True)
@@ -79,6 +83,12 @@ class TrendOverlay:
     # apply_regimes 국면에서 percentile 감점을 무시하고 비중을 floor 이상으로 보장한다.
     # 단 regime cap에는 여전히 종속(추세 꺾이면 해제 → DEFENSE가 받아냄).
     floor: float = 0.0
+    # 추세강도 신호원: "sma"(기본=cm_close-1, 원본) | "kalman"(칼만 평활 종가로
+    # cm 계산 → 잔물결 완화). 스케일은 동일(base_cycle 대비 비율)이라 boost 파라미터
+    # 재보정 불필요. 칼만은 인과적 필터라 무누수.
+    signal: str = "sma"
+    kalman_q: float = 0.01           # 칼만 반응성
+    kalman_r: float = 0.10           # 칼만 평활도
 
 
 @dataclass(frozen=True)
@@ -94,6 +104,9 @@ class ProfileSizingConfig:
     trend_overlay: TrendOverlay = field(default_factory=TrendOverlay)
 
     weight_model: str = "bucket"      # bucket | exponential
+    # 사이징 입력 위치값: "percentile"(누적분포 하위비율, 기존) |
+    # "poc_va"(VA 매물대 대비 위치, yoon1h). 둘 다 동일 weight_model을 통과한다.
+    position_source: str = "percentile"
     buckets: tuple[tuple[float, float, float], ...] = DEFAULT_BUCKETS
     # exponential 모델 파라미터: w = max_w * exp(-k * percentile)
     exp_max_weight: float = 1.0
@@ -158,6 +171,8 @@ def config_from_dict(raw: dict[str, Any]) -> ProfileSizingConfig:
         percentile_value=float(
             pf_raw.get("percentile_value", base.profile.percentile_value)
         ),
+        compute_va=_as_bool(pf_raw.get("compute_va"), base.profile.compute_va),
+        va_pct=float(pf_raw.get("va_pct", base.profile.va_pct)),
     )
     regime_cap = replace(
         base.regime_cap,
@@ -201,6 +216,9 @@ def config_from_dict(raw: dict[str, Any]) -> ProfileSizingConfig:
                                        base.trend_overlay.apply_regimes)
         ),
         floor=float(to_raw.get("floor", base.trend_overlay.floor)),
+        signal=str(to_raw.get("signal", base.trend_overlay.signal)),
+        kalman_q=float(to_raw.get("kalman_q", base.trend_overlay.kalman_q)),
+        kalman_r=float(to_raw.get("kalman_r", base.trend_overlay.kalman_r)),
     )
     return replace(
         base,
@@ -213,6 +231,7 @@ def config_from_dict(raw: dict[str, Any]) -> ProfileSizingConfig:
         costs=costs,
         trend_overlay=trend_overlay,
         weight_model=str(raw.get("weight_model", base.weight_model)),
+        position_source=str(raw.get("position_source", base.position_source)),
         buckets=_buckets_from(raw.get("buckets"), base.buckets),
         exp_max_weight=float(raw.get("exp_max_weight", base.exp_max_weight)),
         exp_k=float(raw.get("exp_k", base.exp_k)),

@@ -74,6 +74,28 @@ class CumulativeMarketDataTests(unittest.TestCase):
 
             pd.testing.assert_frame_equal(actual, expected)
 
+    def test_requested_period_limits_returned_cache_window(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            responses = iter([
+                _ohlcv("2024-01-01", [float(i) for i in range(1, 11)]),
+                _ohlcv("2024-01-10", [10.0]),
+            ])
+
+            def download(*args, **kwargs):
+                return next(responses)
+
+            with patch.object(market_data, "var_dir", return_value=root):
+                market_data.load_cumulative_yfinance(
+                    "AAPL", "1d", "max", downloader=download
+                )
+                result = market_data.load_cumulative_yfinance(
+                    "AAPL", "1d", "5d", downloader=download
+                )
+
+            self.assertEqual(result.index.min(), pd.Timestamp("2024-01-06"))
+            self.assertEqual(list(result["close"]), [6.0, 7.0, 8.0, 9.0, 10.0])
+
 
 class CumulativeFundamentalTests(unittest.TestCase):
     def test_preserves_history_and_updates_period(self) -> None:

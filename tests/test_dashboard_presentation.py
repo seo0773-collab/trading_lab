@@ -10,9 +10,11 @@ from trading_lab.ui.presentation import (
     available_extra_kinds,
     build_account_figure,
     build_bar_figure,
+    build_heatmap_figure,
     build_price_indicator_figure,
     build_price_figure,
     build_scatter_figure,
+    build_stacked_area_figure,
     build_trade_overview,
     build_trade_report,
     build_waveform_figure,
@@ -57,6 +59,20 @@ class TradeReportTests(unittest.TestCase):
         self.assertAlmostEqual(row["account_value_after"], 10_500.0)
         self.assertIn("72봉 예상 상승", row["entry_reason"])
         self.assertIn("다음 시가 체결", row["entry_reason"])
+
+    def test_portfolio_trade_report_preserves_symbol(self):
+        trades = self.trades.assign(symbol=["AAPL"], entry_reason=["AAPL top20 편입"])
+        report = build_trade_report(
+            trades,
+            self.equity,
+            initial_capital=10_000.0,
+            horizon=72,
+            execution="next_open",
+        )
+
+        self.assertIn("symbol", report.columns)
+        self.assertEqual(report.iloc[0]["symbol"], "AAPL")
+        self.assertEqual(report.iloc[0]["entry_reason"], "AAPL top20 편입")
 
     def test_trade_overview_splits_long_and_short_metrics(self):
         trades = pd.DataFrame([
@@ -205,6 +221,25 @@ class TradeReportTests(unittest.TestCase):
             "PORT 전략 vs Buy & Hold",
         )
 
+    def test_stacked_area_figure_shows_portfolio_wave(self):
+        frame = pd.DataFrame({
+            "time": pd.date_range("2026-01-01", periods=3, freq="1D"),
+            "cash": [1.0, 0.4, 0.2],
+            "AAPL": [0.0, 0.35, 0.5],
+            "MSFT": [0.0, 0.25, 0.3],
+        })
+
+        figure = build_stacked_area_figure(
+            frame, x="time", label="포트폴리오 웨이브"
+        )
+
+        self.assertEqual(
+            [trace.name for trace in figure.data], ["현금", "AAPL", "MSFT"]
+        )
+        self.assertTrue(all(trace.stackgroup == "portfolio" for trace in figure.data))
+        self.assertEqual(figure.layout.yaxis.title.text, "비중")
+        self.assertEqual(tuple(figure.layout.yaxis.range), (0, 1))
+
 
 class ExtraPanelTests(unittest.TestCase):
     """전략별 보조 패널 선언/렌더의 공통 인프라 계약 (config add/delete 구조)."""
@@ -250,6 +285,46 @@ class ExtraPanelTests(unittest.TestCase):
         self.assertGreaterEqual(len(scatter.data), 1)
         self.assertEqual(len(bar.data), 1)
 
+    def test_heatmap_panel_figure_builds(self):
+        # wide 프레임(time + 가격 bin 컬럼) → heatmap trace (z = price x time)
+        frame = pd.DataFrame({
+            "time": ["2020-01-01", "2020-01-02", "2020-01-03"],
+            "10.00": [1.0, 2.0, 3.0],
+            "11.00": [0.0, 5.0, 1.0],
+        })
+        fig = build_heatmap_figure(frame, label="볼륨 프로파일 히트맵")
+        self.assertEqual(len(fig.data), 1)
+        self.assertEqual(fig.data[0].type, "heatmap")
+        self.assertEqual(np.asarray(fig.data[0].z).shape, (2, 3))
+
+    def test_price_figure_heatmap_overlay_is_bottom_layer(self):
+        # 청산 히트맵 trace를 넘기면 가격선보다 먼저(맨 아래) 그려져야 한다.
+        from trading_lab.ui.presentation import build_heatmap_trace
+
+        frame = pd.DataFrame({
+            "time": ["2020-01-01", "2020-01-02", "2020-01-03"],
+            "10.00": [1.0, 2.0, 3.0],
+            "11.00": [0.0, 5.0, 1.0],
+        })
+        overlay = build_heatmap_trace(frame, overlay=True, showscale=False)
+        self.assertIsNotNone(overlay)
+        index = pd.date_range("2020-01-01", periods=3, freq="D")
+        forecast = pd.DataFrame({"close": [10.0, 10.5, 11.0]}, index=index)
+        fig = build_price_figure(
+            forecast, pd.DataFrame(), symbol="TEST", horizon=0,
+            heatmap_overlay=overlay,
+        )
+        self.assertEqual(fig.data[0].type, "heatmap")
+        self.assertEqual(fig.data[1].type, "scatter")
+
+    def test_heatmap_trace_returns_none_for_empty(self):
+        from trading_lab.ui.presentation import build_heatmap_trace
+
+        self.assertIsNone(build_heatmap_trace(pd.DataFrame()))
+        self.assertIsNone(
+            build_heatmap_trace(pd.DataFrame({"time": ["2020-01-01"]}))
+        )
+
 
 class BacktestRequestTests(unittest.TestCase):
     def test_initial_capital_must_be_positive(self):
@@ -268,6 +343,48 @@ class BacktestRequestTests(unittest.TestCase):
             chart_type="mixed",
         )
         BacktestService._validate_request(request, True)
+
+
+class DashboardContractTests(unittest.TestCase):
+    """전략 추가 시 UI 공통 인프라를 수정하지 않아도 되게 하는 계약 회귀."""
+
+    def test_declared_panel_types_are_registered(self):
+        """등록된 모든 전략 config의 dashboard.panels[].type은 PANEL_RENDERERS에
+        있어야 한다(오타·미등록 타입을 조기에 잡는다). 'table'은 명시 폴백."""
+        from trading_lab.strategies import list_strategies
+        from trading_lab.ui.config import strategy_config_dict
+        from trading_lab.ui.result_sections import PANEL_RENDERERS
+
+        allowed = set(PANEL_RENDERERS) | {"table"}
+        for definition in list_strategies():
+            config = strategy_config_dict(definition.strategy_id)
+            panels = (config.get("dashboard") or {}).get("panels") or []
+            for panel in panels:
+                ptype = panel.get("type")
+                if ptype is not None:
+                    self.assertIn(
+                        ptype, allowed,
+                        f"{definition.strategy_id}: 미등록 panel type {ptype!r} "
+                        "— presentation.py 빌더 + PANEL_RENDERERS에 등록하세요",
+                    )
+
+    def test_common_ui_modules_have_no_strategy_id_hardcoding(self):
+        """UI 공통 인프라(presentation·result_sections)에 특정 전략 id를
+        하드코딩하면 안 된다 — 전략 분기는 config/registry 메타로만 한다."""
+        from pathlib import Path
+
+        from trading_lab.strategies import list_strategies
+        import trading_lab.ui.presentation as presentation
+        import trading_lab.ui.result_sections as result_sections
+
+        ids = [d.strategy_id for d in list_strategies()]
+        for module in (presentation, result_sections):
+            text = Path(module.__file__).read_text(encoding="utf-8")
+            for strategy_id in ids:
+                self.assertNotIn(
+                    strategy_id, text,
+                    f"{module.__name__} 에 전략 id {strategy_id!r} 하드코딩 금지",
+                )
 
 
 if __name__ == "__main__":

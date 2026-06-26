@@ -20,7 +20,7 @@ from trading_lab.market_catalog import (
     option_label,
 )
 from trading_lab.paths import ROOT
-from trading_lab.strategies import get_strategy
+from trading_lab.strategies import get_strategy, list_strategies
 from trading_lab.strategies.di_kalman_mw import DiKalmanMwHandler
 
 SCRIPTS = ROOT / "scripts"
@@ -30,6 +30,18 @@ if str(SCRIPTS) not in sys.path:
 from di_kalman_mw.extreme_transition import build_pattern_dataset  # noqa: E402
 
 RESEARCH_STRATEGY = "di-kalman-mw-v1"
+
+
+def research_available() -> bool:
+    """전용 연구 화면이 다루는 전략이 등록·활성화돼 있는지. navigation은 이
+    플래그로만 '연구' 메뉴 노출을 결정한다 — 공통 인프라가 전략 id를 직접
+    참조하지 않게(전략명은 이 전용 모듈 안에만 둔다)."""
+    return any(
+        s.strategy_id == RESEARCH_STRATEGY and s.enabled
+        for s in list_strategies()
+    )
+
+
 TF_OPTIONS = ["5m", "15m", "30m", "1h", "1d", "1wk", "1mo"]
 PERIOD_OPTIONS = ["1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "max"]
 # 극점 종류별 마커 색 (수집 형태 위에 표시).

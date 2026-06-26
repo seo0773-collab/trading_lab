@@ -1,0 +1,198 @@
+//@version=6
+indicator("MACD Raw Data with Kalman", overlay=false)
+
+//━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Inputs
+//━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+fastLen   = input.int(12, "Fast EMA Length", minval=1)
+slowLen   = input.int(26, "Slow EMA Length", minval=1)
+signalLen = input.int(9, "Signal Length", minval=1)
+
+q = input.float(0.01, "Kalman Process Noise Q", step=0.001, minval=0.0)
+r = input.float(0.10, "Kalman Measurement Noise R", step=0.001, minval=0.000001)
+
+kalmanBase = input.string(
+     "MACD Line",
+     "Kalman Base",
+     options=["MACD Line", "Fast/Slow EMA"]
+)
+
+showRawMacd      = input.bool(true, "Show Raw MACD / Signal")
+showRawHist      = input.bool(true, "Show Raw Histogram")
+showKalmanMacd   = input.bool(true, "Show Kalman MACD / Signal")
+showKalmanHist   = input.bool(true, "Show Kalman Histogram")
+showHistDelta    = input.bool(false, "Show Kalman Histogram Delta")
+showFastSlowEma  = input.bool(false, "Show Fast / Slow EMA Raw Data")
+
+//━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 1D Kalman Filter
+//━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+f_kalman(src, q, r) =>
+    var float x = na
+    var float p = na
+
+    if na(src)
+        x
+    else
+        if na(x)
+            x := src
+            p := 1.0
+        else
+            // Prediction
+            p := p + q
+
+            // Kalman gain
+            k = p / (p + r)
+
+            // Update
+            x := x + k * (src - x)
+            p := (1.0 - k) * p
+
+        x
+
+//━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// MACD Raw Data
+//━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+fastEma = ta.ema(close, fastLen)
+slowEma = ta.ema(close, slowLen)
+
+macdLine = fastEma - slowEma
+signalLine = ta.ema(macdLine, signalLen)
+hist = macdLine - signalLine
+
+histDelta = hist - hist[1]
+
+//━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Kalman Processed Raw Data
+//━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// Fast / Slow EMA 자체를 Kalman 처리
+kalFastEma = f_kalman(fastEma, q, r)
+kalSlowEma = f_kalman(slowEma, q, r)
+
+// 방식 1: MACD Line 자체를 Kalman 처리
+kalMacdDirect = f_kalman(macdLine, q, r)
+
+// 방식 2: Kalman Fast EMA - Kalman Slow EMA
+kalMacdFromEma = kalFastEma - kalSlowEma
+
+// 선택한 방식 적용
+kalMacd = kalmanBase == "Fast/Slow EMA" ? kalMacdFromEma : kalMacdDirect
+
+// Kalman MACD의 Signal Line
+kalSignalBase = ta.ema(kalMacd, signalLen)
+kalSignal = f_kalman(kalSignalBase, q, r)
+
+// Kalman Histogram
+kalHist = kalMacd - kalSignal
+kalHistDelta = kalHist - kalHist[1]
+
+//━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Colors
+//━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+rawHistColor = hist >= 0 ? color.new(color.green, 75) : color.new(color.red, 75)
+kalHistColor = kalHist >= 0 ? color.new(color.green, 35) : color.new(color.red, 35)
+
+rawMacdColor = color.new(color.blue, 50)
+rawSignalColor = color.new(color.orange, 50)
+
+kalMacdColor = color.new(color.blue, 0)
+kalSignalColor = color.new(color.orange, 0)
+
+fastRawColor = color.new(color.green, 70)
+slowRawColor = color.new(color.red, 70)
+fastKalColor = color.new(color.green, 0)
+slowKalColor = color.new(color.red, 0)
+
+deltaColor = kalHistDelta >= 0 ? color.new(color.lime, 0) : color.new(color.red, 0)
+
+//━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Plot: Histogram
+//━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+plot(
+     showRawHist ? hist : na,
+     "Raw Histogram",
+     style=plot.style_columns,
+     color=rawHistColor
+)
+
+plot(
+     showKalmanHist ? kalHist : na,
+     "Kalman Histogram",
+     style=plot.style_columns,
+     color=kalHistColor
+)
+
+//━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Plot: MACD / Signal
+//━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+plot(
+     showRawMacd ? macdLine : na,
+     "Raw MACD Line",
+     color=rawMacdColor,
+     linewidth=1
+)
+
+plot(
+     showRawMacd ? signalLine : na,
+     "Raw Signal Line",
+     color=rawSignalColor,
+     linewidth=1
+)
+
+plot(
+     showKalmanMacd ? kalMacd : na,
+     "Kalman MACD Line",
+     color=kalMacdColor,
+     linewidth=2
+)
+
+plot(
+     showKalmanMacd ? kalSignal : na,
+     "Kalman Signal Line",
+     color=kalSignalColor,
+     linewidth=2
+)
+
+//━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Plot: Histogram Delta
+//━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+plot(
+     showHistDelta ? kalHistDelta : na,
+     "Kalman Histogram Delta",
+     color=deltaColor,
+     linewidth=2
+)
+
+//━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Optional: Fast / Slow EMA Raw Data
+//━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+plot(
+     showFastSlowEma ? fastEma : na,
+     "Fast EMA Raw",
+     color=fastRawColor,
+     linewidth=1
+)
+
+plot(
+     showFastSlowEma ? slowEma : na,
+     "Slow EMA Raw",
+     color=slowRawColor,
+     linewidth=1
+)
+
+plot(
+     showFastSlowEma ? kalFastEma : na,
+     "Fast EMA Kalman",
+     color=fastKalColor,
+     linewidth=2
+)
+
+plot(
+     showFastSlowEma ? kalSlowEma : na,
+     "Slow EMA Kalman",
+     color=slowKalColor,
+     linewidth=2
+)
+
+hline(0, "Zero Line", color=color.gray)

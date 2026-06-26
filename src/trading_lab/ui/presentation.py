@@ -17,6 +17,10 @@ EXIT_REASON_LABELS = {
     "rebalance": "리밸런싱",
     "signal_flip": "신호 반전",
     "defense_cut": "방어 축소",
+    "hedge_off": "헤지 해제",
+    "trailing_take_profit": "트레일링 익절",
+    "poc_target": "POC 도달",
+    "va_stop": "VA 경계 손절",
 }
 
 PRICE_COLUMNS = ("open", "high", "low", "close")
@@ -33,6 +37,41 @@ WAVEFORM_PALETTE = (
     "#eceff1", "#26c6da", "#7e57c2", "#ffa726",
     "#42a5f5", "#ef5350", "#66bb6a", "#ec407a",
 )
+
+# ── 다크 미니멀 공통 테마 (모든 패널 차트에 일관 적용) ──────────────────
+ACCENT = "#4C9AFF"
+_THEME_BG = "rgba(0,0,0,0)"          # 투명 → Streamlit 다크 캔버스에 녹아듦
+_THEME_FONT = "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
+_THEME_GRID = "rgba(255,255,255,0.06)"
+_THEME_ZERO = "rgba(255,255,255,0.18)"
+_THEME_COLORWAY = (
+    "#4C9AFF", "#26c6da", "#a78bfa", "#ffa726",
+    "#66bb6a", "#ef5350", "#ec407a", "#7e57c2",
+)
+
+
+def _apply_theme(figure: go.Figure) -> go.Figure:
+    """다크 미니멀 톤을 모든 차트에 통일 적용한다. 투명 배경으로 앱 캔버스에
+    녹아들고 폰트·그리드·팔레트·호버를 일관시킨다. 개별 빌더가 설정한
+    title·axis title·height·legend 위치 등 명시값은 부분 업데이트로 보존된다."""
+    figure.update_layout(
+        template="plotly_dark",
+        paper_bgcolor=_THEME_BG,
+        plot_bgcolor=_THEME_BG,
+        colorway=list(_THEME_COLORWAY),
+        font=dict(family=_THEME_FONT, color="#C9D1D9", size=13),
+        title_font=dict(family=_THEME_FONT, color="#FAFAFA", size=16),
+        hoverlabel=dict(
+            bgcolor="#1A1D26", bordercolor="rgba(255,255,255,0.12)",
+            font=dict(family=_THEME_FONT, size=12, color="#FAFAFA"),
+        ),
+        legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(size=12)),
+    )
+    figure.update_xaxes(gridcolor=_THEME_GRID, zerolinecolor=_THEME_ZERO,
+                        linecolor=_THEME_GRID, showline=False)
+    figure.update_yaxes(gridcolor=_THEME_GRID, zerolinecolor=_THEME_ZERO,
+                        linecolor=_THEME_GRID, showline=False)
+    return figure
 
 
 def account_value_series(equity: pd.Series, initial_capital: float) -> pd.Series:
@@ -76,11 +115,15 @@ def build_trade_report(
         "exit_time", "exit_price", "stop_loss_price", "take_profit_price",
         "exit_reason", "net_return_pct", "account_value_after", "entry_reason",
     ]
+    if "symbol" in trades:
+        columns.insert(1, "symbol")
     if trades.empty:
         return pd.DataFrame(columns=columns)
 
     report = pd.DataFrame(index=trades.index)
     report["trade_number"] = np.arange(1, len(trades) + 1)
+    if "symbol" in trades:
+        report["symbol"] = trades["symbol"].astype(str).to_numpy()
     report["side"] = trades["direction"].map({1: "롱", -1: "숏"}).fillna("기타")
     report["entry_time"] = pd.to_datetime(trades["entry_time"])
     report["entry_price"] = trades["entry_price"].astype(float)
@@ -117,11 +160,15 @@ def build_price_figure(
     *,
     symbol: str,
     horizon: int,
+    heatmap_overlay: go.Heatmap | None = None,
 ) -> go.Figure:
     portfolio_view = forecast_is_portfolio(forecast)
     close_label = "포트폴리오 NAV" if portfolio_view else "종가"
     y_title = "NAV" if portfolio_view else "가격"
     figure = go.Figure()
+    # 청산 히트맵은 가장 먼저(맨 아래 레이어) 깔아 가격선·마커가 위로 오게 한다.
+    if heatmap_overlay is not None:
+        figure.add_trace(heatmap_overlay)
     figure.add_trace(go.Scatter(
         x=forecast.index, y=forecast["close"], mode="lines", name=close_label,
         line={"color": "#d7e3f4", "width": 1.2},
@@ -232,7 +279,7 @@ def build_price_figure(
     )
     figure.update_xaxes(rangeslider_visible=False)
     figure.update_yaxes(title_text=y_title)
-    return figure
+    return _apply_theme(figure)
 
 
 def indicator_series(
@@ -315,7 +362,7 @@ def build_waveform_figure(
         template="plotly_dark",
         uirevision="waveform-" + "|".join(series_map),
     )
-    return figure
+    return _apply_theme(figure)
 
 
 def build_price_indicator_figure(
@@ -326,10 +373,12 @@ def build_price_indicator_figure(
     horizon: int,
     series_map: dict[str, pd.Series],
     labels: dict[str, str] | None = None,
+    heatmap_overlay: go.Heatmap | None = None,
 ) -> go.Figure:
     """가격과 보조지표를 TradingView 형태의 공유 X축 패널로 구성합니다."""
     price = build_price_figure(
         forecast, trades, symbol=symbol, horizon=horizon,
+        heatmap_overlay=heatmap_overlay,
     )
     waveform = (
         build_waveform_figure(series_map, labels=labels)
@@ -382,7 +431,7 @@ def build_price_indicator_figure(
         uirevision=f"market-{symbol}-{horizon}-{'|'.join(series_map)}",
     )
     figure.update_xaxes(rangeslider_visible=False)
-    return figure
+    return _apply_theme(figure)
 
 
 def _scale_of(values: pd.Series) -> float:
@@ -450,7 +499,7 @@ def build_account_figure(
     )
     figure.update_yaxes(title_text="계좌 금액", tickprefix="$", secondary_y=False)
     figure.update_yaxes(title_text="낙폭 %", ticksuffix="%", secondary_y=True)
-    return figure
+    return _apply_theme(figure)
 
 
 def _benchmark_equity(
@@ -518,7 +567,7 @@ def resolve_extra_panels(
 ) -> list[dict[str, Any]]:
     """config 선언과 실제 존재하는 아티팩트를 합쳐 패널 스펙 목록을 만든다.
 
-    선언(``dashboard.panels``)에 ``label``/``type``(table|scatter|bar|line)/축
+    선언(``dashboard.panels``)에 ``label``/``type``(table|scatter|bar|stacked_area)/축
     (``x``/``y``)/``default`` 를 줄 수 있다. 선언이 없는 아티팩트는 표(table)로
     자동 노출돼, 새 extras를 추가해도 별도 코드 없이 화면에 뜬다.
     """
@@ -530,7 +579,9 @@ def resolve_extra_panels(
     panels: list[dict[str, Any]] = []
     for kind in available_kinds:
         spec = declared.get(kind, {})
-        panels.append({
+        # 선언 spec을 베이스로 보존(렌더 옵션 등 임의 키 통과) 후 핵심 필드만 정규화
+        panel = dict(spec)
+        panel.update({
             "kind": kind,
             "type": str(spec.get("type", "table")),
             "label": str(spec.get("label", kind)),
@@ -538,7 +589,89 @@ def resolve_extra_panels(
             "y": spec.get("y"),
             "default": bool(spec.get("default", True)),
         })
+        panels.append(panel)
     return panels
+
+
+def build_heatmap_trace(
+    frame: pd.DataFrame,
+    *,
+    x: str = "time",
+    colorscale: str = "Viridis",
+    percentile_clip: float = 99.0,
+    gamma: float = 0.5,
+    column_normalize: bool = False,
+    opacity: float = 1.0,
+    showscale: bool = True,
+    overlay: bool = False,
+) -> go.Heatmap | None:
+    """가격×시간 격자(wide 프레임)를 ``go.Heatmap`` trace 하나로 정규화한다.
+
+    ``x``(기본 'time') 컬럼이 시간축, 나머지 숫자 컬럼명은 가격(y)으로 본다.
+    값은 분위수 클립 + gamma 보정 후 [0,1]로 정규화해 밴드 대비를 살린다.
+    ``column_normalize=True``면 시간 열마다 그 시점의 분위수로 독립 정규화해,
+    누적(prefix-sum) 히트맵에서 우측 열이 값을 독식해 좌측이 까맣게 죽는 현상을
+    막고 가격대 밴드를 전구간 일정한 대비로 드러낸다(코인글래스 청산 히트맵 느낌).
+
+    ``overlay=True``면 가격 그래프 뒤에 깔 용도로 hover를 끄고 0값을 투명 처리한다.
+    프레임이 비었거나 가격 컬럼이 없으면 ``None``을 반환한다(겹쳐 그릴 게 없음).
+    """
+    time_col = x if x in frame else None
+    price_cols = [c for c in frame.columns if c != time_col]
+    if frame.empty or not price_cols:
+        return None
+    y = [float(str(c)) for c in price_cols]
+    xs = frame[time_col].tolist() if time_col else list(range(len(frame)))
+    z = frame[price_cols].apply(pd.to_numeric, errors="coerce").to_numpy().T
+    masked = np.where(np.isfinite(z), z, np.nan)
+    if column_normalize:
+        # 시간 열별(축 0=가격) 독립 클립 — 누적 히트맵에서 전구간 밴드 대비 유지
+        with np.errstate(invalid="ignore"):
+            clip_axis = np.nanpercentile(masked, percentile_clip, axis=0, keepdims=True)
+        clip_axis = np.where(np.isfinite(clip_axis) & (clip_axis > 0), clip_axis, 1.0)
+        norm = np.clip(np.nan_to_num(z) / clip_axis, 0.0, 1.0) ** gamma
+    else:
+        finite = z[np.isfinite(z)]
+        clip = float(np.percentile(finite, percentile_clip)) if finite.size and finite.max() > 0 else 1.0
+        norm = np.clip(z / clip, 0.0, 1.0) ** gamma
+    if overlay:
+        # 0(거래 없는 가격대)은 가격선이 비치도록 투명 처리
+        norm = np.where(norm > 0.0, norm, np.nan)
+    return go.Heatmap(
+        z=norm, x=xs, y=y, colorscale=colorscale,
+        opacity=opacity, showscale=showscale,
+        colorbar=(dict(title="volume") if showscale else None),
+        hoverinfo=("skip" if overlay else None),
+        name="청산 히트맵",
+    )
+
+
+def build_heatmap_figure(
+    frame: pd.DataFrame,
+    *,
+    x: str = "time",
+    label: str,
+    colorscale: str = "Viridis",
+    percentile_clip: float = 99.0,
+    gamma: float = 0.5,
+    column_normalize: bool = False,
+    yaxis_title: str = "가격",
+) -> go.Figure:
+    """가격×시간 격자(wide 프레임)를 단독 히트맵 패널로 렌더.
+
+    볼륨 프로파일 등 2D 격자형 extras를 코드 수정 없이 노출하는 범용 패널.
+    ``yaxis_title``로 세로축 의미(절대가격/상대위치 등)를 패널별로 바꿀 수 있다.
+    """
+    trace = build_heatmap_trace(
+        frame, x=x, colorscale=colorscale, percentile_clip=percentile_clip,
+        gamma=gamma, column_normalize=column_normalize,
+    )
+    figure = go.Figure() if trace is None else go.Figure(trace)
+    figure.update_layout(
+        title=label, height=480, template="plotly_dark",
+        xaxis_title="시간", yaxis_title=yaxis_title,
+    )
+    return _apply_theme(figure)
 
 
 def build_scatter_figure(
@@ -565,7 +698,7 @@ def build_scatter_figure(
         title=label, height=420, template="plotly_dark",
         xaxis_title=x, yaxis_title=y, showlegend=True,
     )
-    return figure
+    return _apply_theme(figure)
 
 
 def build_bar_figure(
@@ -582,7 +715,62 @@ def build_bar_figure(
         title=label, height=420, template="plotly_dark",
         xaxis_title=x, yaxis_title=y,
     )
-    return figure
+    return _apply_theme(figure)
+
+
+def build_stacked_area_figure(
+    frame: pd.DataFrame,
+    *,
+    x: str = "time",
+    label: str,
+) -> go.Figure:
+    """현금/종목 비중처럼 합이 100%인 시계열 구성을 누적 면적으로 그립니다."""
+    if x not in frame:
+        plot_x = frame.index
+        value_columns = list(frame.columns)
+    else:
+        try:
+            plot_x = pd.to_datetime(frame[x])
+        except (TypeError, ValueError):
+            plot_x = frame[x]
+        value_columns = [column for column in frame.columns if column != x]
+    numeric = frame[value_columns].apply(pd.to_numeric, errors="coerce")
+    numeric = numeric.loc[:, numeric.notna().any(axis=0)].fillna(0.0)
+
+    ordered = (
+        ["cash"] + [column for column in numeric.columns if column != "cash"]
+        if "cash" in numeric else list(numeric.columns)
+    )
+    figure = go.Figure()
+    for i, column in enumerate(ordered):
+        values = numeric[column].clip(lower=0.0)
+        is_cash = column == "cash"
+        figure.add_trace(go.Scatter(
+            x=plot_x,
+            y=values,
+            mode="lines",
+            name="현금" if is_cash else str(column),
+            stackgroup="portfolio",
+            line={
+                "width": 0.8,
+                "color": (
+                    "#90a4ae" if is_cash
+                    else WAVEFORM_PALETTE[(i - 1) % len(WAVEFORM_PALETTE)]
+                ),
+            },
+            hovertemplate="%{x}<br>%{fullData.name}: %{y:.2%}<extra></extra>",
+        ))
+    figure.update_layout(
+        title=label,
+        height=460,
+        hovermode="x unified",
+        legend={"orientation": "h", "y": 1.12, "x": 0},
+        margin={"l": 45, "r": 25, "t": 85, "b": 40},
+        template="plotly_dark",
+        uirevision=f"stacked-area-{label}",
+    )
+    figure.update_yaxes(title_text="비중", tickformat=".0%", range=[0, 1])
+    return _apply_theme(figure)
 
 
 def _entry_reason(trade: pd.Series, horizon: int, execution_label: str) -> str:

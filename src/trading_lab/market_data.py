@@ -61,6 +61,31 @@ def _write_parquet_atomic(frame: pd.DataFrame, path: Path) -> None:
     temporary.replace(path)
 
 
+def _apply_period_window(frame: pd.DataFrame, period: str) -> pd.DataFrame:
+    requested = str(period).lower().strip()
+    if requested in {"", "max"} or frame.empty:
+        return frame
+
+    end = pd.Timestamp(frame.index.max())
+    if requested == "ytd":
+        start = pd.Timestamp(year=end.year, month=1, day=1)
+    else:
+        match = re.fullmatch(r"(\d+)(d|wk|mo|y)", requested)
+        if not match:
+            return frame
+        value = int(match.group(1))
+        unit = match.group(2)
+        if unit == "d":
+            start = end - pd.Timedelta(days=value - 1)
+        elif unit == "wk":
+            start = end - pd.Timedelta(weeks=value)
+        elif unit == "mo":
+            start = end - pd.DateOffset(months=value)
+        else:
+            start = end - pd.DateOffset(years=value)
+    return frame.loc[frame.index >= start]
+
+
 def load_cumulative_yfinance(
     symbol: str,
     interval: str,
@@ -94,9 +119,9 @@ def load_cumulative_yfinance(
         incoming = normalize_ohlcv(downloaded)
     except Exception:
         if cached is not None and not cached.empty:
-            return cached
+            return _apply_period_window(cached, period)
         raise
 
     cumulative = incoming if cached is None else merge_ohlcv(cached, incoming)
     _write_parquet_atomic(cumulative, path)
-    return cumulative
+    return _apply_period_window(cumulative, period)

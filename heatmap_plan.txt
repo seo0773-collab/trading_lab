@@ -1,0 +1,166 @@
+
+# heatmap1 — Volume Profile 신호 전략 + 히트맵 (구현 명세서)
+
+> 전략명: **heatmap1** (run_dashboard 통합, StrategyHandler 계약 준수).
+> 목표 2가지:
+>   (A) OHLCV를 가격×시간 격자에 누적해 Coinglass 스타일 볼륨 프로파일 히트맵 렌더(연구 아티팩트).
+>   (B) 그 프로파일에서 POC/VAH/VAL 1D 레벨을 뽑아 **매매 신호**를 생성 → 대시보드에서
+>       백테스트·비교·저장(trades/equity/metrics). 히트맵 레벨은 forecast 보조지표로 자동 노출.
+> Pine Script 버전의 누적 알고리즘을 박스 한도 없이 재현하되, 결과를 신호 전략으로 확장한다.
+> yoon3(kalHist 누적 프로파일 게이트) 계보의 다음 단계.
+
+## 0. 환경 (랩 검증 결과 반영)
+- ccxt 버전, 사용할 거래소(예: binance/bybit), 심볼(예: BTC/USDT:USDT), timeframe은
+  Claude Code가 랩 환경에 맞춰 결정. rate limit 준수(`enableRateLimit=True`).
+- 의존성 현황(2026-06 랩 확인):
+  - scipy 1.11.4 ✅ (가우시안 스무딩 가능), matplotlib 3.6.3 ✅, numpy/pandas ✅.
+  - **ccxt 미설치** → 로컬에서 `pip install ccxt` 필요.
+  - **mplfinance 미설치** → 캔들 오버레이(§3)는 신규 의존성 없이 **직접 그리기**로 구현.
+- **실행 환경 주의(블로커)**: 클라우드 IP에서 Yahoo 403을 이미 겪었고, binance public
+  API도 클라우드/일부 지역에서 451로 막힐 수 있다. **로컬 실행을 1순위 전제**로 하고,
+  네트워크 없이도 동작하도록 §1의 parquet 캐시 입력 경로를 항상 지원한다.
+
+### 데이터 소스 무관 설계 (크립토 + 주식/ETF 모두 지원)
+히트맵 알고리즘(§2~3)은 OHLCV면 출처를 안 가린다. 따라서 **코어(build_heatmap/render)는
+순수 함수로 두고, 로더만 자산군별로 분기**한다. `asset_class` 파라미터로 선택:
+- `asset_class='crypto'` → ccxt (`scripts/fetch_ohlcv.py`), 거래소 네이티브 볼륨.
+- `asset_class='equity'` → yfinance (`market_data.load_cumulative_yfinance`), 주식/ETF.
+
+소스별 특성·한계 (구현 시 인지할 것):
+
+| 항목 | ccxt (crypto) | yfinance (주식/ETF) |
+| --- | --- | --- |
+| 인트라데이 히스토리 | 수년치 무제한(페이지네이션) | **잘림**: 1m ~7일, 1h ~730일 |
+| 일봉 장기 구간 | 가능 | 가능(권장 사용처) |
+| 체결단위(trades 모드) | ✅ `fetch_trades` | ❌ 없음 → 균등분배만 |
+| 볼륨 신뢰도 | 거래소 원천 | 집계값(분할/배당 조정 영향) |
+| 클라우드 차단 | 451 위험 | 403 겪음 → 로컬+캐시 |
+
+권장 사용 패턴:
+- 크립토 → 인트라데이 정밀 히트맵(Coinglass 느낌). trades 모드까지 노릴 수 있음.
+- 주식/ETF → **일봉(또는 1h) 장기 구간** 히트맵이 최적. 분봉 장기는 야후 한계로 불가하니,
+  필요하면 가용 구간만(1m≤7일, 1h≤730일) 쓰거나 일봉으로 간다.
+
+## 1. 데이터 수집 — 기존 인프라 재사용 (로더는 새로 짜지 말 것)
+코어에는 **정규화된 OHLCV DataFrame 하나만** 넘긴다. 컬럼: open/high/low/close/volume,
+DatetimeIndex(UTC 권장). 자산군별 로더는 이미 레포에 있다:
+
+**crypto (`asset_class='crypto'`)** — `scripts/fetch_ohlcv.py` 재사용:
+  - `since` 페이지네이션(거래소 limit 상한 초과 윈도우), UTC 변환 + dedup + sort
+  - `integrity_report()`: gap/NaN/중복/zero-volume (= §6 체크리스트 상당수)
+  - `--audit-only`: 네트워크 없이 캐시 parquet만 읽는 오프라인 경로
+  - 연결: `data/raw/<SYMBOL>_<TF>.parquet` 읽기(오프라인 1순위) 또는
+    `scripts.fetch_ohlcv.fetch_ohlcv()` 직접 호출(온라인, 로컬 한정).
+
+**equity / ETF (`asset_class='equity'`)** — `market_data.load_cumulative_yfinance` 재사용:
+  - 시그니처: `load_cumulative_yfinance(symbol, interval, period)` → 정규화 OHLCV.
+  - 이미 **누적 캐시 + Yahoo 장애 시 캐시 폴백**을 내장(클라우드 403 대비). 별도 fetch 작성 X.
+  - interval/period 는 야후 한계 준수(§0 표): 분봉 장기 불가 → 일봉/1h 위주.
+
+**공통**: 어느 경로든 컬럼명·인덱스를 코어 입력 스키마로 정규화해 넘긴다.
+`fetch_data()` 를 새로 작성하지 말고 위 둘을 얇게 감싸는 어댑터만 둔다.
+- (선택, crypto 한정) `fetch_trades` 로 체결단위 분포 구성 → 균등분배 가정 제거.
+  trades가 무거우면 균등분배로 폴백. (현재 미지원 → 신규 구현 영역.) 주식은 trades 없음.
+
+## 2. 격자 누적 (핵심 알고리즘)
+Pine 버전과 동일한 의미, 단 해상도 제약 없음.
+
+- 가격축: 윈도우 전체의 [min(low), max(high)] 를 `rows`개 bin 으로 분할 (기본 rows=300).
+  - 옵션 `price_scale='linear'|'log'`: 변동성 큰 크립토 긴 윈도우에서 선형 bin은 저가대를
+    뭉갠다. `log` bin 옵션을 제공(기본 linear, Pine 재현용).
+- 시간축: 각 바 = 한 컬럼 (다운샘플 불필요). cols = 바 개수.
+- 누적 행렬 `H` (shape = rows × cols), float64, 0으로 초기화.
+- 각 바 i 에 대해:
+  - **균등분배 모드**: 바의 volume 을 [low_i, high_i] 가 걸친 bin 들에 균등 분배.
+    (한계: 가격이 시·종가 근처에 더 머무는 사실 무시. Pine 재현 목적이면 균등이 맞다.
+     품질을 더 노리면 `distribute='triangular'|'ohlc'` 가중분배를 옵션으로 추가 가능 — MVP는 균등.)
+  - **trades 모드(선택)**: 그 바 구간의 체결을 가격 bin 별로 실제 합산 → 분배 가정 제거.
+- **cumulative 옵션**: True면 행(가격)별로 시간축 좌→우 prefix-sum.
+  (= 그 시점까지 누적된 프로파일. 고볼륨 가격대에 잔존 밴드가 남음)
+
+### 2b. 1D 레벨 도출 (신호용 — heatmap1 전략의 입력)
+2D 히트맵은 대시보드 forecast(시간축 1D)에 직접 못 넣는다. 각 바 시점 t에서 **그 시점까지(또는
+롤링 윈도우 `lookback`개 바)의 프로파일**로부터 1D 레벨을 산출한다. lookahead 금지(t 이하 데이터만 사용):
+- **POC(Point of Control)**: 프로파일에서 volume 최대인 가격 bin의 중심가.
+- **VA(Value Area)**: POC에서 좌우로 확장하며 누적 volume이 전체의 `va_pct`(기본 70%)에
+  도달할 때까지 포함한 가격대. 그 상·하단 = **VAH / VAL**.
+- 산출 함수 `derive_profile_levels(H_or_window, price_edges, va_pct) -> {poc, vah, val}`.
+- 롤링 적용 결과는 바별 시계열: `poc[t], vah[t], val[t]` (forecast 컬럼이 됨).
+- 구현 주의: 매 바 전체 재계산은 O(N·rows). lookback 고정이면 슬라이딩으로 충분. 우선 정확성→이후 최적화.
+
+## 3. 시각화 (품질 결정 지점 — 여기에 신경 쓸 것)
+- 렌더는 `pcolormesh` 또는 `imshow(aspect='auto', origin='lower')`.
+  - x축 = 시간(바 인덱스 또는 datetime), y축 = 가격, 색 = 정규화된 H 값.
+- **정규화**: 전역 max 정규화 기본. 옵션으로 분위수 클리핑(예: 99퍼센타일에서 클립)으로
+  소수 극단값이 색을 먹는 현상 방지. 그 위에 gamma 보정(기본 0.5)으로 밴드 대비 강화.
+- **컬러맵**: 'viridis' 기본 (사진과 동일 계열). 'inferno'/'turbo' 도 옵션.
+  배경(0 값)은 컬러맵 최저색 또는 약간 어두운 단색으로.
+- **스무딩(선택, Coinglass 느낌의 핵심)**: scipy.ndimage.gaussian_filter 로
+  H 를 가볍게(sigma 1~2) 흐려 픽셀 계단 제거 → 부드러운 등고선/구름 느낌.
+- **캔들 오버레이(선택)**: 히트맵 위에 가는 캔들/종가 라인을 알파 낮게 겹쳐
+  Pine 오버레이처럼 보이게. mplfinance 또는 직접 그리기.
+- **컬러바**: 우측에 세로 컬러바(Coinglass처럼 상단 max 라벨 표기).
+
+## 3.5 신호 생성 — heatmap1 전략 로직 (핵심 결정 지점)
+2b의 `poc/vah/val` 레벨과 가격의 상호작용으로 매매한다. 기본 모드 = **밸류에어리어 평균회귀**
+(가장 검증하기 쉬운 1차 버전). 모드는 config로 교체 가능하게 둔다.
+
+- 기본: `signal_mode='va_reversion'`
+  - 진입(롱): close가 VAL 아래로 이탈 후 VAL 위로 회복 → POC를 향한 평균회귀 기대.
+  - 진입(숏, long-only 옵션이면 생략): close가 VAH 위로 이탈 후 VAH 아래로 복귀.
+  - 청산: POC 도달(take-profit) / 반대편 VA 경계 이탈(stop) / 시간초과.
+- 대안(옵션, 후속): `signal_mode='va_breakout'` — close가 VA 밖으로 모멘텀 동반 이탈 시 추세추종.
+- long-only 토글, 쿨다운/최소보유바, ATR 또는 VA폭 기반 스탑 등은 config 파라미터로.
+- **lookahead 금지**: 신호는 t 시점 이하 데이터로만. 2b 레벨이 이미 이를 보장.
+
+산출(StrategyArtifacts 매핑):
+- `forecast`: close + `poc`/`vah`/`val` 컬럼(자동으로 오버레이 라인 노출). 필요시 `profile_strength` 등 추가.
+- `trades`: direction/entry·exit time·price/net_return/exit_reason. 새 exit_reason 라벨
+  (`poc_target`, `va_stop` 등)은 presentation.py `EXIT_REASON_LABELS`에 추가.
+- `equity`, `metrics`: 표준대로.
+- 2D 히트맵 PNG는 forecast 계약 밖 → `var/runs/<run>/`에 **선택적 곁들이 아티팩트**로만 저장(대시보드 필수 아님).
+
+## 4. 파라미터 (config JSON / CLI 인자로 노출)
+- 데이터: asset_class('crypto'|'equity'), symbol, interval, period (또는 limit/window)
+- 프로파일: rows(가격 bin), price_scale('linear'|'log'), cumulative(bool), distribute/trades 모드
+- 신호(heatmap1): lookback, va_pct(기본 0.70), signal_mode('va_reversion'|'va_breakout'),
+  long_only(bool), min_hold_bars, cooldown, stop/tp 규칙
+- gamma, percentile_clip, cmap, gaussian_sigma
+- save_path (PNG) / show
+
+## 5. 구조 — run_dashboard 전략 (CLAUDE.md 계약 준수)
+heatmap1은 **전략**이다. CLAUDE.md §0의 "선언 3 + 핸들러 1" 로 추가하고 공통 인프라는 손대지 않는다.
+
+순수 코어 (자산군·대시보드 무관, 재사용):
+- `load_ohlcv(asset_class, symbol, interval, period/limit)` → 정규화 OHLCV
+  (crypto=fetch_ohlcv.py / equity=load_cumulative_yfinance 분기, fetch 재구현 X).
+- `build_heatmap(df, rows, cumulative, mode, price_scale)` → (H, price_edges, time_axis)  [2D, PNG/연구용]
+- `derive_profile_levels(...)` / 롤링 → `poc/vah/val` 1D 시계열 (§2b)
+- `render(H, ...)` → matplotlib Figure (선택 PNG 아티팩트)
+
+전략 등록 (CLAUDE.md 위치 그대로):
+- registry 1줄: `src/trading_lab/strategies/registry.py` `_STRATEGIES` 에 `heatmap1` + handler_factory
+- config: `configs/strategies/heatmap1.json` (§4 파라미터, `interval`/`period` 키 필수)
+- 핸들러: `src/trading_lab/strategies/heatmap1.py` — `StrategyHandler` 구현
+  - `load_data(symbol, config, *, csv_path, synthetic)` → 위 load_ohlcv 위임. **synthetic=True 경로 필수**(계약 테스트).
+  - `build_artifacts(raw, config, ...)` → 2b 레벨 + §3.5 신호 → StrategyArtifacts(forecast/trades/equity/metrics).
+- 명세/체크리스트: `docs/strategy/specs/heatmap1.md`, `docs/strategy/checklists/heatmap1.md`
+- 스캐폴딩 활용 가능: `python scripts/new_strategy.py heatmap1 --description "..."`
+
+마무리 검증(필수): `PYTHONPATH=src python -m unittest discover tests -q` —
+특히 `tests/test_strategy_contract.py`가 heatmap1을 합성 데이터로 자동 포함해 계약 검증한다.
+
+## 6. 검증 체크리스트 (Claude Code가 스스로 확인)
+- [ ] 데이터 길이/결측 처리, timeframe 일관성 (← `fetch_ohlcv.integrity_report()` 재활용)
+- [ ] H 합 = 총 volume 과 근사 일치(균등분배 모드 기준)하는지 sanity check
+- [ ] 정규화·클리핑 후 색이 한쪽으로 쏠리지 않는지 (히스토그램 확인)
+- [ ] 고볼륨 가격대가 밝은 수평 밴드로 드러나는지 (눈으로)
+- [ ] PNG 저장 정상, DPI 충분(>=150)
+- [ ] **lookahead 없음**: t 시점 poc/vah/val이 t 이하 데이터로만 산출되는지(시프트 점검)
+- [ ] **신호 계약**: trades 비어있지 않고 forecast에 poc/vah/val 컬럼 존재, equity/metrics 정상
+- [ ] **전체 테스트 통과**: `test_strategy_contract.py`가 heatmap1을 합성 데이터로 통과(synthetic 경로)
+
+## 7. 확장 메모 (지금은 범위 밖, 추후)
+- liquidation/OI 기반 모드: open interest·funding·레버리지 가정으로 청산 가격대 추정 후
+  동일 격자에 쌓으면 진짜 Coinglass 의미의 히트맵. 데이터 소스 확보가 선결.
+- 실시간: 폴링 + blit 업데이트 또는 웹 대시보드(plotly/dash)로 분리 구현.

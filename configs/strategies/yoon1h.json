@@ -1,0 +1,185 @@
+{
+  "version": "yoon1h",
+  "interval": "1d",
+  "period": "max",
+  "universe": [
+    "MSFT",
+    "AAPL",
+    "NVDA",
+    "GOOGL",
+    "AMZN",
+    "META",
+    "AVGO",
+    "TSLA",
+    "JPM",
+    "BAC",
+    "WFC",
+    "GS",
+    "JNJ",
+    "PFE",
+    "MRK",
+    "UNH",
+    "KO",
+    "PEP",
+    "PG",
+    "WMT",
+    "MCD",
+    "COST",
+    "CAT",
+    "DE",
+    "HON",
+    "GE",
+    "XOM",
+    "CVX",
+    "NEE",
+    "DIS"
+  ],
+  "top_k": 20,
+  "rebalance_freq": "monthly",
+  "exposure_gain": 1.25,
+  "market_filter": {
+    "enabled": true,
+    "symbol": "SPY",
+    "ma_len": 200,
+    "off_scale": 0.5
+  },
+  "synthetic_symbols": 6,
+  "base_cycle": {
+    "type": "SMA",
+    "length": 200,
+    "scale": 1.0
+  },
+  "position_source": "poc_va",
+  "profile": {
+    "min_mult": 0.0,
+    "max_mult": 3.0,
+    "bin_count": 200,
+    "rolling_window": 126,
+    "weight_mode": "volume_fallback",
+    "accumulation_mode": "range_uniform",
+    "percentile_value": 20.0,
+    "compute_va": true,
+    "va_pct": 0.70
+  },
+  "weight_model": "bucket",
+  "buckets": [
+    [
+      0,
+      20,
+      0.8
+    ],
+    [
+      20,
+      40,
+      0.6
+    ],
+    [
+      40,
+      60,
+      0.5
+    ],
+    [
+      60,
+      80,
+      0.3
+    ],
+    [
+      80,
+      100,
+      0.1
+    ]
+  ],
+  "regime_cap": {
+    "NORMAL": 1.0,
+    "CAUTION": 0.6,
+    "DEFENSE": 0.3,
+    "RECOVERY": 0.6,
+    "recovery_stage_bars": 21,
+    "recovery_stage_caps": [
+      0.6,
+      0.8,
+      1.0
+    ]
+  },
+  "rebalance": {
+    "threshold": 0.03,
+    "max_trade_weight_per_bar": 1.0,
+    "defense_buy_allowed": false
+  },
+  "costs": {
+    "fee_bps_per_side": 5.0,
+    "slippage_bps": 5.0
+  },
+  "trend_overlay": {
+    "enabled": true,
+    "boost_gain": 0.8,
+    "max_boost": 0.4,
+    "floor": 1.0,
+    "apply_regimes": [
+      "NORMAL",
+      "RECOVERY"
+    ]
+  },
+  "train_frac": 0.6,
+  "validation_frac": 0.2,
+  "synthetic_bars": 2000,
+  "seed": 7,
+  "dashboard": {
+    "default_indicators": [
+      "stock_exposure",
+      "cash_ratio",
+      "n_holdings"
+    ],
+    "indicator_labels": {
+      "stock_exposure": "주식 노출 비율",
+      "cash_ratio": "현금 비율",
+      "n_holdings": "보유 종목 수",
+      "market_ok": "시장 레짐(1=정상)"
+    },
+    "panels": [
+      {
+        "kind": "portfolio_wave",
+        "type": "stacked_area",
+        "label": "포트폴리오 웨이브",
+        "x": "time",
+        "default": true
+      },
+      {
+        "kind": "perf_vs_bnh",
+        "type": "table",
+        "label": "시장(SPY) 대비 성과",
+        "default": true
+      },
+      {
+        "kind": "top_contributors",
+        "type": "bar",
+        "label": "종목별 평균 수익(상위)",
+        "x": "symbol",
+        "y": "avg_return",
+        "default": true
+      }
+    ]
+  },
+  "tunables": [
+    {
+      "name": "top_k",
+      "label": "상위 K종목",
+      "type": "int",
+      "min": 3,
+      "max": 30,
+      "step": 1,
+      "default": 10
+    },
+    {
+      "name": "rebalance_freq",
+      "label": "리밸런스 주기",
+      "type": "select",
+      "options": [
+        "monthly",
+        "weekly",
+        "daily"
+      ],
+      "default": "monthly"
+    }
+  ]
+}

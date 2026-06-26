@@ -117,6 +117,66 @@ def _mult_at_quantile(profile: np.ndarray, edges: np.ndarray, q: float) -> np.nd
     return np.where(total > 0, mult, np.nan)
 
 
+def _poc_va(
+    profile: np.ndarray, edges: np.ndarray, va_pct: float
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """각 봉의 프로파일에서 POC와 Value Area 상·하단 multiple (yoon1h 매물대 사이징).
+
+    - POC(Point of Control) = volume 최대 bin 중심 multiple.
+    - VA = POC에서 좌우로 *더 큰 이웃*을 흡수하며 누적 volume이 total*va_pct 에
+      도달할 때까지 확장한 구간 → 하단 edge=VAL, 상단 edge=VAH.
+
+    프로파일은 cumulative/rolling 어느 쪽이든 t 이하 데이터만 누적한 행렬이므로
+    룩어헤드가 없다. 빈 분포(total=0, warmup 포함)는 NaN.
+    """
+    bars, bins = profile.shape
+    centers = (edges[:-1] + edges[1:]) / 2.0
+    total = profile.sum(axis=1)
+    poc_idx = profile.argmax(axis=1)
+    poc = np.where(total > 0, centers[poc_idx], np.nan)
+    val = np.full(bars, np.nan)
+    vah = np.full(bars, np.nan)
+    for i in range(bars):
+        if total[i] <= 0:
+            continue
+        row = profile[i]
+        target = total[i] * va_pct
+        lo = hi = int(poc_idx[i])
+        acc = row[lo]
+        while acc < target and (lo > 0 or hi < bins - 1):
+            left = row[lo - 1] if lo > 0 else -1.0
+            right = row[hi + 1] if hi < bins - 1 else -1.0
+            if right >= left:
+                hi += 1
+                acc += row[hi]
+            else:
+                lo -= 1
+                acc += row[lo]
+        val[i] = edges[lo]
+        vah[i] = edges[hi + 1]
+    return poc, vah, val
+
+
+def _va_position(
+    cm_close: np.ndarray, poc: np.ndarray, vah: np.ndarray, val: np.ndarray
+) -> np.ndarray:
+    """현재가의 VA 대비 위치(0~1, 연속 외삽). percentile 대체 사이징 입력.
+
+    POC=0.5 중립, VAL→0(싸다), VAH→1(비싸다). VA 밖 이탈은 같은 방향 기울기로
+    **외삽**(이탈 강도 반영) 후 [0,1] 클립. POC가 VA 가운데가 아닐 수 있어 상·하
+    반폭을 따로 정규화한다. percentile 자리에 들어가 동일 bucket 가중을 통과한다.
+    """
+    cm = np.asarray(cm_close, dtype=float)
+    up = np.maximum(vah - poc, 1e-9)
+    dn = np.maximum(poc - val, 1e-9)
+    raw = np.where(
+        cm >= poc, 0.5 + 0.5 * (cm - poc) / up, 0.5 - 0.5 * (poc - cm) / dn
+    )
+    pos = np.clip(raw, 0.0, 1.0)
+    valid = np.isfinite(poc) & np.isfinite(cm)
+    return np.where(valid, pos, np.nan)
+
+
 def compute_profile(cycle: pd.DataFrame, raw: pd.DataFrame, cfg: Profile) -> pd.DataFrame:
     """봉별 percentile/mid_50 시리즈 프레임을 cycle 인덱스로 반환."""
     weights = _bar_weights(raw, cfg.weight_mode.lower())
@@ -138,4 +198,11 @@ def compute_profile(cycle: pd.DataFrame, raw: pd.DataFrame, cfg: Profile) -> pd.
     out["rolling_mid_50"] = _mult_at_quantile(roll_profile, edges, 0.5)
     out["cumulative_lower_percentile"] = _mult_at_quantile(cum_profile, edges, pv)
     out["cumulative_upper_percentile"] = _mult_at_quantile(cum_profile, edges, 1.0 - pv)
+    if cfg.compute_va:
+        # 매물대(VA)는 "최근 거래 밀집" 개념 → rolling profile 사용.
+        poc, vah, val = _poc_va(roll_profile, edges, cfg.va_pct)
+        out["poc"] = poc
+        out["vah"] = vah
+        out["val"] = val
+        out["va_position"] = _va_position(cm_close, poc, vah, val)
     return out

@@ -1,0 +1,34 @@
+{
+  "version": "yoon1k",
+  "interval": "1d",
+  "period": "max",
+  "base_currency": "KRW",
+  "fx_symbol": "KRW=X",
+  "rebalance_freq": "monthly",
+  "sub_strategies": [
+    { "config": "yoon1j", "currency": "USD", "weight": 0.5 },
+    { "config": "yoon1j_kr", "currency": "KRW", "weight": 0.5 }
+  ],
+  "benchmark_symbols": { "USD": "SPY", "KRW": "069500.KS" },
+  "benchmark_label": "50/50 SPY원화+KODEX200",
+  "train_frac": 0.6,
+  "validation_frac": 0.2,
+  "synthetic_symbols": 6,
+  "synthetic_bars": 2000,
+  "seed": 7,
+  "dashboard": {
+    "default_indicators": ["sleeve_yoon1j", "sleeve_yoon1j_kr"],
+    "indicator_labels": {
+      "sleeve_yoon1j": "미국 슬리브(원화환산)",
+      "sleeve_yoon1j_kr": "한국 슬리브(원화)"
+    },
+    "panels": [
+      {
+        "kind": "perf_vs_bnh",
+        "type": "table",
+        "label": "벤치(50/50 패시브) 대비 성과",
+        "default": true
+      }
+    ]
+  }
+}

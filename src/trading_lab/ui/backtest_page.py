@@ -5,12 +5,12 @@ import streamlit as st
 from trading_lab.service import BacktestRequest, BacktestService
 from trading_lab.storage import RunStore
 from trading_lab.ui.backtest_controls import (
-    PORTFOLIO_STRATEGY_ID,
     MarketSelection,
     render_data_controls,
     render_market_selector,
     render_multi_portfolio_selector,
     render_portfolio_mode_selector,
+    render_portfolio_strategy_selector,
     render_strategy_selector,
     render_strategy_tunables,
 )
@@ -24,7 +24,7 @@ def render_new_backtest_page(store: RunStore, service: BacktestService) -> None:
 
     portfolio_mode = render_portfolio_mode_selector()
     if portfolio_mode == "멀티 포트폴리오":
-        strategy_id = PORTFOLIO_STRATEGY_ID
+        strategy_id = render_portfolio_strategy_selector()
         selection, config_overrides = render_multi_backtest_setup(strategy_id)
     else:
         strategy_id = render_strategy_selector()
@@ -63,7 +63,6 @@ def render_single_backtest_setup(
 def render_multi_backtest_setup(
     strategy_id: str,
 ) -> tuple[MarketSelection, dict]:
-    st.selectbox("전략", [strategy_id], format_func=lambda _: "yoon1")
     config_overrides = render_strategy_tunables(strategy_id)
     portfolio_selection = render_multi_portfolio_selector()
     selection = portfolio_selection.market

@@ -27,7 +27,7 @@ from profile_sizing.engine import buy_hold_equity, portfolio_returns  # noqa: E4
 from profile_sizing.indicators import compute_cycle, moving_average  # noqa: E402
 from profile_sizing.profile import compute_profile  # noqa: E402
 from profile_sizing.regime import classify  # noqa: E402
-from profile_sizing.run import run_pipeline  # noqa: E402
+from profile_sizing.run import rebased_equity, run_pipeline, slice_window  # noqa: E402
 from profile_sizing.sizing import (  # noqa: E402
     base_target_weight, build_weights, trend_boost,
 )
@@ -230,6 +230,12 @@ class AccountSimTests(unittest.TestCase):
         self.assertTrue((acct["invested_ratio"] <= 1.0 + 1e-9).all())
         self.assertTrue((acct["account_value"] > 0).all())
 
+    def test_phase_rebased_equity_starts_at_one(self) -> None:
+        for phase in ("validation", "test", "all"):
+            window = slice_window(self.raw.index, phase, self.cfg)
+            equity = rebased_equity(self.out["port_ret"], window)
+            self.assertAlmostEqual(float(equity.iloc[0]), 1.0)
+
 
 class PortfolioTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -259,6 +265,80 @@ class PortfolioTests(unittest.TestCase):
                                 market_off_scale=0.5)
         self.assertLess(float(on["forecast"]["stock_exposure"].mean()),
                         float(off["forecast"]["stock_exposure"].mean()))
+
+    def test_short_hedge_adds_spy_short_in_market_downtrend(self) -> None:
+        from profile_sizing.portfolio import simulate_portfolio
+        down = pd.Series(np.linspace(100.0, 50.0, len(self.prices)),
+                         index=self.prices.index)
+        sim = simulate_portfolio(
+            self.scores, self.prices, self.cfg,
+            top_k=2, rebal_freq="monthly",
+            market_close=down, market_ma_len=50, market_off_scale=0.5,
+            short_hedge_close=down, short_hedge_symbol="SPY",
+            short_hedge_ratio=0.5, short_hedge_max=0.25,
+        )
+
+        forecast = sim["forecast"]
+        self.assertGreater(float(forecast["short_exposure"].max()), 0.0)
+        self.assertLess(
+            float(forecast["net_exposure"].mean()),
+            float(forecast["stock_exposure"].mean()),
+        )
+        self.assertLessEqual(
+            float(sim["short_target_weights"]["SPY_SHORT"].max()), 0.25 + 1e-9
+        )
+        self.assertIn(-1, set(sim["trades"]["direction"].astype(int)))
+
+    def test_short_hedge_trailing_take_profit_closes_short(self) -> None:
+        from profile_sizing.portfolio import simulate_portfolio
+        idx = pd.date_range("2026-01-01", periods=12, freq="1D")
+        scores = pd.DataFrame({
+            "A": [0.6] * len(idx),
+            "B": [0.5] * len(idx),
+        }, index=idx)
+        prices = pd.DataFrame({
+            "A": [100.0] * len(idx),
+            "B": [100.0] * len(idx),
+        }, index=idx)
+        hedge = pd.Series(
+            [100.0, 99.0, 95.0, 90.0, 85.0, 88.0,
+             92.0, 94.0, 93.0, 92.0, 91.0, 90.0],
+            index=idx,
+        )
+
+        sim = simulate_portfolio(
+            scores, prices, self.cfg,
+            top_k=2, rebal_freq="daily",
+            market_close=hedge, market_ma_len=2, market_off_scale=0.5,
+            short_hedge_close=hedge, short_hedge_symbol="SPY",
+            short_hedge_ratio=0.5, short_hedge_max=0.25,
+            short_hedge_trailing_pct=0.05,
+        )
+
+        short_trades = sim["trades"][sim["trades"]["direction"] == -1]
+        self.assertIn("trailing_take_profit", set(short_trades["exit_reason"]))
+        trailing_exit = short_trades[
+            short_trades["exit_reason"] == "trailing_take_profit"
+        ].iloc[0]
+        self.assertGreater(
+            float(trailing_exit["net_return"]),
+            0.0,
+        )
+
+    def test_rsi_filter_reduces_exposure_when_rsi_ma_below_threshold(self) -> None:
+        from profile_sizing.portfolio import simulate_portfolio
+        # 단조 하락 RSI 기준 시리즈 → warmup 이후 RSI MA가 50 미만 → 노출 축소.
+        down = pd.Series(np.linspace(100.0, 50.0, len(self.prices)),
+                         index=self.prices.index)
+        off = simulate_portfolio(self.scores, self.prices, self.cfg,
+                                 top_k=2, rebal_freq="monthly")
+        on = simulate_portfolio(self.scores, self.prices, self.cfg,
+                                top_k=2, rebal_freq="monthly",
+                                rsi_close=down, rsi_len=14, rsi_ma_len=14,
+                                rsi_threshold=50.0, rsi_below_scale=0.25)
+        self.assertLess(float(on["forecast"]["stock_exposure"].mean()),
+                        float(off["forecast"]["stock_exposure"].mean()))
+        self.assertIn("rsi_ma", on["forecast"].columns)
 
 
 class EngineTests(unittest.TestCase):

@@ -73,25 +73,107 @@ class ProfilePortfolioHandler:
         top_k = int(config.get("top_k", 10))
         rebal_freq = str(config.get("rebalance_freq", "monthly"))
         panels = self._from_wide(raw)
-
-        scores, prices = compute_universe(panels, cfg)
-        if prices.empty:
-            raise RuntimeError("유효한 종목 점수/가격이 없습니다")
         synth = self._is_synth(panels)
-        # 벤치마크용 시장 종가(SPY): 시장필터 on/off와 무관하게 비교용으로 로드.
-        bench_close = None if synth else self._load_close("SPY", cfg, panels)
-        mk = self._market_close(config, cfg, panels)   # SPY 단일 시장필터(옵션)
         mf = config.get("market_filter") or {}
         sf = config.get("sector_filter") or {}
-        sec_close, sym_sec, sec_off = self._sector_filter(config, cfg, panels, synth)
         ma_len = int(mf.get("ma_len", sf.get("ma_len", 200)))
+        mk = self._market_close(config, cfg, panels)   # SPY 단일 시장필터(옵션)
+
+        # 레버리지 슬리브: 지정 2x 종목을 자기 RECOVERY 국면에만 보유. require_market_on이면
+        # SPY 200MA 위(시장 정상)일 때만 허용 → 위기 바닥의 헛(false) 회복 진입 차단.
+        ls = config.get("leverage_sleeve") or {}
+        lev_syms = set(ls.get("symbols", [])) if ls.get("enabled") else None
+        lev_regimes = tuple(ls.get("regimes", ["RECOVERY"]))
+        market_ok_ser = None
+        if lev_syms and bool(ls.get("require_market_on", True)) and mk is not None:
+            mser = pd.Series(mk)
+            ma = mser.rolling(ma_len, min_periods=ma_len).mean()
+            market_ok_ser = mser > ma   # warmup NaN은 compute_universe서 정상(True) 취급
+        # yoon3 모멘텀 게이트: 종목별 칼만 히스토그램 누적프로파일 백분위 × 점수(블렌드).
+        mom_gate = config.get("mom_gate") or None
+        # yoon1i SR 게이트: heatmap2 HVN 지지/저항 기대값 × 점수(블렌드).
+        sr_gate = config.get("sr_gate") or None
+        scores, prices = compute_universe(
+            panels, cfg, leveraged_symbols=lev_syms, leverage_regimes=lev_regimes,
+            market_ok=market_ok_ser, mom_gate=mom_gate, sr_gate=sr_gate,
+        )
+        if prices.empty:
+            raise RuntimeError("유효한 종목 점수/가격이 없습니다")
+        # 벤치마크용 시장 종가: 시장필터 on/off와 무관하게 비교용으로 로드.
+        # benchmark_symbol(기본 SPY)로 시장 지수를 바꿀 수 있다(한국장=KODEX200 등).
+        bench_sym = str(config.get("benchmark_symbol", "SPY"))
+        bench_close = None if synth else self._load_close(bench_sym, cfg, panels)
+        sec_close, sym_sec, sec_off = self._sector_filter(config, cfg, panels, synth)
+        rf = config.get("rsi_filter") or {}
+        rsi_close = self._rsi_filter_close(config, cfg, panels, synth)
+        sh = config.get("short_hedge") or {}
+        hedge_symbol = str(sh.get("symbol", "SPY"))
+        hedge_close = (
+            self._load_close(hedge_symbol, cfg, panels)
+            if sh.get("enabled") and not synth else None
+        )
+        trailing = sh.get("trailing_take_profit") or {}
+        # 안전자산 슬리브(yoon1j): 현금 완충분을 추세 ON 안전자산으로 연속 회전.
+        ss = config.get("safe_sleeve") or {}
+        safe_close = None
+        if ss.get("enabled") and not synth:
+            sc = {}
+            for s in ss.get("symbols", []):
+                c = self._load_close(s, cfg, panels)
+                if c is not None:
+                    sc[s] = c
+            safe_close = sc or None
+        # dollar_volume 가중용 거래량 패널(종목→volume, prices 인덱스 정렬). 다른 스킴은 None.
+        volumes = None
+        if str(config.get("weight_scheme", "score")) == "dollar_volume":
+            vcols = {}
+            for s, p in panels.items():
+                if "volume" not in p:
+                    continue
+                vi = pd.DatetimeIndex(pd.to_datetime(p.index))
+                if vi.tz is not None:
+                    vi = vi.tz_localize(None)
+                vcols[s] = pd.Series(p["volume"].to_numpy(float), index=vi)
+            if vcols:
+                volumes = pd.DataFrame(vcols).reindex(prices.index)
         sim = simulate_portfolio(
             scores, prices, cfg, top_k=top_k, rebal_freq=rebal_freq,
             market_close=mk,
             market_ma_len=ma_len,
             market_off_scale=float(mf.get("off_scale", 0.5)),
+            market_mode=str(mf.get("mode", "binary")),
+            market_kalman_q=float(mf.get("kalman_q", 0.01)),
+            market_kalman_r=float(mf.get("kalman_r", 0.10)),
+            market_kalman_fast=int(mf.get("kalman_fast", 12)),
+            market_kalman_slow=int(mf.get("kalman_slow", 26)),
+            market_z_win=int(mf.get("z_win", 200)),
+            market_z_scale=float(mf.get("z_scale", 1.0)),
             exposure_gain=float(config.get("exposure_gain", 1.0)),
+            max_exposure=float(config.get("max_exposure", 1.0)),
+            borrow_rate_annual=float(config.get("borrow_rate_annual", 0.0)),
+            weight_scheme=str(config.get("weight_scheme", "score")),
+            vol_lookback=int(config.get("vol_lookback", 63)),
+            volumes=volumes,
             sector_close=sec_close, symbol_sector=sym_sec, sector_off_scale=sec_off,
+            rsi_close=rsi_close,
+            rsi_len=int(rf.get("length", 14)),
+            rsi_ma_len=int(rf.get("ma_len", 14)),
+            rsi_ma_kind=str(rf.get("ma_kind", "SMA")),
+            rsi_threshold=float(rf.get("threshold", 50.0)),
+            rsi_above_scale=float(rf.get("above_scale", 1.0)),
+            rsi_below_scale=float(rf.get("below_scale", 0.5)),
+            short_hedge_close=hedge_close,
+            short_hedge_symbol=hedge_symbol,
+            short_hedge_ratio=float(sh.get("hedge_ratio", 0.0)),
+            short_hedge_max=float(sh.get("max_short", 0.0)),
+            short_hedge_trailing_pct=(
+                float(trailing.get("trail_pct", 0.0))
+                if trailing.get("enabled") else None
+            ),
+            safe_close=safe_close,
+            safe_ratio=float(ss.get("ratio", 0.0)),
+            safe_max=float(ss.get("max", 0.0)),
+            safe_ma_len=int(ss.get("ma_len", 100)),
         )
 
         window = slice_window(prices.index, phase, cfg)
@@ -108,7 +190,8 @@ class ProfilePortfolioHandler:
         bh_perf = self._bench_perf(sim["benchmark"], window, cfg.interval)
         spy_perf = self._market_perf(bench_close, window, cfg.interval)
         if spy_perf:
-            bench_perf, bench_label = spy_perf, "SPY"
+            bench_perf = spy_perf
+            bench_label = str(config.get("benchmark_label", bench_sym))
             benchmark_raw = pd.Series(bench_close).reindex(window).ffill()
         else:
             bench_perf, bench_label = ew_perf, "EW지수"
@@ -130,15 +213,48 @@ class ProfilePortfolioHandler:
             "exposure_gain": float(config.get("exposure_gain", 1.0)),
             "benchmark": bench_label,
             "sector_filter": sec_close is not None,
+            "rsi_filter": rsi_close is not None,
+            "safe_sleeve": safe_close is not None,
+            "safe_sleeve_symbols": (
+                sorted(safe_close.keys()) if safe_close is not None else None
+            ),
+            "safe_sleeve_ratio": float(ss.get("ratio", 0.0)),
+            "safe_sleeve_max": float(ss.get("max", 0.0)),
+            "avg_safe_exposure": float(forecast["safe_exposure"].mean())
+            if len(forecast) and "safe_exposure" in forecast else 0.0,
+            "short_hedge": hedge_close is not None,
+            "short_hedge_symbol": hedge_symbol if hedge_close is not None else None,
+            "short_hedge_ratio": float(sh.get("hedge_ratio", 0.0)),
+            "max_short": float(sh.get("max_short", 0.0)),
+            "short_hedge_trailing_pct": (
+                float(trailing.get("trail_pct", 0.0))
+                if trailing.get("enabled") else None
+            ),
             "market_filter": mk is not None,
+            "market_mode": str(mf.get("mode", "binary")) if mk is not None else None,
+            "trend_signal": str((config.get("trend_overlay") or {}).get("signal", "sma")),
+            "weight_scheme": str(config.get("weight_scheme", "score")),
+            "mom_gate": bool(mom_gate and mom_gate.get("enabled")),
+            "mom_gate_min": (
+                float(mom_gate.get("g_min", 0.5))
+                if mom_gate and mom_gate.get("enabled") else None
+            ),
+            "leverage_sleeve": sorted(lev_syms) if lev_syms else None,
             "timeframe": cfg.interval,
             "avg_exposure": float(forecast["stock_exposure"].mean())
             if len(forecast) else 0.0,
+            "avg_short_exposure": float(forecast["short_exposure"].mean())
+            if len(forecast) and "short_exposure" in forecast else 0.0,
             "avg_holdings": float(forecast["n_holdings"].mean())
             if len(forecast) else 0.0,
             "insufficient_train_data": len(window) < cfg.warmup,
         }
         extras = {
+            "portfolio_wave": self._portfolio_wave(
+                sim["target_weights"]
+                .join(sim["short_target_weights"])
+                .join(sim["safe_target_weights"]), window,
+            ),
             "perf_vs_bnh": self._perf_table(perf, spy_perf, ew_perf, bh_perf),
             "top_contributors": self._contributors(trades),
         }
@@ -192,6 +308,17 @@ class ProfilePortfolioHandler:
             return None, None, None
         return closes, sym_sec, float(sf.get("off_scale", 0.5))
 
+    @classmethod
+    def _rsi_filter_close(cls, config, cfg, panels, synth) -> pd.Series | None:
+        """포트폴리오 RSI 레짐 필터용 종가. 비활성/합성/실패면 None."""
+        rf = config.get("rsi_filter") or {}
+        if not rf.get("enabled") or synth:
+            return None
+        symbol = str(rf.get("symbol") or (config.get("market_filter") or {}).get(
+            "symbol", "SPY"
+        ))
+        return cls._load_close(symbol, cfg, panels)
+
     # ----- wide panel <-> dict -----------------------------------------
     @staticmethod
     def _to_wide(panels: dict[str, pd.DataFrame]) -> pd.DataFrame:
@@ -209,6 +336,16 @@ class ProfilePortfolioHandler:
         return out
 
     # ----- helpers ------------------------------------------------------
+    @staticmethod
+    def _portfolio_wave(target_weights: pd.DataFrame, window) -> pd.DataFrame:
+        weights = target_weights.reindex(window).fillna(0.0).clip(lower=0.0)
+        active = weights.loc[:, weights.gt(1e-9).any(axis=0)]
+        exposure = active.sum(axis=1).clip(upper=1.0)
+        wave = active.copy()
+        wave.insert(0, "cash", (1.0 - exposure).clip(lower=0.0))
+        wave.insert(0, "time", wave.index.strftime("%Y-%m-%d %H:%M:%S"))
+        return wave.reset_index(drop=True)
+
     @staticmethod
     def _bench_perf(series: pd.Series, window, interval: str) -> dict:
         b = series.reindex(window)

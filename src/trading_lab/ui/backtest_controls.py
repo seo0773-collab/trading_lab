@@ -15,7 +15,9 @@ from trading_lab.strategies import list_strategies
 from trading_lab.ui.config import PERIOD_OPTIONS, TF_OPTIONS, strategy_config_dict
 
 
-PORTFOLIO_STRATEGY_ID = "yoon1"
+PORTFOLIO_HANDLER_FACTORY = (
+    "trading_lab.strategies.profile_portfolio:ProfilePortfolioHandler"
+)
 
 
 @dataclass(frozen=True)
@@ -47,14 +49,31 @@ def render_portfolio_mode_selector() -> str:
     )
 
 
-def render_strategy_selector(*, include_multi: bool = False) -> str:
+def is_portfolio_strategy(strategy) -> bool:
+    return strategy.handler_factory == PORTFOLIO_HANDLER_FACTORY
+
+
+def enabled_strategy_ids(*, portfolio_only: bool | None = None) -> list[str]:
     strategies = [item for item in list_strategies() if item.enabled]
-    if not include_multi:
-        strategies = [
-            item for item in strategies
-            if item.strategy_id != PORTFOLIO_STRATEGY_ID
-        ] or strategies
-    return st.selectbox("전략", [item.strategy_id for item in strategies])
+    if portfolio_only is True:
+        strategies = [item for item in strategies if is_portfolio_strategy(item)]
+    elif portfolio_only is False:
+        strategies = [item for item in strategies if not is_portfolio_strategy(item)]
+    return [item.strategy_id for item in strategies]
+
+
+def render_strategy_selector(*, include_multi: bool = False) -> str:
+    strategy_ids = enabled_strategy_ids(
+        portfolio_only=None if include_multi else False
+    ) or enabled_strategy_ids()
+    return st.selectbox("전략", strategy_ids)
+
+
+def render_portfolio_strategy_selector() -> str:
+    strategy_ids = (
+        enabled_strategy_ids(portfolio_only=True) or enabled_strategy_ids()
+    )
+    return st.selectbox("전략", strategy_ids)
 
 
 def render_strategy_tunables(strategy_id: str) -> dict[str, Any]:

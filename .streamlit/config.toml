@@ -1,0 +1,9 @@
+# Trading Lab 대시보드 — 다크 미니멀 테마
+# 차트(presentation._apply_theme)와 같은 톤으로 통일한다.
+[theme]
+base = "dark"
+primaryColor = "#4C9AFF"            # 액센트(버튼·선택·포커스)
+backgroundColor = "#0E1117"         # 메인 캔버스 (차트 투명배경이 녹아듦)
+secondaryBackgroundColor = "#1A1D26"  # 사이드바·위젯·카드
+textColor = "#FAFAFA"
+font = "sans serif"

@@ -27,12 +27,28 @@ def run_pipeline(raw: pd.DataFrame, cfg: ProfileSizingConfig) -> dict:
     regimes = classify(cycle, profile)
 
     # 추세 강도: 가격이 base_cycle 위(cm_close>1)이고 기준선 자체가 상승 중일 때만 양수.
-    cm_close = cycle["cm_close"].to_numpy()
     base_up = np.asarray(cycle["base_cycle"].diff() > 0)
+    to = cfg.trend_overlay
+    if to.enabled and str(to.signal) == "kalman":
+        # 칼만 평활 종가로 cm 재계산 → 잔물결 완화(스케일은 cm_close-1과 동일).
+        from indicators.kalman import kalman_1d  # noqa: E402
+        kclose = kalman_1d(
+            pd.Series(np.asarray(raw["close"], dtype=float), index=raw.index),
+            to.kalman_q, to.kalman_r,
+        ).to_numpy()
+        cm_close = kclose / cycle["base_cycle"].to_numpy()
+    else:
+        cm_close = cycle["cm_close"].to_numpy()
     trend_strength = np.where(base_up, np.clip(cm_close - 1.0, 0.0, None), 0.0)
 
+    # 사이징 입력 위치값: percentile(기존) 또는 VA 매물대 위치(yoon1h). 둘 다 0~1.
+    if cfg.position_source == "poc_va" and "va_position" in profile:
+        position = profile["va_position"].to_numpy()
+    else:
+        position = profile["cumulative_percentile"].to_numpy()
+
     weights = build_weights(
-        profile["cumulative_percentile"].to_numpy(),
+        position,
         regimes["regime"].to_numpy(),
         regimes["recovery_bars"].to_numpy(),
         cfg,
@@ -78,4 +94,6 @@ def slice_window(index: pd.DatetimeIndex, phase: str,
 def rebased_equity(port_ret: pd.Series, window: pd.DatetimeIndex) -> pd.Series:
     """phase 구간 시작을 1.0으로 재정규화한 equity."""
     seg = port_ret.reindex(window).fillna(0.0)
+    if len(seg):
+        seg.iloc[0] = 0.0
     return (1.0 + seg).cumprod().rename("equity")

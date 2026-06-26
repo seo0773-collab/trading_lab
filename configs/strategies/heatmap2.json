@@ -1,0 +1,70 @@
+{
+  "version": "heatmap2",
+  "asset_class": "equity",
+  "interval": "1d",
+  "period": "max",
+  "exchange": "binance",
+  "since": "2021-01-01",
+  "lookback": 120,
+  "profile_bins": 80,
+  "va_pct": 0.70,
+  "cumulative": false,
+  "heatmap_cumulative": true,
+  "price_scale": "log",
+  "node_top_n": 4,
+  "node_min_strength": 0.3,
+  "node_min_gap_bins": 3,
+  "signal_mode": "va_reversion",
+  "long_only": false,
+  "stop_buffer_frac": 0.5,
+  "min_hold_bars": 1,
+  "max_hold_bars": 60,
+  "costs": {
+    "fee_bps_per_side": 5.0,
+    "slippage_bps": 5.0
+  },
+  "execution": "next_open",
+  "train_frac": 0.6,
+  "validation_frac": 0.2,
+  "synthetic_bars": 1500,
+  "seed": 7,
+  "heatmap_rows": 120,
+  "heatmap_max_cols": 360,
+  "heatmap_axis": "absolute",
+  "dashboard": {
+    "default_indicators": ["poc", "vah", "val"],
+    "indicator_labels": {
+      "poc": "POC (최빈 매물대)",
+      "vah": "저항 (상단 HVN)",
+      "val": "지지 (하단 HVN)"
+    },
+    "panels": [
+      {"kind": "heatmap", "type": "heatmap", "label": "가격대 누적 히트맵 (로그스케일·HVN 지지/저항)",
+       "x": "time", "default": false, "overlay": true, "column_normalize": true}
+    ]
+  },
+  "tunables": [
+    {"name": "signal_mode", "label": "신호 모드", "type": "select",
+     "options": ["va_reversion", "va_breakout"], "default": "va_reversion"},
+    {"name": "asset_class", "label": "자산군", "type": "select",
+     "options": ["equity", "crypto"], "default": "equity"},
+    {"name": "lookback", "label": "프로파일 lookback(봉)", "type": "int",
+     "min": 20, "max": 500, "step": 10, "default": 120},
+    {"name": "profile_bins", "label": "가격 bin 수", "type": "int",
+     "min": 20, "max": 200, "step": 10, "default": 80},
+    {"name": "node_top_n", "label": "HVN 최대 개수", "type": "int",
+     "min": 2, "max": 8, "step": 1, "default": 4},
+    {"name": "node_min_strength", "label": "HVN 최소 강도(최대 대비)", "type": "number",
+     "min": 0.1, "max": 0.8, "step": 0.05, "default": 0.3},
+    {"name": "node_min_gap_bins", "label": "HVN 최소 간격(bin)", "type": "int",
+     "min": 1, "max": 10, "step": 1, "default": 3},
+    {"name": "price_scale", "label": "가격축 스케일", "type": "select",
+     "options": ["log", "linear"], "default": "log"},
+    {"name": "long_only", "label": "롱 온리", "type": "select",
+     "options": [false, true], "default": false},
+    {"name": "stop_buffer_frac", "label": "손절 버퍼(S/R폭 배수)", "type": "number",
+     "min": 0.0, "max": 2.0, "step": 0.1, "default": 0.5},
+    {"name": "max_hold_bars", "label": "최대 보유봉(0=off)", "type": "int",
+     "min": 0, "max": 250, "step": 5, "default": 60}
+  ]
+}

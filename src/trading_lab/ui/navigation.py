@@ -6,7 +6,7 @@ from trading_lab.service import BacktestService
 from trading_lab.storage import RunStore
 from trading_lab.ui.artifact_io import run_label
 from trading_lab.ui.backtest_page import render_new_backtest_page
-from trading_lab.ui.research import render_research_page
+from trading_lab.ui.research import render_research_page, research_available
 from trading_lab.ui.results_page import render_run_result
 from trading_lab.ui.system_page import render_system_page
 
@@ -30,7 +30,8 @@ def render_dashboard(store: RunStore, service: BacktestService) -> None:
 
 def render_sidebar() -> str:
     st.sidebar.title("Trading Lab")
-    return st.sidebar.radio("메뉴", PAGES)
+    pages = [p for p in PAGES if p != "연구" or research_available()]
+    return st.sidebar.radio("메뉴", pages)
 
 
 def render_results_selector(store: RunStore, runs: list[dict]) -> None:

@@ -13,8 +13,11 @@ from trading_lab.ui.presentation import (
     available_extra_kinds,
     build_account_figure,
     build_bar_figure,
+    build_heatmap_figure,
+    build_heatmap_trace,
     build_price_indicator_figure,
     build_scatter_figure,
+    build_stacked_area_figure,
     build_trade_overview,
     build_trade_report,
     forecast_is_portfolio,
@@ -61,6 +64,25 @@ def render_backtest_detail(
         format_func=lambda name: indicator_labels.get(name, name),
         key=f"indicators-{run['run_id']}",
     )
+    heatmap_spec, heatmap_frame = _resolve_heatmap_panel(run, dashboard_config)
+    heatmap_overlay = None
+    # overlay=false 패널(예: 세로축이 절대가격이 아닌 상대위치)은 가격 y축과
+    # 정렬되지 않으므로 가격 차트에 겹치지 않고 독립 패널로만 노출한다.
+    if heatmap_frame is not None and bool(heatmap_spec.get("overlay", True)):
+        show_heatmap = st.checkbox(
+            "가격 그래프에 청산 히트맵 겹쳐 표시",
+            value=True,
+            key=f"heatmap-overlay-{run['run_id']}",
+        )
+        if show_heatmap:
+            heatmap_overlay = build_heatmap_trace(
+                heatmap_frame,
+                x=str(heatmap_spec.get("x") or "time"),
+                column_normalize=bool(heatmap_spec.get("column_normalize", False)),
+                opacity=0.55,
+                showscale=False,
+                overlay=True,
+            )
     st.plotly_chart(
         build_price_indicator_figure(
             forecast,
@@ -69,6 +91,7 @@ def render_backtest_detail(
             horizon=horizon,
             series_map={name: indicators[name] for name in selected_indicators},
             labels=indicator_labels,
+            heatmap_overlay=heatmap_overlay,
         ),
         width="stretch",
         config={"scrollZoom": True, "displaylogo": False},
@@ -113,6 +136,7 @@ def render_backtest_detail(
     else:
         display = report.rename(columns={
             "trade_number": "번호",
+            "symbol": "종목",
             "side": "방향",
             "entry_time": "진입 시각",
             "entry_price": "진입가",
@@ -143,6 +167,77 @@ def render_backtest_detail(
             )
 
     render_extra_panels(run, dashboard_config)
+
+
+def _resolve_heatmap_panel(
+    run: dict[str, Any], dashboard_config: dict[str, Any]
+) -> tuple[dict[str, Any], pd.DataFrame | None]:
+    """heatmap 타입 보조 패널이 있으면 그 스펙과 프레임을 돌려준다(없으면 None).
+
+    전략명을 가리지 않는 범용 탐지: ``dashboard.panels`` 중 ``type == "heatmap"``
+    선언이 있고 실제 아티팩트가 존재하면 가격 그래프 오버레이용으로 로드한다.
+    """
+    available = available_extra_kinds(run)
+    for panel in resolve_extra_panels(dashboard_config, available):
+        if panel.get("type") != "heatmap":
+            continue
+        path = artifact_path(run, panel["kind"])
+        records = load_json(path) if path and Path(path).exists() else None
+        if not records:
+            continue
+        frame = pd.DataFrame(records)
+        if frame.empty:
+            continue
+        return panel, frame
+    return {}, None
+
+
+def _panel_scatter(frame: pd.DataFrame, spec: dict[str, Any]) -> Any:
+    x, y = spec.get("x"), spec.get("y")
+    if x in frame and y in frame:
+        return build_scatter_figure(frame, x, y, label=spec["label"])
+    return None
+
+
+def _panel_bar(frame: pd.DataFrame, spec: dict[str, Any]) -> Any:
+    x, y = spec.get("x"), spec.get("y")
+    if x in frame and y in frame:
+        return build_bar_figure(frame, x, y, label=spec["label"])
+    return None
+
+
+def _panel_stacked_area(frame: pd.DataFrame, spec: dict[str, Any]) -> Any:
+    return build_stacked_area_figure(
+        frame, x=str(spec.get("x") or "time"), label=spec["label"])
+
+
+def _panel_heatmap(frame: pd.DataFrame, spec: dict[str, Any]) -> Any:
+    return build_heatmap_figure(
+        frame, x=str(spec.get("x") or "time"), label=spec["label"],
+        column_normalize=bool(spec.get("column_normalize", False)),
+        yaxis_title=str(spec.get("yaxis_title", "가격")))
+
+
+# 패널 type → figure 빌더 레지스트리. 새 시각화를 추가할 때는 presentation.py에
+# 빌더를 만들고 여기 한 줄만 등록하면 된다 — render_extra_panels 디스패치 본체는
+# 더 이상 수정하지 않는다(Open-Closed). 미등록 타입은 원본 테이블로 폴백한다.
+PANEL_RENDERERS: dict[str, Any] = {
+    "scatter": _panel_scatter,
+    "bar": _panel_bar,
+    "stacked_area": _panel_stacked_area,
+    "heatmap": _panel_heatmap,
+}
+
+
+def _render_panel_figure(spec: dict[str, Any], frame: pd.DataFrame) -> None:
+    """spec["type"]을 PANEL_RENDERERS로 디스패치. 미등록 타입이거나 필요한
+    컬럼이 없어 빌더가 None을 주면 원본 테이블로 폴백한다(전략명·타입 하드코딩 없음)."""
+    renderer = PANEL_RENDERERS.get(str(spec.get("type")))
+    figure = renderer(frame, spec) if renderer is not None else None
+    if figure is None:
+        st.dataframe(frame, width="stretch", hide_index=True)
+        return
+    st.plotly_chart(figure, width="stretch", config={"displaylogo": False})
 
 
 def render_extra_panels(run: dict[str, Any], dashboard_config: dict[str, Any]) -> None:
@@ -182,20 +277,8 @@ def render_extra_panels(run: dict[str, Any], dashboard_config: dict[str, Any]) -
         frame = pd.DataFrame(records)
         if frame.empty:
             continue
-        ptype, x, y = spec["type"], spec.get("x"), spec.get("y")
         st.markdown(f"**{spec['label']}**")
-        if ptype == "scatter" and x in frame and y in frame:
-            st.plotly_chart(
-                build_scatter_figure(frame, x, y, label=spec["label"]),
-                width="stretch", config={"displaylogo": False},
-            )
-        elif ptype == "bar" and x in frame and y in frame:
-            st.plotly_chart(
-                build_bar_figure(frame, x, y, label=spec["label"]),
-                width="stretch", config={"displaylogo": False},
-            )
-        else:
-            st.dataframe(frame, width="stretch", hide_index=True)
+        _render_panel_figure(spec, frame)
 
 
 def render_learning_result(

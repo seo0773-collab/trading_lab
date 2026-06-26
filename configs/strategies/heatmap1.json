@@ -1,0 +1,67 @@
+{
+  "version": "heatmap1",
+  "asset_class": "equity",
+  "interval": "1d",
+  "period": "max",
+  "exchange": "binance",
+  "since": "2021-01-01",
+  "lookback": 120,
+  "profile_bins": 60,
+  "va_pct": 0.70,
+  "cumulative": false,
+  "heatmap_cumulative": true,
+  "price_scale": "linear",
+  "signal_mode": "va_reversion",
+  "long_only": true,
+  "stop_buffer_frac": 0.5,
+  "min_hold_bars": 1,
+  "max_hold_bars": 60,
+  "costs": {
+    "fee_bps_per_side": 5.0,
+    "slippage_bps": 5.0
+  },
+  "execution": "next_open",
+  "train_frac": 0.6,
+  "validation_frac": 0.2,
+  "synthetic_bars": 1500,
+  "seed": 7,
+  "heatmap_rows": 120,
+  "heatmap_max_cols": 360,
+  "heatmap_axis": "absolute",
+  "dashboard": {
+    "default_indicators": ["poc", "vah", "val"],
+    "indicator_labels": {
+      "poc": "POC (Point of Control)",
+      "vah": "Value Area High",
+      "val": "Value Area Low"
+    },
+    "panels": [
+      {"kind": "heatmap", "type": "heatmap", "label": "가격대 누적 히트맵 (절대가격·가격차트 오버레이)",
+       "x": "time", "default": false, "overlay": true, "column_normalize": true}
+    ]
+  },
+  "tunables": [
+    {"name": "signal_mode", "label": "신호 모드", "type": "select",
+     "options": ["va_reversion", "va_breakout"], "default": "va_reversion"},
+    {"name": "asset_class", "label": "자산군", "type": "select",
+     "options": ["equity", "crypto"], "default": "equity"},
+    {"name": "lookback", "label": "프로파일 lookback(봉)", "type": "int",
+     "min": 20, "max": 500, "step": 10, "default": 120},
+    {"name": "profile_bins", "label": "가격 bin 수", "type": "int",
+     "min": 20, "max": 200, "step": 10, "default": 60},
+    {"name": "va_pct", "label": "Value Area 비율", "type": "number",
+     "min": 0.5, "max": 0.95, "step": 0.05, "default": 0.70},
+    {"name": "cumulative", "label": "누적 프로파일(0..t)", "type": "select",
+     "options": [false, true], "default": false},
+    {"name": "price_scale", "label": "가격축 스케일", "type": "select",
+     "options": ["linear", "log"], "default": "linear"},
+    {"name": "heatmap_axis", "label": "히트맵 세로축", "type": "select",
+     "options": ["absolute", "relative"], "default": "absolute"},
+    {"name": "long_only", "label": "롱 온리", "type": "select",
+     "options": [true, false], "default": true},
+    {"name": "stop_buffer_frac", "label": "손절 버퍼(VA폭 배수)", "type": "number",
+     "min": 0.0, "max": 2.0, "step": 0.1, "default": 0.5},
+    {"name": "max_hold_bars", "label": "최대 보유봉(0=off)", "type": "int",
+     "min": 0, "max": 250, "step": 5, "default": 60}
+  ]
+}

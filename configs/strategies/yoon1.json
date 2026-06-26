@@ -76,6 +76,8 @@
       "market_ok": "시장 레짐(1=정상)"
     },
     "panels": [
+      {"kind": "portfolio_wave", "type": "stacked_area",
+       "label": "포트폴리오 웨이브", "x": "time", "default": true},
       {"kind": "perf_vs_bnh", "type": "table",
        "label": "시장(SPY) 대비 성과", "default": true},
       {"kind": "top_contributors", "type": "bar",
