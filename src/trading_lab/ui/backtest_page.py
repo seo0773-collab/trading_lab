@@ -15,6 +15,7 @@ from trading_lab.ui.backtest_controls import (
     render_strategy_tunables,
 )
 from trading_lab.ui.config import strategy_config_dict
+from trading_lab.ui.formatting import currency_spec
 from trading_lab.ui.results_page import render_run_result
 
 
@@ -23,7 +24,7 @@ def render_new_backtest_page(store: RunStore, service: BacktestService) -> None:
     st.caption("전략 실행 후 같은 화면 아래에 전체 결과를 표시합니다.")
 
     portfolio_mode = render_portfolio_mode_selector()
-    if portfolio_mode == "멀티 포트폴리오":
+    if portfolio_mode == "포트폴리오 전략":
         strategy_id = render_portfolio_strategy_selector()
         selection, config_overrides = render_multi_backtest_setup(strategy_id)
     else:
@@ -31,8 +32,11 @@ def render_new_backtest_page(store: RunStore, service: BacktestService) -> None:
         selection, config_overrides = render_single_backtest_setup(strategy_id)
 
     phase = st.selectbox("평가 구간", ["validation", "all"])
+    currency_sym, _, capital_step, capital_default = currency_spec(
+        strategy_config_dict(strategy_id).get("base_currency"))
     initial_capital = st.number_input(
-        "초기 계좌 금액", min_value=100.0, value=10_000.0, step=1_000.0,
+        f"초기 계좌 금액 ({currency_sym})",
+        min_value=0.0, value=float(capital_default), step=float(capital_step),
     )
     st.info(
         "현재 전략은 연구 전용이며 live 주문과 holdout test 실행은 잠겨 있습니다."

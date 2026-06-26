@@ -387,5 +387,80 @@ class DashboardContractTests(unittest.TestCase):
                 )
 
 
+class AccountValueTests(unittest.TestCase):
+    """거치식/적립식 계좌 평가액 + 통화 포맷."""
+
+    def test_lump_sum_is_equity_times_capital(self):
+        from trading_lab.ui.presentation import account_value_series
+
+        index = pd.date_range("2020-01-01", periods=10, freq="D")
+        equity = pd.Series(np.linspace(1.0, 1.1, 10), index=index)
+        account = account_value_series(equity, 1000.0)
+        self.assertAlmostEqual(account.iloc[0], 1000.0)
+        self.assertAlmostEqual(account.iloc[-1], 1100.0)
+
+    def test_dca_no_growth_equals_total_invested(self):
+        from trading_lab.ui.presentation import (
+            account_value_series, total_invested)
+
+        index = pd.date_range("2020-01-01", periods=120, freq="D")  # 4개월
+        equity = pd.Series(1.0, index=index)  # 무성장 → 평가액=누적 투입원금
+        account = account_value_series(equity, 0.0, monthly_contribution=100.0)
+        self.assertAlmostEqual(account.iloc[-1], 400.0)
+        self.assertAlmostEqual(total_invested(equity, 0.0, 100.0), 400.0)
+
+    def test_dca_tranche_compounds(self):
+        from trading_lab.ui.presentation import account_value_series
+
+        index = pd.date_range("2020-01-01", periods=90, freq="D")  # 3개월
+        equity = pd.Series(2.0, index=index)  # 진입 전부터 NAV=2 (단순 검증)
+        # 매월 100 투입, NAV 일정(2.0): 각 투입분이 그대로 유지 → 평가=투입.
+        account = account_value_series(equity, 0.0, monthly_contribution=100.0)
+        self.assertAlmostEqual(account.iloc[-1], 300.0)
+
+    def test_money_text_currency_symbol_and_decimals(self):
+        from trading_lab.ui.formatting import currency_spec, money_text
+
+        self.assertEqual(money_text(1_000_000, "₩", 0), "₩1,000,000")
+        symbol, decimals, _, _ = currency_spec("KRW")
+        self.assertEqual((symbol, decimals), ("₩", 0))
+
+
+class PortfolioReportTests(unittest.TestCase):
+    """포트폴리오형 전략용 QuantStats 표준 리포트 어댑터."""
+
+    def _equity(self, n=400):
+        index = pd.date_range("2020-01-01", periods=n, freq="D")
+        rets = np.random.default_rng(0).normal(0.0005, 0.01, n)
+        return pd.Series(np.cumprod(1.0 + rets), index=index, name="equity")
+
+    def test_to_returns_handles_dataframe_and_tz(self):
+        from trading_lab.ui import portfolio_report as pr
+
+        index = pd.date_range("2020-01-01", periods=5, freq="D", tz="UTC")
+        frame = pd.DataFrame({"equity": [1.0, 1.01, 1.02, 1.0, 1.05]}, index=index)
+        returns = pr._to_returns(frame)
+        self.assertEqual(len(returns), 4)
+        self.assertIsNone(returns.index.tz)
+
+    def test_metrics_table_has_standard_rows(self):
+        from trading_lab.ui import portfolio_report as pr
+
+        if not pr.is_available():
+            self.skipTest("quantstats 미설치 환경")
+        table = pr.metrics_table(self._equity(), self._equity())
+        rows = set(map(str, table.index))
+        self.assertTrue({"Sharpe", "Max Drawdown"} & rows)
+
+    def test_report_figures_build(self):
+        from trading_lab.ui import portfolio_report as pr
+
+        if not pr.is_available():
+            self.skipTest("quantstats 미설치 환경")
+        figures = pr.report_figures(
+            self._equity(), names=("drawdown", "monthly_heatmap"))
+        self.assertTrue(figures)
+
+
 if __name__ == "__main__":
     unittest.main()

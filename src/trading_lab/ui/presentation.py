@@ -74,8 +74,36 @@ def _apply_theme(figure: go.Figure) -> go.Figure:
     return figure
 
 
-def account_value_series(equity: pd.Series, initial_capital: float) -> pd.Series:
-    return (equity.astype(float) * float(initial_capital)).rename("account_value")
+def account_value_series(
+    equity: pd.Series, initial_capital: float, *,
+    monthly_contribution: float = 0.0,
+) -> pd.Series:
+    """정규화 NAV(1.0 기준)를 실제 계좌 평가액 시계열로 환산한다.
+
+    거치식(기본, monthly_contribution=0): 초기 일시금 전액을 t0에 투입 →
+    equity×capital. 적립식(monthly_contribution>0): 초기 일시금 + 매월 첫
+    거래일마다 정액을 추가 투입하고, 각 투입분이 그 시점 이후 NAV 성장률로
+    복리 성장한다(money-weighted). NaN NAV 구간(벤치 워밍업 등)은 투입 무효."""
+    eq = pd.Series(equity).astype(float)
+    if monthly_contribution <= 0 or eq.empty:
+        return (eq * float(initial_capital)).rename("account_value")
+    contrib = pd.Series(0.0, index=eq.index)
+    contrib.iloc[0] += float(initial_capital)
+    monthly_first = ~eq.index.to_period("M").duplicated()
+    contrib.loc[monthly_first] += float(monthly_contribution)
+    # NaN NAV 시점(벤치 워밍업)의 투입은 무효(0)로 두어 cumsum 오염을 막는다.
+    added = (contrib / eq.replace(0.0, np.nan)).fillna(0.0)
+    return (added.cumsum() * eq).rename("account_value")
+
+
+def total_invested(
+    equity: pd.Series, initial_capital: float, monthly_contribution: float
+) -> float:
+    """적립식 누적 투입원금(거치식이면 초기 일시금)."""
+    if monthly_contribution <= 0 or len(equity) == 0:
+        return float(initial_capital)
+    months = int((~pd.Series(equity).index.to_period("M").duplicated()).sum())
+    return float(initial_capital) + float(monthly_contribution) * months
 
 
 def build_trade_overview(trades: pd.DataFrame) -> dict[str, float | int]:
@@ -455,14 +483,24 @@ def build_account_figure(
     symbol: str,
     benchmark_price: pd.Series | None = None,
     benchmark_equity: pd.Series | None = None,
+    monthly_contribution: float = 0.0,
+    currency_symbol: str = "$",
 ) -> go.Figure:
-    account = account_value_series(equity, initial_capital)
+    account = account_value_series(
+        equity, initial_capital, monthly_contribution=monthly_contribution)
     drawdown = (equity / equity.cummax() - 1.0) * 100.0
-    strategy_return = float(equity.iloc[-1] / equity.iloc[0] - 1.0)
+    # 적립식은 단순 NAV 배수가 아니라 평가액/누적투입원금 기준으로 손익을 본다.
+    invested = total_invested(equity, initial_capital, monthly_contribution)
+    dca = monthly_contribution > 0
+    strategy_return = (
+        float(account.iloc[-1] / invested - 1.0) if dca and invested
+        else float(equity.iloc[-1] / equity.iloc[0] - 1.0)
+    )
+    name_suffix = " · 적립식" if dca else ""
     figure = make_subplots(specs=[[{"secondary_y": True}]])
     figure.add_trace(go.Scatter(
         x=account.index, y=account, mode="lines",
-        name=f"전략 계좌 ({strategy_return:+.2%})",
+        name=f"전략 계좌{name_suffix} ({strategy_return:+.2%})",
         line={"color": "#66bb6a", "width": 1.8},
     ), secondary_y=False)
     buy_hold_equity = _benchmark_equity(
@@ -471,14 +509,29 @@ def build_account_figure(
         benchmark_equity=benchmark_equity,
     )
     if buy_hold_equity is not None and buy_hold_equity.notna().any():
-        buy_hold_account = buy_hold_equity * float(initial_capital)
-        buy_hold_return = float(buy_hold_equity.dropna().iloc[-1] - 1.0)
+        buy_hold_account = account_value_series(
+            buy_hold_equity, initial_capital,
+            monthly_contribution=monthly_contribution)
+        buy_hold_return = (
+            float(buy_hold_account.dropna().iloc[-1] / invested - 1.0)
+            if dca and invested
+            else float(buy_hold_equity.dropna().iloc[-1] - 1.0)
+        )
         figure.add_trace(go.Scatter(
             x=buy_hold_account.index,
             y=buy_hold_account,
             mode="lines",
             name=f"Buy & Hold ({buy_hold_return:+.2%})",
             line={"color": "#42a5f5", "width": 1.6, "dash": "dash"},
+        ), secondary_y=False)
+    if dca:  # 누적 투입원금 기준선(계단형)
+        contrib = pd.Series(0.0, index=account.index)
+        contrib.iloc[0] += float(initial_capital)
+        contrib.loc[~account.index.to_period("M").duplicated()] += float(
+            monthly_contribution)
+        figure.add_trace(go.Scatter(
+            x=account.index, y=contrib.cumsum(), mode="lines",
+            name="누적 투입원금", line={"color": "#90a4ae", "width": 1.0, "dash": "dot"},
         ), secondary_y=False)
     figure.add_trace(go.Scatter(
         x=drawdown.index, y=drawdown, mode="lines", name="낙폭 %",
@@ -497,7 +550,8 @@ def build_account_figure(
         margin={"l": 45, "r": 45, "t": 85, "b": 40},
         template="plotly_dark", uirevision=f"account-{symbol}",
     )
-    figure.update_yaxes(title_text="계좌 금액", tickprefix="$", secondary_y=False)
+    figure.update_yaxes(
+        title_text="계좌 금액", tickprefix=currency_symbol, secondary_y=False)
     figure.update_yaxes(title_text="낙폭 %", ticksuffix="%", secondary_y=True)
     return _apply_theme(figure)
 

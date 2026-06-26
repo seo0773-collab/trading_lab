@@ -1,13 +1,15 @@
 from __future__ import annotations
 
+import contextlib
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
 import streamlit as st
 
+from trading_lab.ui import portfolio_report
 from trading_lab.ui.artifact_io import artifact_path, load_json, load_json_frame
-from trading_lab.ui.formatting import metric_text, money_text
+from trading_lab.ui.formatting import currency_spec, metric_text, money_text
 from trading_lab.ui.presentation import (
     DERIVED_LABELS,
     available_extra_kinds,
@@ -57,58 +59,85 @@ def render_backtest_detail(
         name for name in dashboard_config.get("default_indicators", [])
         if name in indicators
     ] or list(indicators)[:4]
-    selected_indicators = st.multiselect(
-        "표시할 보조지표 (스케일이 비슷한 지표는 같은 패널에 겹쳐 표시)",
-        list(indicators),
-        default=default_indicators,
-        format_func=lambda name: indicator_labels.get(name, name),
-        key=f"indicators-{run['run_id']}",
+    portfolio_view = forecast_is_portfolio(forecast)
+    # 포트폴리오형(NAV+구성)은 가격·웨이브폼보다 표준 리포트가 메인이므로
+    # 가격/보조지표 차트는 접이식(기본 접힘)으로 둔다. 단일자산 전략은 그대로 노출.
+    price_section = (
+        st.expander("구성 자산 NAV · 보조지표 차트", expanded=False)
+        if portfolio_view else contextlib.nullcontext()
     )
-    heatmap_spec, heatmap_frame = _resolve_heatmap_panel(run, dashboard_config)
-    heatmap_overlay = None
-    # overlay=false 패널(예: 세로축이 절대가격이 아닌 상대위치)은 가격 y축과
-    # 정렬되지 않으므로 가격 차트에 겹치지 않고 독립 패널로만 노출한다.
-    if heatmap_frame is not None and bool(heatmap_spec.get("overlay", True)):
-        show_heatmap = st.checkbox(
-            "가격 그래프에 청산 히트맵 겹쳐 표시",
-            value=True,
-            key=f"heatmap-overlay-{run['run_id']}",
+    with price_section:
+        selected_indicators = st.multiselect(
+            "표시할 보조지표 (스케일이 비슷한 지표는 같은 패널에 겹쳐 표시)",
+            list(indicators),
+            default=default_indicators,
+            format_func=lambda name: indicator_labels.get(name, name),
+            key=f"indicators-{run['run_id']}",
         )
-        if show_heatmap:
-            heatmap_overlay = build_heatmap_trace(
-                heatmap_frame,
-                x=str(heatmap_spec.get("x") or "time"),
-                column_normalize=bool(heatmap_spec.get("column_normalize", False)),
-                opacity=0.55,
-                showscale=False,
-                overlay=True,
+        heatmap_spec, heatmap_frame = _resolve_heatmap_panel(run, dashboard_config)
+        heatmap_overlay = None
+        # overlay=false 패널(예: 세로축이 절대가격이 아닌 상대위치)은 가격 y축과
+        # 정렬되지 않으므로 가격 차트에 겹치지 않고 독립 패널로만 노출한다.
+        if heatmap_frame is not None and bool(heatmap_spec.get("overlay", True)):
+            show_heatmap = st.checkbox(
+                "가격 그래프에 청산 히트맵 겹쳐 표시",
+                value=True,
+                key=f"heatmap-overlay-{run['run_id']}",
             )
-    st.plotly_chart(
-        build_price_indicator_figure(
-            forecast,
-            trades,
-            symbol=run["symbol"],
-            horizon=horizon,
-            series_map={name: indicators[name] for name in selected_indicators},
-            labels=indicator_labels,
-            heatmap_overlay=heatmap_overlay,
-        ),
-        width="stretch",
-        config={"scrollZoom": True, "displaylogo": False},
+            if show_heatmap:
+                heatmap_overlay = build_heatmap_trace(
+                    heatmap_frame,
+                    x=str(heatmap_spec.get("x") or "time"),
+                    column_normalize=bool(heatmap_spec.get("column_normalize", False)),
+                    opacity=0.55,
+                    showscale=False,
+                    overlay=True,
+                )
+        st.plotly_chart(
+            build_price_indicator_figure(
+                forecast,
+                trades,
+                symbol=run["symbol"],
+                horizon=horizon,
+                series_map={name: indicators[name] for name in selected_indicators},
+                labels=indicator_labels,
+                heatmap_overlay=heatmap_overlay,
+            ),
+            width="stretch",
+            config={"scrollZoom": True, "displaylogo": False},
+        )
+    currency_sym, currency_dec, currency_step, _ = currency_spec(
+        config.get("base_currency"))
+    invest_mode = st.radio(
+        "투자 방식", ["거치식", "적립식"], horizontal=True,
+        key=f"invest-mode-{run['run_id']}",
+        help="거치식=초기 일시금 전액 투입. 적립식=초기 일시금 + 매월 정액 추가 투입.",
     )
+    monthly_contribution = 0.0
+    if invest_mode == "적립식":
+        monthly_contribution = float(st.number_input(
+            f"월 적립액 ({currency_sym})", min_value=0.0,
+            value=float(currency_step), step=float(currency_step),
+            key=f"monthly-contrib-{run['run_id']}",
+        ))
     st.plotly_chart(
         build_account_figure(
             equity,
             initial_capital=initial_capital,
             symbol=run["symbol"],
-            benchmark_price=(
-                None if forecast_is_portfolio(forecast) else forecast["close"]
-            ),
+            benchmark_price=(None if portfolio_view else forecast["close"]),
             benchmark_equity=benchmark_equity,
+            monthly_contribution=monthly_contribution,
+            currency_symbol=currency_sym,
         ),
         width="stretch",
         config={"scrollZoom": True, "displaylogo": False},
     )
+
+    # 포트폴리오형(NAV 기반) 전략은 가격·웨이브폼이 의미없으므로 표준 포트폴리오
+    # 리포트로 대체 보강한다. config dashboard.portfolio_report 로 강제할 수도 있다.
+    if portfolio_view or dashboard_config.get("portfolio_report"):
+        render_portfolio_report(run, equity, benchmark_equity)
 
     st.subheader("트레이드 리포트")
     overview = build_trade_overview(trades)
@@ -157,7 +186,7 @@ def render_backtest_detail(
             lambda value: f"{value:+.2f}%"
         )
         display["거래 후 계좌 금액"] = display["거래 후 계좌 금액"].map(
-            money_text
+            lambda value: money_text(value, currency_sym, currency_dec)
         )
         st.dataframe(display, width="stretch", hide_index=True, height=520)
         if report[["stop_loss_price", "take_profit_price"]].isna().all().all():
@@ -190,6 +219,34 @@ def _resolve_heatmap_panel(
             continue
         return panel, frame
     return {}, None
+
+
+def render_portfolio_report(run: dict[str, Any], equity, benchmark_equity) -> None:
+    """포트폴리오형 전략(NAV 기반)에 QuantStats 표준 리포트를 노출한다 —
+    멀티에셋/계층 전략용 '플랫폼 표준 형식'(지표표 + 누적수익·낙폭·월별
+    히트맵·롤링 샤프). equity/benchmark는 StrategyArtifacts가 이미 만든다."""
+    st.subheader("포트폴리오 표준 리포트 (QuantStats)")
+    if not portfolio_report.is_available():
+        st.info(
+            "QuantStats 미설치 — `.venv/bin/pip install quantstats` 후 표준 "
+            "리포트가 표시됩니다."
+        )
+        return
+    try:
+        table = portfolio_report.metrics_table(equity, benchmark_equity)
+        st.dataframe(table, width="stretch")
+    except Exception as exc:  # noqa: BLE001
+        st.warning(f"지표표 생성 실패: {exc}")
+
+    figures = portfolio_report.report_figures(equity, benchmark_equity)
+    columns = st.columns(2)
+    for i, name in enumerate(portfolio_report.REPORT_FIGURES):
+        figure = figures.get(name)
+        if figure is None:
+            continue
+        with columns[i % 2]:
+            st.caption(portfolio_report.FIGURE_LABELS.get(name, name))
+            st.pyplot(figure, clear_figure=True)
 
 
 def _panel_scatter(frame: pd.DataFrame, spec: dict[str, Any]) -> Any:

@@ -3,6 +3,7 @@ numpy
 scipy
 numba
 matplotlib
+quantstats
 plotly
 streamlit
 yfinance

@@ -42,8 +42,8 @@ def cached_market_options(chart_type: str):
 
 def render_portfolio_mode_selector() -> str:
     return st.radio(
-        "포트폴리오 유형",
-        ["단일 포트폴리오", "멀티 포트폴리오"],
+        "전략 유형",
+        ["단일자산 전략", "포트폴리오 전략"],
         horizontal=True,
         key="portfolio-mode",
     )
@@ -183,7 +183,7 @@ def render_multi_portfolio_selector() -> PortfolioSelection:
             step=1,
             key="multi-synthetic-symbols",
         ))
-        st.info("랜덤 멀티 포트폴리오는 재현 가능한 합성 유니버스를 사용합니다.")
+        st.info("랜덤 포트폴리오는 재현 가능한 합성 유니버스를 사용합니다.")
         return PortfolioSelection(
             market=MarketSelection(
                 chart_type="random",
