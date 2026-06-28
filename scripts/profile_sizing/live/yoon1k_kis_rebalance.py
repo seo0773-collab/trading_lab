@@ -104,6 +104,54 @@ def plan_currency_allocation(sleeves, target_w, fx, *, total_krw=None, band=0.05
             "rebalance": rebalance, "budgets": budgets, "transfers": transfers}
 
 
+def reconcile_fills(orders, pre_holdings, post_holdings):
+    """제출 주문 대비 실제 보유 변화로 체결 상태를 산출(순수 — 단위테스트 대상).
+
+    orders: [{symbol,side,qty}]. pre/post_holdings: {sym: 주수}.
+    반환: [{symbol,side,ordered,filled,ratio,status}] (filled/partial/none/over).
+    의도 방향(BUY=+, SELL=−) 체결수량 = post−pre 의 부호 정렬값."""
+    rows = []
+    for o in orders:
+        s = o["symbol"]
+        ordered = float(o["qty"])
+        if ordered <= 0:
+            continue
+        sgn = 1.0 if o["side"].upper() == "BUY" else -1.0
+        delta = float(post_holdings.get(s, 0.0)) - float(pre_holdings.get(s, 0.0))
+        filled = delta * sgn
+        ratio = filled / ordered
+        if ratio <= 0.001:
+            st = "none"
+        elif 0.999 <= ratio <= 1.001:
+            st = "filled"
+        elif ratio > 1.001:
+            st = "over"
+        else:
+            st = "partial"
+        rows.append({"symbol": s, "side": o["side"], "ordered": ordered,
+                     "filled": round(filled, 4), "ratio": round(ratio, 3),
+                     "status": st})
+    return rows
+
+
+def us_dst_active(date) -> bool:
+    """미국 동부 서머타임(2nd Sun Mar ~ 1st Sun Nov) 여부. 주문 세션 KST 시각이 1h 이동."""
+    import pandas as pd
+    d = pd.Timestamp(date).normalize()
+    mar = pd.Timestamp(d.year, 3, 1)
+    start = mar + pd.Timedelta(days=(6 - mar.weekday()) % 7 + 7)   # 3월 둘째 일요일
+    nov = pd.Timestamp(d.year, 11, 1)
+    end = nov + pd.Timedelta(days=(6 - nov.weekday()) % 7)         # 11월 첫째 일요일
+    return start <= d < end
+
+
+def recommended_session_kst(currency, date) -> str:
+    """해당 통화 시장의 정규장 KST 권장 실행창. US 는 DST 분기(주문가 stale 회피용)."""
+    if currency == "KRW":
+        return "09:00~15:30 KST"
+    return "22:30~05:00 KST(익일, 서머타임)" if us_dst_active(date) else "23:30~06:00 KST(익일)"
+
+
 def target_age_days(data_through, today=None) -> int:
     """페이퍼 목표의 데이터 기준일(data_through)로부터 경과 달력일수.
 
@@ -160,7 +208,7 @@ def gather_sleeve(cfg_id, currency, exch, data, order, *, max_stale_days=None):
     }
 
 
-def execute_sleeve(st, min_tv, execute, budget_cash=None):
+def execute_sleeve(st, min_tv, execute, budget_cash=None, verify=False):
     """수집된 상태로 rebalance_plan → 출력(+ --execute 시 제출).
 
     budget_cash=배정 현금(통합증거금: 50/50 배정 달성용 환전후 가정 현금). None=자체 예수금.
@@ -197,7 +245,28 @@ def execute_sleeve(st, min_tv, execute, budget_cash=None):
         else:
             print("  (dry-run)")
     print(f"   주문 {len(plan['orders'])}건"
-          + (f" · 제출 {submitted}건" if execute else " (미제출)") + "\n")
+          + (f" · 제출 {submitted}건" if execute else " (미제출)"))
+    # 체결 사후확인: 보유 변화로 체결/부분/미체결 대조(잔량은 다음 리밸런스서 자동 보정)
+    if execute and verify and submitted:
+        import time as _t
+        _t.sleep(2)
+        try:
+            bal2 = (order.domestic_balance() if domestic
+                    else order.balance(exchange=exch))
+            post = {(to_code6(kk) if domestic else kk.upper()): v
+                    for kk, v in bal2["holdings"].items()}
+            rec = reconcile_fills(plan["orders"], st["holdings"], post)
+            agg = {}
+            for r in rec:
+                agg[r["status"]] = agg.get(r["status"], 0) + 1
+            print(f"   [체결확인] " + " · ".join(f"{k} {v}" for k, v in sorted(agg.items())))
+            for r in rec:
+                if r["status"] != "filled":
+                    print(f"      {r['symbol']:10} {r['side']:4} 주문 {r['ordered']:.0f} "
+                          f"체결 {r['filled']:.0f} ({r['ratio']*100:.0f}%) → {r['status']}")
+        except Exception as e:  # noqa: BLE001
+            print(f"   [체결확인 실패] {type(e).__name__}: {str(e)[:80]}")
+    print()
     return len(plan["orders"])
 
 
@@ -218,7 +287,10 @@ def main(argv=None) -> int:
     ap.add_argument("--max-stale-days", type=int, default=7,
                     help="페이퍼 목표 기준일이 이보다 오래면 그 슬리브 주문 거부(저널 미갱신 방지, 기본 7일).")
     ap.add_argument("--allow-stale", action="store_true", help="stale 목표 가드 무시.")
+    ap.add_argument("--verify", action="store_true",
+                    help="--execute 후 잔고 재조회로 체결/부분/미체결 대조.")
     args = ap.parse_args(argv)
+    import pandas as pd
     integrated = not args.per_sleeve
     stale_guard = None if args.allow_stale else args.max_stale_days
 
@@ -245,7 +317,11 @@ def main(argv=None) -> int:
     mode = "EXECUTE(모의 제출)" if args.execute else "DRY-RUN(미제출)"
     margin = "·통합증거금(50/50 복원)" if integrated else "·통화독립(드리프트)"
     print(f"=== {args.strategy} · KIS 모의 리밸런스 · {mode}{margin} ===")
-    print(f"시세 도메인 {data.base} · 주문 도메인 {order.base}\n")
+    print(f"시세 도메인 {data.base} · 주문 도메인 {order.base}")
+    today = pd.Timestamp.today().normalize()
+    print("권장 실행창(시장별·주문가 stale 회피): "
+          + " / ".join(f"{str(s.get('currency','KRW'))} {recommended_session_kst(str(s.get('currency','KRW')), today)}"
+                       for s in cfg["sub_strategies"]) + "\n")
 
     # 1) 두 슬리브 현재 상태 수집(통화 비중·총자본 산출에 필요)
     states: dict[str, dict] = {}
@@ -302,7 +378,8 @@ def main(argv=None) -> int:
     total = 0
     for sid, st in states.items():
         min_tv = 50000.0 if st["currency"] == "KRW" else 50.0
-        total += execute_sleeve(st, min_tv, args.execute, budget_cash=budgets.get(sid))
+        total += execute_sleeve(st, min_tv, args.execute, budget_cash=budgets.get(sid),
+                                verify=args.verify)
     print(f"=== 총 {total}건 ({mode}) ===")
     return 0
 

@@ -15,7 +15,8 @@ if str(ROOT / "src") not in sys.path:
     sys.path.insert(0, str(ROOT / "src"))
 
 from profile_sizing.live.yoon1k_kis_rebalance import (  # noqa: E402
-    plan_currency_allocation, rebalance_plan, target_age_days)
+    plan_currency_allocation, rebalance_plan, target_age_days,
+    reconcile_fills, us_dst_active, recommended_session_kst)
 
 FX = 1000.0  # 원/달러 (계산 단순화)
 
@@ -80,6 +81,50 @@ class TestTargetAge(unittest.TestCase):
         # 7일 가드: 기준일 8일 경과 → stale, 6일 경과 → fresh
         self.assertTrue(target_age_days("2026-06-20", today="2026-06-28") > 7)
         self.assertFalse(target_age_days("2026-06-22", today="2026-06-28") > 7)
+
+
+class TestReconcileFills(unittest.TestCase):
+    def test_filled_partial_none_over(self):
+        orders = [
+            {"symbol": "A", "side": "BUY", "qty": 10},   # 완전체결
+            {"symbol": "B", "side": "BUY", "qty": 10},   # 부분(4)
+            {"symbol": "C", "side": "SELL", "qty": 5},   # 미체결
+            {"symbol": "D", "side": "SELL", "qty": 4},   # 초과(언노운)
+        ]
+        pre = {"A": 0, "B": 0, "C": 5, "D": 10}
+        post = {"A": 10, "B": 4, "C": 5, "D": 5}          # D 5주 매도(주문 4)
+        rec = {r["symbol"]: r for r in reconcile_fills(orders, pre, post)}
+        self.assertEqual(rec["A"]["status"], "filled")
+        self.assertEqual(rec["B"]["status"], "partial")
+        self.assertAlmostEqual(rec["B"]["ratio"], 0.4)
+        self.assertEqual(rec["C"]["status"], "none")
+        self.assertEqual(rec["D"]["status"], "over")
+
+    def test_sell_direction(self):
+        # SELL 5주 정상 체결: 보유 8→3
+        rec = reconcile_fills([{"symbol": "X", "side": "SELL", "qty": 5}],
+                              {"X": 8}, {"X": 3})
+        self.assertEqual(rec[0]["status"], "filled")
+        self.assertAlmostEqual(rec[0]["filled"], 5.0)
+
+
+class TestSessionDST(unittest.TestCase):
+    def test_dst_summer_winter(self):
+        self.assertTrue(us_dst_active("2026-07-01"))    # 여름=DST
+        self.assertFalse(us_dst_active("2026-01-15"))   # 겨울=표준시
+        self.assertFalse(us_dst_active("2026-12-01"))
+
+    def test_dst_boundaries_2026(self):
+        # 2026: DST 3월 8일(둘째 일요일)~11월 1일(첫째 일요일)
+        self.assertTrue(us_dst_active("2026-03-08"))
+        self.assertFalse(us_dst_active("2026-03-07"))
+        self.assertFalse(us_dst_active("2026-11-01"))
+        self.assertTrue(us_dst_active("2026-10-31"))
+
+    def test_session_strings(self):
+        self.assertIn("09:00", recommended_session_kst("KRW", "2026-07-01"))
+        self.assertIn("22:30", recommended_session_kst("USD", "2026-07-01"))  # 여름
+        self.assertIn("23:30", recommended_session_kst("USD", "2026-01-15"))  # 겨울
 
 
 if __name__ == "__main__":
