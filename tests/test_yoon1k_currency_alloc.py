@@ -15,7 +15,7 @@ if str(ROOT / "src") not in sys.path:
     sys.path.insert(0, str(ROOT / "src"))
 
 from profile_sizing.live.yoon1k_kis_rebalance import (  # noqa: E402
-    plan_currency_allocation, rebalance_plan)
+    plan_currency_allocation, rebalance_plan, target_age_days)
 
 FX = 1000.0  # 원/달러 (계산 단순화)
 
@@ -67,6 +67,19 @@ class TestCurrencyAllocation(unittest.TestCase):
         # 현재 10M 평가인데 총자본 20M 강제 → 각 1000만 배정(추가 납입 가정)
         self.assertTrue(a["rebalance"])
         self.assertAlmostEqual(a["budgets"]["kr"], 10_000_000)
+
+
+class TestTargetAge(unittest.TestCase):
+    def test_age_days(self):
+        self.assertEqual(target_age_days("2026-06-20", today="2026-06-28"), 8)
+
+    def test_fresh_zero(self):
+        self.assertEqual(target_age_days("2026-06-28", today="2026-06-28"), 0)
+
+    def test_stale_guard_threshold(self):
+        # 7일 가드: 기준일 8일 경과 → stale, 6일 경과 → fresh
+        self.assertTrue(target_age_days("2026-06-20", today="2026-06-28") > 7)
+        self.assertFalse(target_age_days("2026-06-22", today="2026-06-28") > 7)
 
 
 if __name__ == "__main__":

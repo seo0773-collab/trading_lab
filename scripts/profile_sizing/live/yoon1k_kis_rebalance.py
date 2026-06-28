@@ -104,16 +104,36 @@ def plan_currency_allocation(sleeves, target_w, fx, *, total_krw=None, band=0.05
             "rebalance": rebalance, "budgets": budgets, "transfers": transfers}
 
 
-def gather_sleeve(cfg_id, currency, exch, data, order):
+def target_age_days(data_through, today=None) -> int:
+    """페이퍼 목표의 데이터 기준일(data_through)로부터 경과 달력일수.
+
+    today=None 이면 오늘. 월간 전략이라 며칠은 정상이나, 수 주 묵으면 paper_trade 미갱신
+    = 월말 리밸런스를 놓쳤을 위험 → 신선도 가드의 신호로 쓴다."""
+    import pandas as pd
+    t0 = pd.Timestamp(data_through).normalize()
+    t1 = (pd.Timestamp(today).normalize() if today is not None
+          else pd.Timestamp.today().normalize())
+    return int((t1 - t0).days)
+
+
+def gather_sleeve(cfg_id, currency, exch, data, order, *, max_stale_days=None):
     """슬리브 현재 상태(목표·보유·현재가·예수금·계좌평가)를 수집한다. 주문 없음.
 
     반환 dict 또는 실패 시 None. account_value 는 통화 비중·총자본 산출과
-    50/50 배정에 쓰인다(통화 리밸런싱은 두 슬리브 평가액을 모두 알아야 한다)."""
+    50/50 배정에 쓰인다(통화 리밸런싱은 두 슬리브 평가액을 모두 알아야 한다).
+    max_stale_days 지정 시 목표 기준일이 그보다 오래면 None(주문 거부=stale 가드)."""
     journal = ROOT / "var" / "paper_trading" / f"{cfg_id}_journal.jsonl"
     if not journal.exists():
         print(f"[{cfg_id}] 저널 없음 → paper_trade.py --strategy {cfg_id} 먼저 실행\n")
         return None
     snap = load_latest_target(journal)
+    if max_stale_days is not None and snap.get("data_through"):
+        age = target_age_days(snap["data_through"])
+        if age > max_stale_days:
+            print(f"[{cfg_id}] 목표 stale: 기준일 {snap['data_through']}"
+                  f"({age}일 경과 > {max_stale_days}일) → paper_trade.py 갱신 필요. 건너뜀"
+                  f" (무시: --allow-stale)\n")
+            return None
     domestic = currency == "KRW"
     targets = {(to_code6(s) if domestic else s.upper()): w
                for s, w in snap["targets"].items()}
@@ -195,8 +215,12 @@ def main(argv=None) -> int:
     ap.add_argument("--rebalance-band", type=float, default=0.05,
                     help="통화비중이 목표±이 값 벗어날 때만 50/50 환전(기본 0.05=±5%%p). "
                          "A3: ±5%%p 밴드가 환전 최소화+분산효과 회수 최적.")
+    ap.add_argument("--max-stale-days", type=int, default=7,
+                    help="페이퍼 목표 기준일이 이보다 오래면 그 슬리브 주문 거부(저널 미갱신 방지, 기본 7일).")
+    ap.add_argument("--allow-stale", action="store_true", help="stale 목표 가드 무시.")
     args = ap.parse_args(argv)
     integrated = not args.per_sleeve
+    stale_guard = None if args.allow_stale else args.max_stale_days
 
     try:
         data = KISClient.from_env("KIS", env="real")          # 시세=실키
@@ -236,7 +260,8 @@ def main(argv=None) -> int:
             print(f"── {sub['config']} [{cur}] 건너뜀: 해외 모의계좌 미설정 "
                   f"(.env 에 KIS_MOCK_OVS_ACCOUNT 추가 필요)\n")
             continue
-        st = gather_sleeve(sub["config"], cur, exch, data, oc)
+        st = gather_sleeve(sub["config"], cur, exch, data, oc,
+                           max_stale_days=stale_guard)
         if st is not None:
             states[sub["config"]] = st
 
