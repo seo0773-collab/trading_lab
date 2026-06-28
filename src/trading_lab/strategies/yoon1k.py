@@ -110,8 +110,11 @@ class Yoon1kHandler:
         idx = idx.sort_values()
         wsum = sum(weights) or 1.0
         weights = [w / wsum for w in weights]
-        combo = self._combine([(n.reindex(idx), w) for n, w in zip(navs, weights)],
-                              idx, freq)
+        sub_ids = [s["config"] for s in config["sub_strategies"]]
+        combo_values = self._combine_values(
+            [(n.reindex(idx), w) for n, w in zip(navs, weights)],
+            idx, freq, sub_ids)
+        combo = combo_values.sum(axis=1)
 
         window = self._slice(idx, phase, config)
         eq = combo.reindex(window)
@@ -123,6 +126,18 @@ class Yoon1kHandler:
         for name, ser in sleeve_cols.items():           # 통화별 슬리브(원화 기준) 보조지표
             s = ser.reindex(window)
             forecast[name] = (s / s.iloc[0]) if s.notna().any() else s
+
+        # 자산군(통화 슬리브)별 평가가치 비중(행 합=100%) → 누적 면적 '웨이브'.
+        # 평가금액 자체는 초기금액·적립방식 등 대시보드 입력에 종속되므로(금액 환산은
+        # 대시보드 책임) 비중으로 노출한다 — 결과 화면이 계좌금액과 곱해 읽으면 된다.
+        cur_label = {s["config"]: str(s.get("currency", base_cur))
+                     for s in config["sub_strategies"]}
+        share_win = combo_values.reindex(window)
+        shares = share_win.div(share_win.sum(axis=1), axis=0).fillna(0.0)
+        shares = shares.rename(columns={
+            sid: f"{cur_label[sid]} ({sid})" for sid in sub_ids})
+        shares.index.name = "time"
+        sleeve_weights = shares.reset_index()
 
         trades = self._slice_trades(sub_trades, window)
         n = int(len(trades))
@@ -159,7 +174,8 @@ class Yoon1kHandler:
         }
         return StrategyArtifacts(
             forecast=forecast, trades=trades, equity=equity,
-            metrics=metrics, metadata=metadata, benchmark=benchmark)
+            metrics=metrics, metadata=metadata, benchmark=benchmark,
+            extras={"sleeve_weights": sleeve_weights})
 
     # ---------------- helpers ----------------
     @staticmethod
@@ -185,20 +201,28 @@ class Yoon1kHandler:
         return (nav * (f / f0.iloc[0])).rename(nav.name)
 
     @staticmethod
-    def _combine(navs_weights, idx, freq) -> pd.Series:
-        """가중 통화 슬리브를 주기적으로 목표비중 복원(리밸런싱) 결합. 1.0 기준."""
+    def _combine_values(navs_weights, idx, freq, columns) -> pd.DataFrame:
+        """가중 통화 슬리브를 주기적 목표비중 복원(리밸런싱) 결합하고, 각 슬리브의
+        기준통화 평가가치(행 합 = 총 NAV) 행렬을 1.0 기준으로 돌려준다.
+        총 NAV는 행 합으로 복원되고, 행별 비중이 곧 자산군 구성(웨이브)이다."""
         reb = rebalance_dates(idx, freq)
         rets = [(n.pct_change().fillna(0.0).to_numpy(), w) for n, w in navs_weights]
         vals = [w for _, w in navs_weights]
-        out = np.empty(len(idx))
+        out = np.empty((len(idx), len(rets)))
         for i, t in enumerate(idx):
             for j, (r, _) in enumerate(rets):
                 vals[j] *= 1.0 + r[i]
-            tot = sum(vals)
-            out[i] = tot
+            out[i, :] = vals
             if t in reb:
+                tot = sum(vals)
                 vals = [tot * w for _, w in navs_weights]
-        return pd.Series(out, index=idx)
+        return pd.DataFrame(out, index=idx, columns=list(columns))
+
+    @classmethod
+    def _combine(cls, navs_weights, idx, freq) -> pd.Series:
+        """가중 통화 슬리브 결합 총 NAV(1.0 기준). 슬리브별 평가가치의 행 합."""
+        cols = list(range(len(navs_weights)))
+        return cls._combine_values(navs_weights, idx, freq, cols).sum(axis=1)
 
     def _benchmark(self, raw, config, idx, freq, base_cur, fx_sym) -> pd.Series | None:
         """전략 없는 동일 통화배분 패시브(50/50 시장 buy&hold), 기준통화."""

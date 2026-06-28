@@ -24,6 +24,13 @@
     },
     "panels": [
       {
+        "kind": "sleeve_weights",
+        "type": "stacked_area",
+        "x": "time",
+        "label": "자산군별 평가금액 비중 (누적 면적 웨이브)",
+        "default": true
+      },
+      {
         "kind": "perf_vs_bnh",
         "type": "table",
         "label": "벤치(50/50 패시브) 대비 성과",

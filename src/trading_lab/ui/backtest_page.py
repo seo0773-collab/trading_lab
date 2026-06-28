@@ -4,14 +4,20 @@ import streamlit as st
 
 from trading_lab.service import BacktestRequest, BacktestService
 from trading_lab.storage import RunStore
+from trading_lab.strategies.registry import (
+    CATEGORY_HIERARCHICAL,
+    CATEGORY_PORTFOLIO,
+)
 from trading_lab.ui.backtest_controls import (
     MarketSelection,
     render_data_controls,
+    render_hierarchical_selector,
     render_market_selector,
     render_multi_portfolio_selector,
     render_portfolio_mode_selector,
     render_portfolio_strategy_selector,
     render_strategy_selector,
+    render_strategy_selector_for_category,
     render_strategy_tunables,
 )
 from trading_lab.ui.config import strategy_config_dict
@@ -23,10 +29,13 @@ def render_new_backtest_page(store: RunStore, service: BacktestService) -> None:
     st.title("새 백테스트")
     st.caption("전략 실행 후 같은 화면 아래에 전체 결과를 표시합니다.")
 
-    portfolio_mode = render_portfolio_mode_selector()
-    if portfolio_mode == "포트폴리오 전략":
+    category = render_portfolio_mode_selector()
+    if category == CATEGORY_PORTFOLIO:
         strategy_id = render_portfolio_strategy_selector()
         selection, config_overrides = render_multi_backtest_setup(strategy_id)
+    elif category == CATEGORY_HIERARCHICAL:
+        strategy_id = render_strategy_selector_for_category(CATEGORY_HIERARCHICAL)
+        selection, config_overrides = render_hierarchical_backtest_setup(strategy_id)
     else:
         strategy_id = render_strategy_selector()
         selection, config_overrides = render_single_backtest_setup(strategy_id)
@@ -59,6 +68,16 @@ def render_single_backtest_setup(
 ) -> tuple[MarketSelection, dict]:
     config_overrides = render_strategy_tunables(strategy_id)
     selection = render_market_selector()
+    base_config = strategy_config_dict(strategy_id)
+    config_overrides.update(render_data_controls(strategy_id, base_config, selection))
+    return selection, config_overrides
+
+
+def render_hierarchical_backtest_setup(
+    strategy_id: str,
+) -> tuple[MarketSelection, dict]:
+    config_overrides = render_strategy_tunables(strategy_id)
+    selection = render_hierarchical_selector(strategy_id)
     base_config = strategy_config_dict(strategy_id)
     config_overrides.update(render_data_controls(strategy_id, base_config, selection))
     return selection, config_overrides

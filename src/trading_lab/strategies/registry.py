@@ -6,6 +6,16 @@ from pathlib import Path
 from trading_lab.paths import ROOT
 from trading_lab.strategies.base import StrategyHandler
 
+# 전략 분류(UI 선택 그룹 + 입력 위젯 결정). 핸들러 문자열로 추측하지 않고
+# registry에서 명시 선언한다 — 새 핸들러를 만들어도 UI가 깨지지 않도록.
+#   single        : 단일자산(종목 1개 선택)
+#   portfolio     : 다종목 포트폴리오(유니버스 선택)
+#   hierarchical  : 계층 포트폴리오(fund-of-funds; 구성이 config에 고정 → 종목 선택 무의미)
+CATEGORY_SINGLE = "single"
+CATEGORY_PORTFOLIO = "portfolio"
+CATEGORY_HIERARCHICAL = "hierarchical"
+STRATEGY_CATEGORIES = (CATEGORY_SINGLE, CATEGORY_PORTFOLIO, CATEGORY_HIERARCHICAL)
+
 
 @dataclass(frozen=True)
 class StrategyDefinition:
@@ -16,6 +26,7 @@ class StrategyDefinition:
     enabled: bool
     live_eligible: bool
     handler_factory: str  # "module:Callable" producing a StrategyHandler
+    category: str = CATEGORY_SINGLE
 
 
 _STRATEGIES = {
@@ -90,6 +101,7 @@ _STRATEGIES = {
         enabled=True,
         live_eligible=False,
         handler_factory="trading_lab.strategies.profile_portfolio:ProfilePortfolioHandler",
+        category=CATEGORY_PORTFOLIO,
     ),
     "yoon1b": StrategyDefinition(
         strategy_id="yoon1b",
@@ -99,6 +111,7 @@ _STRATEGIES = {
         enabled=True,
         live_eligible=False,
         handler_factory="trading_lab.strategies.profile_portfolio:ProfilePortfolioHandler",
+        category=CATEGORY_PORTFOLIO,
     ),
     "yoon1h": StrategyDefinition(
         strategy_id="yoon1h",
@@ -108,6 +121,7 @@ _STRATEGIES = {
         enabled=True,
         live_eligible=False,
         handler_factory="trading_lab.strategies.profile_portfolio:ProfilePortfolioHandler",
+        category=CATEGORY_PORTFOLIO,
     ),
     "yoon1i": StrategyDefinition(
         strategy_id="yoon1i",
@@ -117,6 +131,7 @@ _STRATEGIES = {
         enabled=True,
         live_eligible=False,
         handler_factory="trading_lab.strategies.profile_portfolio:ProfilePortfolioHandler",
+        category=CATEGORY_PORTFOLIO,
     ),
     "yoon1e": StrategyDefinition(
         strategy_id="yoon1e",
@@ -126,6 +141,7 @@ _STRATEGIES = {
         enabled=True,
         live_eligible=False,
         handler_factory="trading_lab.strategies.profile_portfolio:ProfilePortfolioHandler",
+        category=CATEGORY_PORTFOLIO,
     ),
     "yoon1c": StrategyDefinition(
         strategy_id="yoon1c",
@@ -135,6 +151,7 @@ _STRATEGIES = {
         enabled=True,
         live_eligible=False,
         handler_factory="trading_lab.strategies.profile_portfolio:ProfilePortfolioHandler",
+        category=CATEGORY_PORTFOLIO,
     ),
     "yoon1d": StrategyDefinition(
         strategy_id="yoon1d",
@@ -144,6 +161,7 @@ _STRATEGIES = {
         enabled=True,
         live_eligible=False,
         handler_factory="trading_lab.strategies.profile_portfolio:ProfilePortfolioHandler",
+        category=CATEGORY_PORTFOLIO,
     ),
     "yoon1f": StrategyDefinition(
         strategy_id="yoon1f",
@@ -153,6 +171,7 @@ _STRATEGIES = {
         enabled=True,
         live_eligible=False,
         handler_factory="trading_lab.strategies.profile_portfolio:ProfilePortfolioHandler",
+        category=CATEGORY_PORTFOLIO,
     ),
     "yoon1j": StrategyDefinition(
         strategy_id="yoon1j",
@@ -162,6 +181,7 @@ _STRATEGIES = {
         enabled=True,
         live_eligible=False,
         handler_factory="trading_lab.strategies.profile_portfolio:ProfilePortfolioHandler",
+        category=CATEGORY_PORTFOLIO,
     ),
     "yoon1k": StrategyDefinition(
         strategy_id="yoon1k",
@@ -171,6 +191,7 @@ _STRATEGIES = {
         enabled=True,
         live_eligible=False,
         handler_factory="trading_lab.strategies.yoon1k:Yoon1kHandler",
+        category=CATEGORY_HIERARCHICAL,
     ),
     "yoon1g": StrategyDefinition(
         strategy_id="yoon1g",
@@ -180,6 +201,7 @@ _STRATEGIES = {
         enabled=True,
         live_eligible=False,
         handler_factory="trading_lab.strategies.profile_portfolio:ProfilePortfolioHandler",
+        category=CATEGORY_PORTFOLIO,
     ),
     "yoon3": StrategyDefinition(
         strategy_id="yoon3",
@@ -189,6 +211,7 @@ _STRATEGIES = {
         enabled=True,
         live_eligible=False,
         handler_factory="trading_lab.strategies.profile_portfolio:ProfilePortfolioHandler",
+        category=CATEGORY_PORTFOLIO,
     ),
     "yoon2": StrategyDefinition(
         strategy_id="yoon2",

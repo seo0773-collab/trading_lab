@@ -12,12 +12,21 @@ from trading_lab.market_catalog import (
 )
 from trading_lab.portfolio_universes import portfolio_universe
 from trading_lab.strategies import list_strategies
+from trading_lab.strategies.registry import (
+    CATEGORY_HIERARCHICAL,
+    CATEGORY_PORTFOLIO,
+    CATEGORY_SINGLE,
+)
 from trading_lab.ui.config import PERIOD_OPTIONS, TF_OPTIONS, strategy_config_dict
 
 
-PORTFOLIO_HANDLER_FACTORY = (
-    "trading_lab.strategies.profile_portfolio:ProfilePortfolioHandler"
-)
+# 전략 유형 라디오 라벨 ↔ registry category 매핑(단일 진실 출처).
+MODE_LABELS = {
+    CATEGORY_SINGLE: "단일자산 전략",
+    CATEGORY_PORTFOLIO: "포트폴리오 전략",
+    CATEGORY_HIERARCHICAL: "계층 포트폴리오 전략",
+}
+MODE_BY_LABEL = {label: category for category, label in MODE_LABELS.items()}
 
 
 @dataclass(frozen=True)
@@ -40,22 +49,31 @@ def cached_market_options(chart_type: str):
     return load_market_options(chart_type)
 
 
+def available_modes() -> list[str]:
+    """등록된 전략에 실제 존재하는 유형만 라디오에 노출(빈 그룹 숨김)."""
+    present = {item.category for item in list_strategies() if item.enabled}
+    return [MODE_LABELS[cat] for cat in MODE_LABELS if cat in present]
+
+
 def render_portfolio_mode_selector() -> str:
-    return st.radio(
-        "전략 유형",
-        ["단일자산 전략", "포트폴리오 전략"],
-        horizontal=True,
-        key="portfolio-mode",
-    )
+    """전략 유형 라디오. 반환값은 registry category 문자열(single/portfolio/hierarchical)."""
+    labels = available_modes() or [MODE_LABELS[CATEGORY_SINGLE]]
+    chosen = st.radio("전략 유형", labels, horizontal=True, key="portfolio-mode")
+    return MODE_BY_LABEL[chosen]
 
 
 def is_portfolio_strategy(strategy) -> bool:
-    return strategy.handler_factory == PORTFOLIO_HANDLER_FACTORY
+    """다종목/계층 포트폴리오(=단일자산이 아님)인지. 핸들러가 아니라 선언된 category로 판정."""
+    return strategy.category != CATEGORY_SINGLE
 
 
-def enabled_strategy_ids(*, portfolio_only: bool | None = None) -> list[str]:
+def enabled_strategy_ids(
+    *, portfolio_only: bool | None = None, category: str | None = None
+) -> list[str]:
     strategies = [item for item in list_strategies() if item.enabled]
-    if portfolio_only is True:
+    if category is not None:
+        strategies = [item for item in strategies if item.category == category]
+    elif portfolio_only is True:
         strategies = [item for item in strategies if is_portfolio_strategy(item)]
     elif portfolio_only is False:
         strategies = [item for item in strategies if not is_portfolio_strategy(item)]
@@ -69,11 +87,14 @@ def render_strategy_selector(*, include_multi: bool = False) -> str:
     return st.selectbox("전략", strategy_ids)
 
 
-def render_portfolio_strategy_selector() -> str:
-    strategy_ids = (
-        enabled_strategy_ids(portfolio_only=True) or enabled_strategy_ids()
-    )
+def render_strategy_selector_for_category(category: str) -> str:
+    """주어진 category의 전략만 선택지로 노출(없으면 전체 폴백)."""
+    strategy_ids = enabled_strategy_ids(category=category) or enabled_strategy_ids()
     return st.selectbox("전략", strategy_ids)
+
+
+def render_portfolio_strategy_selector() -> str:
+    return render_strategy_selector_for_category(CATEGORY_PORTFOLIO)
 
 
 def render_strategy_tunables(strategy_id: str) -> dict[str, Any]:
@@ -207,6 +228,28 @@ def render_multi_portfolio_selector() -> PortfolioSelection:
             synthetic=False,
         ),
         config_overrides={"universe": universe},
+    )
+
+
+def render_hierarchical_selector(strategy_id: str) -> MarketSelection:
+    """계층 포트폴리오는 구성(하위 전략·유니버스)이 config에 고정되어 종목 선택이
+    의미가 없다. 종목 위젯 대신 구성을 안내하고 고정 MarketSelection을 돌려준다."""
+    config = strategy_config_dict(strategy_id)
+    subs = [str(s.get("config")) for s in (config.get("sub_strategies") or [])]
+    base_currency = str(config.get("base_currency") or "")
+    if subs:
+        st.caption(
+            f"계층 포트폴리오: 하위 전략 {len(subs)}종({', '.join(subs)})을 "
+            f"{base_currency or '기준통화'}로 결합합니다. 종목은 각 하위 전략의 "
+            "유니버스로 고정되어 별도 선택이 없습니다."
+        )
+    detail = base_currency or "FOF"
+    return MarketSelection(
+        chart_type="stock",
+        symbol=detail,
+        chart_detail=detail,
+        bars_per_year=252,
+        synthetic=False,
     )
 
 

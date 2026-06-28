@@ -1,0 +1,42 @@
+{
+  "version": "yoon1k_lp",
+  "_comment": "yoon1k 저가(low-price) 변형 — 소액 모의/실매매용. 미국 슬리브를 저가 ETF(yoon1j_lp)로 교체, 한국 슬리브(yoon1j_kr)는 유지. 검증 원본=yoon1k.",
+  "interval": "1d",
+  "period": "max",
+  "base_currency": "KRW",
+  "fx_symbol": "KRW=X",
+  "rebalance_freq": "monthly",
+  "sub_strategies": [
+    { "config": "yoon1j_lp", "currency": "USD", "weight": 0.5 },
+    { "config": "yoon1j_kr", "currency": "KRW", "weight": 0.5 }
+  ],
+  "benchmark_symbols": { "USD": "SPY", "KRW": "069500.KS" },
+  "benchmark_label": "50/50 SPY원화+KODEX200",
+  "train_frac": 0.6,
+  "validation_frac": 0.2,
+  "synthetic_symbols": 6,
+  "synthetic_bars": 2000,
+  "seed": 7,
+  "dashboard": {
+    "default_indicators": ["sleeve_yoon1j_lp", "sleeve_yoon1j_kr"],
+    "indicator_labels": {
+      "sleeve_yoon1j_lp": "미국 슬리브 저가(원화환산)",
+      "sleeve_yoon1j_kr": "한국 슬리브(원화)"
+    },
+    "panels": [
+      {
+        "kind": "sleeve_weights",
+        "type": "stacked_area",
+        "x": "time",
+        "label": "자산군별 평가금액 비중 (누적 면적 웨이브)",
+        "default": true
+      },
+      {
+        "kind": "perf_vs_bnh",
+        "type": "table",
+        "label": "벤치(50/50 패시브) 대비 성과",
+        "default": true
+      }
+    ]
+  }
+}
