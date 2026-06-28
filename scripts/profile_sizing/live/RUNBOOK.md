@@ -47,6 +47,34 @@ PYTHONPATH=src .venv/bin/python scripts/profile_sizing/live/yoon1k_kis_rebalance
 PYTHONPATH=src .venv/bin/python scripts/profile_sizing/live/kis_field_probe.py
 ```
 
+## 모의투자 전진(forward) 경향성 검증 셋업
+
+목표: 백테스트 경향(위험조정 우위 + 낙폭 방어)이 **모의 실행**에서도 유지되는지 전진 측정.
+
+흐름: `paper_trade`(목표) → `yoon1k_kis_rebalance --execute`(모의 체결) →
+`kis_track snapshot`(주기 적립) → `kis_track report`(모의 NAV vs 50/50 벤치 낙폭/수익).
+
+```bash
+# 주기 적립(주 1회 권장) + 리포트
+PYTHONPATH=src .venv/bin/python scripts/profile_sizing/live/kis_track.py snapshot
+PYTHONPATH=src .venv/bin/python scripts/profile_sizing/live/kis_track.py report
+```
+
+### ⚠️ 선행 조건 — 모의 계좌 등록(현재 미충족)
+
+2026-06-28 점검: 모의 **잔고 조회는 성공**(국내 예수금 1억 시드 확인)하나 **주문은 거부**
+(`msg_cd 40910000 "모의투자 주문이 불가한 계좌입니다"`, 시장가·지정가 공통 = 계좌 레벨).
+→ 주문이 나가려면 KIS 포털에서 다음을 확인/처리해야 한다(코드로 해결 불가):
+
+1. **국내주식 모의투자 참가 신청**(상시 모의투자) — 모의 계좌·기간 활성화.
+2. `KIS_MOCK_ACCOUNT` 가 **모의 앱키(`KIS_MOCK_APP_KEY`)에 바인딩된 계좌**와 일치하는지.
+   (실키를 모의 도메인에 쓰면 조회는 되어도 주문은 거부된다.)
+3. **해외주식 모의투자 계좌**는 별도 → 발급 후 `.env` 에 `KIS_MOCK_OVS_ACCOUNT` 추가
+   (없으면 US 슬리브가 통째 스킵되어 50/50 통화 검증 불가 = 반쪽 트래킹).
+
+위 1~3 충족 후 `--execute`가 체결되고, `kis_track` 이 양 통화 NAV 를 적립해 전진 경향을
+측정한다. 충족 전까지는 baseline 스냅샷만 쌓인다(잔고=현금 1억, 포지션 0).
+
 ## 게이트 상태 (2026-06-28)
 
 - A1 프록시 검증 ✅ / A2 잔고파싱 안전화 ✅(KR 필드 `dnca_tot_amt` 실측 확인) /
