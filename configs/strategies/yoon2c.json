@@ -1,0 +1,58 @@
+{
+  "version": "yoon2c",
+  "_comment": "yoon2의 하위 슬리브(yoon1j_lp/yoon1j_kr)는 유지하고, 상위 원/달러 월간 리밸런싱만 World Bank 버핏지수 변화율 revert scaled 방식으로 동적 조절한다. 채택값 k=1.25, 밴드 30~70%. live 레이어는 아직 동적 통화비중을 읽지 않으므로 live_eligible=false.",
+  "interval": "1d",
+  "period": "max",
+  "base_currency": "KRW",
+  "fx_symbol": "KRW=X",
+  "rebalance_freq": "monthly",
+  "currency_allocation": {
+    "kind": "world_bank_buffett_change_scaled_revert",
+    "indicator": "CM.MKT.LCAP.GD.ZS",
+    "indicator_label": "World Bank Stock market capitalization to GDP (%)",
+    "k": 1.25,
+    "band": [0.30, 0.70],
+    "lag_rule": "observation_year_value_available_from_next_year_jan_1",
+    "formula": "raw_w_KRW = US_growth / (KR_growth + US_growth); w_KRW = clip(0.5 + k * (raw_w_KRW - 0.5), band)"
+  },
+  "sub_strategies": [
+    { "config": "yoon1j_lp", "currency": "USD", "weight": 0.5 },
+    { "config": "yoon1j_kr", "currency": "KRW", "weight": 0.5 }
+  ],
+  "benchmark_symbols": { "USD": "SPY", "KRW": "069500.KS" },
+  "benchmark_label": "50/50 SPY원화+KODEX200",
+  "train_frac": 0.6,
+  "validation_frac": 0.2,
+  "synthetic_symbols": 6,
+  "synthetic_bars": 2000,
+  "seed": 7,
+  "dashboard": {
+    "default_indicators": [
+      "sleeve_yoon1j_lp",
+      "sleeve_yoon1j_kr",
+      "target_w_yoon1j_lp",
+      "target_w_yoon1j_kr"
+    ],
+    "indicator_labels": {
+      "sleeve_yoon1j_lp": "미국 슬리브 저가(원화환산)",
+      "sleeve_yoon1j_kr": "한국 슬리브(원화)",
+      "target_w_yoon1j_lp": "목표 USD 슬리브 비중",
+      "target_w_yoon1j_kr": "목표 KRW 슬리브 비중"
+    },
+    "panels": [
+      {
+        "kind": "sleeve_weights",
+        "type": "stacked_area",
+        "x": "time",
+        "label": "2단계 슬리브 평가금액 비중",
+        "default": true
+      },
+      {
+        "kind": "perf_vs_bnh",
+        "type": "table",
+        "label": "벤치(50/50 패시브) 대비 성과",
+        "default": true
+      }
+    ]
+  }
+}

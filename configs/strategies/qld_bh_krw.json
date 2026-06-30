@@ -1,0 +1,51 @@
+{
+  "version": "qld_bh_krw",
+  "_comment": "QLD(2x Nasdaq100) 100% buy & hold, USD/KRW 환산. yoon1k 계열 벤치(50/50 SPY원화+KODEX200)와 같은 기간 비교용.",
+  "interval": "1d",
+  "period": "max",
+  "base_currency": "KRW",
+  "fx_symbol": "KRW=X",
+  "core_strategy": "yoon2",
+  "rebalance_freq": "monthly",
+  "benchmark_label": "50/50 SPY원화+KODEX200",
+  "train_frac": 0.6,
+  "validation_frac": 0.2,
+  "synthetic_symbols": 6,
+  "synthetic_bars": 2000,
+  "seed": 7,
+  "leverage_mix": {
+    "core_weight": 0.0,
+    "rebalance_freq": "monthly",
+    "overlays": [
+      {
+        "symbol": "QLD",
+        "label": "QLD 2x Nasdaq100",
+        "currency": "USD",
+        "weight": 1.0
+      }
+    ]
+  },
+  "dashboard": {
+    "default_indicators": [
+      "leg_QLD 2x Nasdaq100"
+    ],
+    "indicator_labels": {
+      "leg_QLD 2x Nasdaq100": "QLD 2x Nasdaq100"
+    },
+    "panels": [
+      {
+        "kind": "sleeve_weights",
+        "type": "stacked_area",
+        "x": "time",
+        "label": "QLD 평가금액 비중",
+        "default": true
+      },
+      {
+        "kind": "perf_vs_bnh",
+        "type": "table",
+        "label": "벤치(50/50 패시브) 대비 성과",
+        "default": true
+      }
+    ]
+  }
+}

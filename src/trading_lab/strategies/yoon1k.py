@@ -19,6 +19,8 @@ config 스키마(configs/strategies/yoon1k.json):
 from __future__ import annotations
 
 import json
+import time
+import urllib.request
 from pathlib import Path
 from typing import Any
 
@@ -53,7 +55,7 @@ class Yoon1kHandler:
     ) -> pd.DataFrame:
         frames: dict[str, pd.DataFrame] = {}
         for sub in config["sub_strategies"]:
-            sub_cfg = self._sub_config(sub["config"])
+            sub_cfg = self._sub_config(sub["config"], sub.get("overrides"))
             frames[sub["config"]] = self._base.load_data(
                 symbol, sub_cfg, synthetic=synthetic)
         if not synthetic:
@@ -87,7 +89,7 @@ class Yoon1kHandler:
         navs, weights, sleeve_cols, sub_trades = [], [], {}, []
         for sub in config["sub_strategies"]:
             sub_id = sub["config"]
-            sub_cfg = self._sub_config(sub_id)
+            sub_cfg = self._sub_config(sub_id, sub.get("overrides"))
             sub_raw = raw[sub_id]                       # 3→2레벨 복원
             art = self._base.build_artifacts(
                 sub_raw, sub_cfg, symbol=symbol, phase="all",
@@ -108,12 +110,11 @@ class Yoon1kHandler:
         for n in navs[1:]:
             idx = idx.intersection(n.index)
         idx = idx.sort_values()
-        wsum = sum(weights) or 1.0
-        weights = [w / wsum for w in weights]
         sub_ids = [s["config"] for s in config["sub_strategies"]]
-        combo_values = self._combine_values(
-            [(n.reindex(idx), w) for n, w in zip(navs, weights)],
-            idx, freq, sub_ids)
+        target_weights = self._target_weight_frame(config, raw, idx, weights)
+        weights = target_weights.iloc[0].to_list()
+        combo_values = self._combine_values_dynamic(
+            [n.reindex(idx) for n in navs], target_weights, idx, freq, sub_ids)
         combo = combo_values.sum(axis=1)
 
         window = self._slice(idx, phase, config)
@@ -126,6 +127,8 @@ class Yoon1kHandler:
         for name, ser in sleeve_cols.items():           # 통화별 슬리브(원화 기준) 보조지표
             s = ser.reindex(window)
             forecast[name] = (s / s.iloc[0]) if s.notna().any() else s
+        for sid in sub_ids:
+            forecast[f"target_w_{sid}"] = target_weights[sid].reindex(window)
 
         # 자산군(통화 슬리브)별 평가가치 비중(행 합=100%) → 누적 면적 '웨이브'.
         # 평가금액 자체는 초기금액·적립방식 등 대시보드 입력에 종속되므로(금액 환산은
@@ -179,9 +182,12 @@ class Yoon1kHandler:
 
     # ---------------- helpers ----------------
     @staticmethod
-    def _sub_config(sub_id: str) -> dict[str, Any]:
+    def _sub_config(sub_id: str, overrides: dict[str, Any] | None = None) -> dict[str, Any]:
         path = ROOT / "configs" / "strategies" / f"{sub_id}.json"
-        return json.loads(path.read_text(encoding="utf-8"))
+        cfg = json.loads(path.read_text(encoding="utf-8"))
+        if overrides:                       # sub_strategies 항목의 inline override(예: top_k)
+            cfg.update(overrides)
+        return cfg
 
     @staticmethod
     def _fx(raw: pd.DataFrame, fx_sym: str) -> pd.Series | None:
@@ -200,6 +206,89 @@ class Yoon1kHandler:
             return nav
         return (nav * (f / f0.iloc[0])).rename(nav.name)
 
+    @classmethod
+    def _target_weight_frame(
+        cls, config: dict[str, Any], raw: pd.DataFrame, idx: pd.DatetimeIndex,
+        weights: list[float],
+    ) -> pd.DataFrame:
+        sub_ids = [s["config"] for s in config["sub_strategies"]]
+        wsum = sum(weights) or 1.0
+        static = pd.Series([w / wsum for w in weights], index=sub_ids, dtype=float)
+        out = pd.DataFrame(
+            np.tile(static.to_numpy(), (len(idx), 1)), index=idx, columns=sub_ids)
+
+        alloc = config.get("currency_allocation") or {}
+        if str(alloc.get("kind", "")).lower() != "world_bank_buffett_change_scaled_revert":
+            return out
+        # 합성 테스트/오프라인 계약에서는 외부 World Bank 호출을 피하고 정적 비중으로 둔다.
+        if "__FX__" not in raw.columns.get_level_values(0):
+            return out
+        if len(config["sub_strategies"]) != 2:
+            return out
+
+        k = float(alloc.get("k", 1.0))
+        band = alloc.get("band", [0.0, 1.0])
+        lo, hi = float(band[0]), float(band[1])
+        kr_w = cls._buffett_change_scaled_revert_wkr(idx, k=k, band=(lo, hi))
+        if kr_w.empty:
+            return out
+
+        dyn = out.copy()
+        base_cur = str(config.get("base_currency", "KRW"))
+        for sub in config["sub_strategies"]:
+            sid = sub["config"]
+            cur = str(sub.get("currency", base_cur))
+            if cur == "KRW":
+                dyn[sid] = kr_w.reindex(idx).ffill().bfill()
+            elif cur == "USD":
+                dyn[sid] = 1.0 - kr_w.reindex(idx).ffill().bfill()
+            else:
+                return out
+        denom = dyn.sum(axis=1).replace(0.0, np.nan)
+        return dyn.div(denom, axis=0).fillna(out)
+
+    @classmethod
+    def _buffett_change_scaled_revert_wkr(
+        cls, idx: pd.DatetimeIndex, *, k: float, band: tuple[float, float],
+    ) -> pd.Series:
+        annual = pd.concat({
+            "us": cls._fetch_world_bank_buffett("USA"),
+            "kr": cls._fetch_world_bank_buffett("KOR"),
+        }, axis=1).sort_index()
+        growth = annual / annual.shift(1)
+        raw = growth["us"] / (growth["kr"] + growth["us"])
+        scaled = (0.5 + k * (raw - 0.5)).clip(*band)
+        return scaled.reindex(idx.union(scaled.index)).ffill().reindex(idx).dropna()
+
+    @staticmethod
+    def _fetch_world_bank_buffett(country: str) -> pd.Series:
+        indicator = "CM.MKT.LCAP.GD.ZS"
+        url = (
+            "https://api.worldbank.org/v2/country/"
+            f"{country}/indicator/{indicator}?format=json&per_page=1000"
+        )
+        last_error: Exception | None = None
+        for attempt in range(5):
+            try:
+                req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+                with urllib.request.urlopen(req, timeout=20) as resp:
+                    payload = json.load(resp)
+                rows = payload[1] if len(payload) > 1 else []
+                vals = {
+                    int(row["date"]): float(row["value"])
+                    for row in rows
+                    if row.get("value") is not None
+                }
+                if not vals:
+                    raise ValueError(f"World Bank returned no values for {country}")
+                # 관측연도 Y 값은 다음 해 1월 1일부터 사용 가능하다고 둔다.
+                dates = pd.to_datetime([f"{year + 1}-01-01" for year in vals])
+                return pd.Series(list(vals.values()), index=dates, name=country).sort_index()
+            except Exception as exc:  # pragma: no cover - network retry guard
+                last_error = exc
+                time.sleep(1.5 * (attempt + 1))
+        raise RuntimeError(f"World Bank fetch failed for {country}: {last_error}") from last_error
+
     @staticmethod
     def _combine_values(navs_weights, idx, freq, columns) -> pd.DataFrame:
         """가중 통화 슬리브를 주기적 목표비중 복원(리밸런싱) 결합하고, 각 슬리브의
@@ -216,6 +305,27 @@ class Yoon1kHandler:
             if t in reb:
                 tot = sum(vals)
                 vals = [tot * w for _, w in navs_weights]
+        return pd.DataFrame(out, index=idx, columns=list(columns))
+
+    @staticmethod
+    def _combine_values_dynamic(
+        navs: list[pd.Series], target_weights: pd.DataFrame,
+        idx: pd.DatetimeIndex, freq: str, columns,
+    ) -> pd.DataFrame:
+        reb = rebalance_dates(idx, freq)
+        tw = target_weights.reindex(idx).ffill().bfill()
+        tw = tw.div(tw.sum(axis=1).replace(0.0, np.nan), axis=0).fillna(0.0)
+        vals = tw.iloc[0].to_numpy(dtype=float).tolist()
+        rets = [n.pct_change().fillna(0.0).to_numpy() for n in navs]
+        out = np.empty((len(idx), len(rets)))
+        for i, t in enumerate(idx):
+            for j, r in enumerate(rets):
+                vals[j] *= 1.0 + r[i]
+            out[i, :] = vals
+            if t in reb:
+                total = sum(vals)
+                target = tw.iloc[i].to_numpy(dtype=float)
+                vals = (total * target).tolist()
         return pd.DataFrame(out, index=idx, columns=list(columns))
 
     @classmethod

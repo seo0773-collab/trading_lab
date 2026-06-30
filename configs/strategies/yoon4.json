@@ -1,0 +1,115 @@
+{
+  "version": "yoon4",
+  "_comment": "Global Capital Flow Regime Engine. yoon2(미국/한국 50:50 고정)를 일반화 — 글로벌 자금흐름(CRI)으로 투자 국가를 동적 선택하는 다국가 로테이션. 국가 ETF·안전자산 모두 미국 상장이라 KIS 해외주식 거래 가능(단일 USD, 원화 환산은 표시용). 리프(v1)=국가 ETF 직접 보유, 섹터 계층은 후속 레이어.",
+  "interval": "1d",
+  "period": "max",
+  "base_currency": "KRW",
+  "fx_symbol": "KRW=X",
+  "rebalance_freq": "monthly",
+  "countries": [
+    { "symbol": "SPY", "label": "미국", "exchange": "AMEX" },
+    { "symbol": "EWJ", "label": "일본", "exchange": "AMEX" },
+    { "symbol": "EWY", "label": "한국", "exchange": "AMEX" },
+    { "symbol": "EWG", "label": "독일", "exchange": "AMEX" },
+    { "symbol": "EWT", "label": "대만", "exchange": "AMEX" },
+    { "symbol": "INDA", "label": "인도", "exchange": "AMEX" },
+    { "symbol": "MCHI", "label": "중국", "exchange": "NASD" },
+    { "symbol": "EWW", "label": "멕시코", "exchange": "AMEX" },
+    { "symbol": "EWZ", "label": "브라질", "exchange": "AMEX" },
+    { "symbol": "EWU", "label": "영국", "exchange": "AMEX" },
+    { "symbol": "EWC", "label": "캐나다", "exchange": "AMEX" }
+  ],
+  "top_n": 4,
+  "cri": {
+    "rs_benchmark": "SPY",
+    "lookbacks": {
+      "mom_3m": 63,
+      "mom_6m": 126,
+      "mom_12m": 252,
+      "hi_window": 252,
+      "vol_window": 63,
+      "volume_window": 63,
+      "accel_window": 21
+    },
+    "weights": {
+      "mom_3m": 1.0,
+      "mom_6m": 1.0,
+      "mom_12m": 1.0,
+      "rs": 1.0,
+      "hi_dist": 0.5,
+      "vol_trend": 0.5,
+      "vol_contraction": 0.5,
+      "acceleration": 1.0
+    }
+  },
+  "regime": {
+    "enabled": true,
+    "vix_symbol": "^VIX",
+    "dxy_symbol": "DX-Y.NYB",
+    "spy_symbol": "SPY",
+    "spy_ma": 200,
+    "vix_high": 25.0,
+    "off_scale": 0.4
+  },
+  "safe_sleeve": {
+    "enabled": true,
+    "symbols": ["TLT", "GLD"],
+    "max": 0.4,
+    "ma_len": 100
+  },
+  "rebalance": {
+    "min_weight_change": 0.03,
+    "fee_bps_per_side": 5.0,
+    "slippage_bps": 5.0
+  },
+  "benchmark_symbol": "SPY",
+  "benchmark_label": "미국(SPY) 원화 B&H",
+  "train_frac": 0.6,
+  "validation_frac": 0.2,
+  "synthetic_symbols": 6,
+  "synthetic_bars": 2000,
+  "seed": 7,
+  "dashboard": {
+    "default_indicators": ["stock_exposure", "safe_exposure", "cash_ratio", "n_countries", "risk_on"],
+    "indicator_labels": {
+      "stock_exposure": "국가 주식 노출 비율",
+      "safe_exposure": "안전자산 슬리브 비율",
+      "cash_ratio": "현금 비율",
+      "n_countries": "보유 국가 수",
+      "risk_on": "레짐 스케일(1=Risk-On)"
+    },
+    "panels": [
+      {
+        "kind": "sleeve_weights",
+        "type": "stacked_area",
+        "x": "time",
+        "label": "국가/안전자산 평가금액 비중(웨이브)",
+        "default": true
+      },
+      {
+        "kind": "perf_vs_bnh",
+        "type": "table",
+        "label": "벤치(SPY 원화 B&H) 대비 성과",
+        "default": true
+      }
+    ]
+  },
+  "tunables": [
+    {
+      "name": "top_n",
+      "label": "상위 N개 국가",
+      "type": "int",
+      "min": 2,
+      "max": 8,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "name": "rebalance_freq",
+      "label": "리밸런스 주기",
+      "type": "select",
+      "options": ["monthly", "weekly"],
+      "default": "monthly"
+    }
+  ]
+}

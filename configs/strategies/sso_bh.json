@@ -1,0 +1,9 @@
+{
+  "version": "sso_bh",
+  "_comment": "yoon2a의 레버리지 슬리브용 buy&hold 디스크립터(live 전용, 대시보드 registry 미등록). paper_trade.py가 kind=buy_hold를 보고 목표 {SSO:1.0} 저널을 적립한다.",
+  "kind": "buy_hold",
+  "symbol": "SSO",
+  "currency": "USD",
+  "interval": "1d",
+  "period": "max"
+}

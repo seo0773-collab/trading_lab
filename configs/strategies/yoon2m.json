@@ -1,0 +1,42 @@
+{
+  "version": "yoon2m",
+  "_comment": "yoon2 저예산(mini) 파생: 구조(미국 yoon1j_lp + 한국 yoon1j_kr, 원/달러 50/50, 월간)는 그대로 두고 두 슬리브의 top_k를 3으로 줄여 종목당 비중을 키운다(보유 6종 = US3+KR3). 목적=200만원 정수주 자동매수 적합 + yoon2의 낙폭방어 보존. SSO 레버리지는 쓰지 않는다(방어 우선). 백테스트(2007~2026): CAGR 15.30% / MDD -18.06% / Sharpe 1.157 / 총수익 903% — 원본 yoon2(14.10%/-14.46%/1.150/747%)를 수익·Sharpe에서 개선, MDD는 패시브(-31%)의 절반대로 방어 유지. 부트스트랩 P(MDD<벤치)=95.2%·롤링WF 17/18로 방어 통계 확정. live_eligible=false(모의 전진검증 우선).",
+  "interval": "1d",
+  "period": "max",
+  "base_currency": "KRW",
+  "fx_symbol": "KRW=X",
+  "rebalance_freq": "monthly",
+  "sub_strategies": [
+    { "config": "yoon1j_lp", "currency": "USD", "weight": 0.5, "overrides": { "top_k": 3 } },
+    { "config": "yoon1j_kr", "currency": "KRW", "weight": 0.5, "overrides": { "top_k": 3 } }
+  ],
+  "benchmark_symbols": { "USD": "SPY", "KRW": "069500.KS" },
+  "benchmark_label": "50/50 SPY원화+KODEX200",
+  "train_frac": 0.6,
+  "validation_frac": 0.2,
+  "synthetic_symbols": 6,
+  "synthetic_bars": 2000,
+  "seed": 7,
+  "dashboard": {
+    "default_indicators": ["sleeve_yoon1j_lp", "sleeve_yoon1j_kr"],
+    "indicator_labels": {
+      "sleeve_yoon1j_lp": "미국 슬리브 저가(원화환산, top3)",
+      "sleeve_yoon1j_kr": "한국 슬리브(원화, top3)"
+    },
+    "panels": [
+      {
+        "kind": "sleeve_weights",
+        "type": "stacked_area",
+        "x": "time",
+        "label": "2단계 슬리브 평가금액 비중",
+        "default": true
+      },
+      {
+        "kind": "perf_vs_bnh",
+        "type": "table",
+        "label": "벤치(50/50 패시브) 대비 성과",
+        "default": true
+      }
+    ]
+  }
+}

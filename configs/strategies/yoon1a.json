@@ -1,0 +1,53 @@
+{
+  "version": "yoon1a",
+  "_comment": "yoon2 파생 공격형: 2단계 yoon2 코어 65% + USD(2x Semiconductors) 35%를 월간 리밸런싱. 목표는 50/50 패시브 B&H와 유사한 MDD에서 CAGR 극대화.",
+  "interval": "1d",
+  "period": "max",
+  "base_currency": "KRW",
+  "fx_symbol": "KRW=X",
+  "core_strategy": "yoon2",
+  "rebalance_freq": "monthly",
+  "benchmark_label": "50/50 SPY원화+KODEX200",
+  "train_frac": 0.6,
+  "validation_frac": 0.2,
+  "synthetic_symbols": 6,
+  "synthetic_bars": 2000,
+  "seed": 7,
+  "leverage_mix": {
+    "core_weight": 0.65,
+    "rebalance_freq": "monthly",
+    "overlays": [
+      {
+        "symbol": "USD",
+        "label": "USD 2x Semiconductors",
+        "currency": "USD",
+        "weight": 0.35
+      }
+    ]
+  },
+  "dashboard": {
+    "default_indicators": [
+      "leg_yoon2",
+      "leg_USD 2x Semiconductors"
+    ],
+    "indicator_labels": {
+      "leg_yoon2": "yoon2 코어",
+      "leg_USD 2x Semiconductors": "USD 2x Semiconductors"
+    },
+    "panels": [
+      {
+        "kind": "sleeve_weights",
+        "type": "stacked_area",
+        "x": "time",
+        "label": "코어/레버리지 평가금액 비중",
+        "default": true
+      },
+      {
+        "kind": "perf_vs_bnh",
+        "type": "table",
+        "label": "벤치(50/50 패시브) 대비 성과",
+        "default": true
+      }
+    ]
+  }
+}

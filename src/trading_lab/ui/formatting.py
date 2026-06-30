@@ -19,7 +19,7 @@ def money_text(value: Any, symbol: str = "$", decimals: int = 2) -> str:
 
 # base_currency → (기호, 소수자리, number_input step, 기본 초기계좌)
 _CURRENCY = {
-    "KRW": ("₩", 0, 1_000_000.0, 10_000_000.0),
+    "KRW": ("₩", 0, 10_000.0, 2_000_000.0),
     "USD": ("$", 2, 1_000.0, 10_000.0),
     "EUR": ("€", 2, 1_000.0, 10_000.0),
     "JPY": ("¥", 0, 100_000.0, 1_000_000.0),
