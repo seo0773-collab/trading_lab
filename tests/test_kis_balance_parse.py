@@ -13,7 +13,12 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT / "scripts") not in sys.path:
     sys.path.insert(0, str(ROOT / "scripts"))
 
-from profile_sizing.live.kis_client import _pick_amount, KISSchemaError  # noqa: E402
+from profile_sizing.live.kis_client import (  # noqa: E402
+    KISConfigError,
+    KISSchemaError,
+    _integer_qty,
+    _pick_amount,
+)
 
 
 class TestPickAmount(unittest.TestCase):
@@ -57,6 +62,15 @@ class TestPickAmount(unittest.TestCase):
             self.assertIn("foo", str(e))  # 디버깅용 가용 키 노출
         else:
             self.fail("KISSchemaError 가 발생해야 함")
+
+
+class TestIntegerQty(unittest.TestCase):
+    def test_integer_qty_accepts_whole_number(self):
+        self.assertEqual(_integer_qty(3.0), 3)
+
+    def test_integer_qty_rejects_fractional(self):
+        with self.assertRaises(KISConfigError):
+            _integer_qty(1.25)
 
 
 if __name__ == "__main__":

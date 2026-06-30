@@ -89,20 +89,14 @@ def snapshot() -> int:
         print(f"[국내 잔고 실패] {type(e).__name__}: {str(e)[:100]}")
         kr_val, kr_n = 0.0, 0
 
-    # 해외(USD) — OVS 모의계좌 있을 때만
+    # 해외(USD) — 국내 모의와 같은 KIS_MOCK 계좌를 사용한다.
     us_val_usd, us_n = 0.0, 0
-    ovs = os.environ.get("KIS_MOCK_OVS_ACCOUNT")
-    if ovs:
-        oc = KISClient(env="mock",
-                       app_key=os.environ.get("KIS_MOCK_OVS_APP_KEY") or order.app_key,
-                       app_secret=os.environ.get("KIS_MOCK_OVS_APP_SECRET") or order.app_secret,
-                       account=ovs)
-        try:
-            us_bal = oc.balance(exchange="NASD")
-            us_val_usd = float(us_bal["cash"]) + _holdings_value_usd(oc, us_bal)
-            us_n = len(us_bal["holdings"])
-        except Exception as e:  # noqa: BLE001
-            print(f"[해외 잔고 실패] {type(e).__name__}: {str(e)[:100]}")
+    try:
+        us_bal = order.balance(exchange="NASD")
+        us_val_usd = float(us_bal["cash"]) + _holdings_value_usd(order, us_bal)
+        us_n = len(us_bal["holdings"])
+    except Exception as e:  # noqa: BLE001
+        print(f"[해외 잔고 실패] {type(e).__name__}: {str(e)[:100]}")
 
     us_krw = us_val_usd * fx
     total_krw = kr_val + us_krw
@@ -118,8 +112,6 @@ def snapshot() -> int:
         fh.write(json.dumps(rec, ensure_ascii=False) + "\n")
     print(f"[적립] {rec['date']} · 모의총평가 {total_krw:,.0f}원 "
           f"(KR {kr_val:,.0f} {kr_n}종 / US ${us_val_usd:,.0f} {us_n}종) · 환율 {fx:,.1f}")
-    if us_n == 0 and not ovs:
-        print("  ⚠️ 해외(USD) 슬리브 미반영: KIS_MOCK_OVS_ACCOUNT 설정 필요(반쪽 트래킹).")
     return 0
 
 

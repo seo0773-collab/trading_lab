@@ -29,7 +29,8 @@ for _p in (str(ROOT), str(ROOT / "scripts"), str(ROOT / "src")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from profile_sizing.live.rebalance import load_latest_target, rebalance_plan  # noqa: E402
+from profile_sizing.live.execution_layer import integer_execution_plan  # noqa: E402
+from profile_sizing.live.rebalance import load_latest_target  # noqa: E402
 
 
 def main(argv=None) -> int:
@@ -71,8 +72,10 @@ def main(argv=None) -> int:
         syms = sorted(set(targets) | set(holdings))
         prices = {s: client.price(s, args.exchange) for s in syms}
 
-    plan = rebalance_plan(targets, holdings, prices, cash,
-                          min_trade_value=args.min_trade_value)
+    plan = integer_execution_plan(
+        targets, holdings, prices, cash,
+        min_trade_value=args.min_trade_value,
+    )
     _print_plan(plan, snap, args)
 
     if args.execute:
@@ -85,9 +88,13 @@ def main(argv=None) -> int:
 
 
 def _print_plan(plan, snap, args) -> None:
-    print(f"\n  계좌평가액 ${plan['account_value']:,.2f} (현금 ${plan['cash']:,.2f})")
+    print(f"\n  계좌평가액 ${plan['account_value']:,.2f} (현금 ${plan['cash']:,.2f})"
+          f" · 예상현금 ${plan['expected_cash']:,.2f}"
+          f" · 재현율 {plan['target_fit']*100:.1f}%")
     if plan["skipped_no_price"]:
         print(f"  ⚠️ 가격없어 제외: {', '.join(plan['skipped_no_price'])}")
+    if plan.get("skipped_high_price"):
+        print(f"  ⚠️ 주당가격/현금 제약: {', '.join(plan['skipped_high_price'])}")
     orders = plan["orders"]
     if not orders:
         print("  → 리밸런스 주문 없음(임계치 내).")

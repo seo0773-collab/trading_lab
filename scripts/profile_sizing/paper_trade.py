@@ -66,6 +66,10 @@ def main(argv=None) -> int:
 
     cfg_path = ROOT / "configs" / "strategies" / f"{args.strategy}.json"
     raw = json.loads(cfg_path.read_text())
+    if str(raw.get("kind", "")) == "buy_hold":
+        # 단일종목 buy&hold 슬리브(예: yoon2a의 SSO). 포트폴리오 시뮬레이션 없이
+        # 목표 {symbol:1.0} 을 그대로 저널에 적립한다(리밸런스 불필요·항상 보유).
+        return _buy_hold_journal(args.strategy, raw)
     cfg = config_from_dict(raw)
     mf, sf = raw.get("market_filter") or {}, raw.get("sector_filter") or {}
     top_k = int(raw.get("top_k", 20))
@@ -118,6 +122,53 @@ def main(argv=None) -> int:
         fh.write(json.dumps(snap, ensure_ascii=False) + "\n")
 
     _print_report(snap, prev, sect is not None)
+    print(f"\n저널 적립: {jpath}")
+    return 0
+
+
+def buy_hold_snapshot(strategy: str, symbol: str, data_through: str) -> dict:
+    """단일종목 buy&hold 페이퍼 스냅샷(순수 — 단위테스트 대상). targets={symbol:1.0}.
+
+    저널 키는 포트폴리오 전략과 동일(gather_sleeve 가 targets·data_through 를 소비)."""
+    sym = str(symbol).upper()
+    return {
+        "run_at": dt.datetime.now().isoformat(timespec="seconds"),
+        "strategy": strategy,
+        "data_through": data_through,
+        "last_rebal_date": data_through,
+        "exposure": 1.0,
+        "cash": 0.0,
+        "market_regime": "정상(buy&hold)",
+        "n_holdings": 1,
+        "targets": {sym: 1.0},
+    }
+
+
+def _buy_hold_journal(strategy: str, raw: dict) -> int:
+    """단일종목 buy&hold 슬리브의 페이퍼 목표를 적립한다(targets={symbol:1.0}).
+
+    저널 키/경로 형식은 포트폴리오 전략과 동일해서 live 오케스트레이터의
+    gather_sleeve(`targets` + stale 가드용 `data_through`)가 그대로 소비한다."""
+    from run_kalman_pipeline import load_yfinance
+
+    sym = str(raw["symbol"]).upper()
+    interval, period = str(raw.get("interval", "1d")), str(raw.get("period", "max"))
+    print(f"[{strategy}] {sym} buy&hold 최신 데이터 로드 ...", flush=True)
+    data = load_yfinance(sym, interval, period)
+    if data is None or data.empty:
+        raise RuntimeError(f"데이터 로드 실패: {sym}")
+    snap = buy_hold_snapshot(strategy, sym, str(data.index[-1].date()))
+
+    jdir = ROOT / "var" / "paper_trading"
+    jdir.mkdir(parents=True, exist_ok=True)
+    jpath = jdir / f"{strategy}_journal.jsonl"
+    with jpath.open("a") as fh:
+        fh.write(json.dumps(snap, ensure_ascii=False) + "\n")
+    print("\n" + "=" * 64)
+    print(f" 페이퍼 트레이딩 현재 목표 — {strategy} (buy&hold)")
+    print("=" * 64)
+    print(f" 데이터 기준일 : {snap['data_through']}")
+    print(f" 목표          : {sym} 100%")
     print(f"\n저널 적립: {jpath}")
     return 0
 

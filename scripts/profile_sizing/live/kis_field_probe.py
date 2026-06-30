@@ -55,7 +55,10 @@ def dump(label: str, raw: dict) -> None:
         print(f"  output1[0] keys: {sorted(out1[0])}")
     print(f"output2 keys ({len(out2)}): {sorted(out2)}")
     hits = {k: out2[k] for k in CASH_CANDIDATES if k in out2}
-    print(f"예수금 후보 필드 값: {hits if hits else '(후보 키 없음 → 파싱 필드 수정 필요)'}")
+    if not hits and str(raw.get("rt_cd")) == "0" and str(raw.get("msg_cd")) == "70070000":
+        print("예수금 후보 필드 값: (조회 내역 없음 → 해외 현금 0으로 처리)")
+    else:
+        print(f"예수금 후보 필드 값: {hits if hits else '(후보 키 없음 → 파싱 필드 수정 필요)'}")
 
 
 def main(argv=None) -> int:
@@ -71,21 +74,13 @@ def main(argv=None) -> int:
             print(f"실계좌 도메인 {cli.base}")
             dump("실 국내잔고", cli.domestic_balance()["raw"])
             if args.overseas:
-                dump("실 해외잔고(NASD)", cli.balance(exchange="NASD")["raw"])
+                dump("실 해외잔고(NASD)", cli.balance(exchange="NASD", currency="USD")["raw"])
         else:
             cli = KISClient.from_env("KIS_MOCK", env="mock")
             print(f"모의계좌 도메인 {cli.base}")
             dump("모의 국내잔고", cli.domestic_balance()["raw"])
             if args.overseas:
-                ovs = os.environ.get("KIS_MOCK_OVS_ACCOUNT")
-                if not ovs:
-                    print("\n[해외 모의 계좌(KIS_MOCK_OVS_ACCOUNT) 없음 → 해외 잔고 스킵]")
-                else:
-                    oc = KISClient(env="mock",
-                                   app_key=os.environ.get("KIS_MOCK_OVS_APP_KEY") or cli.app_key,
-                                   app_secret=os.environ.get("KIS_MOCK_OVS_APP_SECRET") or cli.app_secret,
-                                   account=ovs)
-                    dump("모의 해외잔고(NASD)", oc.balance(exchange="NASD")["raw"])
+                dump("모의 해외잔고(NASD)", cli.balance(exchange="NASD", currency="USD")["raw"])
     except KISConfigError as e:
         print(f"[자격증명 오류] {e}")
         return 1

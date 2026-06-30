@@ -33,8 +33,12 @@ DOMAINS = {
 # ⚠️ 문서 대조 필요. 해외주식(미국). 실/모의 TR_ID 상이.
 TR_IDS = {
     # 해외(미국) 주문·잔고 — 실/모의 상이. ⚠️ 문서 대조 필요.
-    "real": {"balance": "TTTS3012R", "buy": "TTTT1002U", "sell": "TTTT1006U"},
-    "mock": {"balance": "VTTS3012R", "buy": "VTTT1002U", "sell": "VTTT1001U"},
+    # psamount=매수가능금액(예수금 조회). inquire-balance output2엔 해외 가용현금이
+    # 없어(매수금액/평가손익만) 예수금은 이 엔드포인트의 ord_psbl_frcr_amt 로 읽는다.
+    "real": {"balance": "TTTS3012R", "buy": "TTTT1002U", "sell": "TTTT1006U",
+             "psamount": "TTTS3007R"},
+    "mock": {"balance": "VTTS3012R", "buy": "VTTT1002U", "sell": "VTTT1001U",
+             "psamount": "VTTS3007R"},
     # 국내 주문(현금)·잔고 — 실/모의 상이. ⚠️ 문서 대조 필요.
     "dom_real": {"balance": "TTTC8434R", "buy": "TTTC0802U", "sell": "TTTC0801U"},
     "dom_mock": {"balance": "VTTC8434R", "buy": "VTTC0802U", "sell": "VTTC0801U"},
@@ -86,6 +90,14 @@ def _pick_amount(out2: dict, fields: tuple[str, ...], label: str) -> float:
     raise KISSchemaError(
         f"{label}: 기대 예수금 필드 {fields} 가 응답에 없음. "
         f"실서버 스키마 변경 가능 — 응답 키: {sorted(out2)[:25]}")
+
+
+def _integer_qty(qty: float) -> int:
+    """현재 KIS 실행 경로는 현금 주식 정수주 주문만 허용한다."""
+    q = float(qty)
+    if q <= 0 or not q.is_integer():
+        raise KISConfigError(f"정수주 주문만 허용: qty={qty}")
+    return int(q)
 
 
 class KISClient:
@@ -184,6 +196,39 @@ class KISClient:
             r.raise_for_status()
             return r.json()
         raise last or RuntimeError("hist_get failed")
+
+    _RETRY_STATUS = (429, 500, 502, 503)
+
+    def _get_with_retry(self, url: str, tr_id: str, params: dict,
+                        *, hashkey: str | None = None):
+        """GET + 간헐적 5xx/429 지수백오프 재시도. Response 반환(raise_for_status 적용)."""
+        last: Exception | None = None
+        for attempt in range(4):
+            r = requests.get(url, headers=self._headers(tr_id, hashkey),
+                             params=params, timeout=self.timeout)
+            if r.status_code in self._RETRY_STATUS:
+                last = requests.HTTPError(f"{r.status_code} on {url}")
+                time.sleep(0.4 * (attempt + 1))
+                continue
+            r.raise_for_status()
+            return r
+        raise last or RuntimeError("get_with_retry failed")
+
+    def _post_with_retry(self, url: str, tr_id: str, body: dict,
+                         *, hashkey: str | None = None):
+        """POST(주문 등) + 간헐적 5xx/429 지수백오프 재시도. 주문은 멱등이 아니나
+        5xx는 서버측 접수 실패(미체결)로 보고 재시도한다(KIS 모의 빈발)."""
+        last: Exception | None = None
+        for attempt in range(3):
+            r = requests.post(url, headers=self._headers(tr_id, hashkey),
+                              json=body, timeout=self.timeout)
+            if r.status_code in self._RETRY_STATUS:
+                last = requests.HTTPError(f"{r.status_code} on {url}")
+                time.sleep(0.5 * (attempt + 1))
+                continue
+            r.raise_for_status()
+            return r
+        raise last or RuntimeError("post_with_retry failed")
 
     @staticmethod
     def _is_domestic(symbol: str) -> bool:
@@ -295,14 +340,12 @@ class KISClient:
 
         ⚠️ 응답 필드명(output1/output2, ovrs_cblc_qty 등)은 문서 대조 필요."""
         tr = TR_IDS[self.env]["balance"]
-        r = requests.get(
+        r = self._get_with_retry(
             f"{self.base}/uapi/overseas-stock/v1/trading/inquire-balance",
-            headers=self._headers(tr),
-            params={"CANO": self.cano, "ACNT_PRDT_CD": self.acnt_prdt,
-                    "OVRS_EXCG_CD": exchange, "TR_CRCY_CD": currency,
-                    "CTX_AREA_FK200": "", "CTX_AREA_NK200": ""},
-            timeout=self.timeout)
-        r.raise_for_status()
+            tr,
+            {"CANO": self.cano, "ACNT_PRDT_CD": self.acnt_prdt,
+             "OVRS_EXCG_CD": exchange, "TR_CRCY_CD": currency,
+             "CTX_AREA_FK200": "", "CTX_AREA_NK200": ""})
         data = r.json()
         holdings = {}
         for row in data.get("output1", []):
@@ -313,9 +356,41 @@ class KISClient:
         out2 = data.get("output2") or {}
         if isinstance(out2, list):
             out2 = out2[0] if out2 else {}
-        cash = _pick_amount(out2, ("frcr_dncl_amt1", "frcr_evlu_amt2"),
-                            "해외잔고 예수금")
+        if (
+            not holdings
+            and str(data.get("rt_cd")) == "0"
+            and str(data.get("msg_cd")) == "70070000"
+        ):
+            cash = 0.0
+        else:
+            # inquire-balance output2엔 해외 가용현금 필드가 없다(매수금액·평가손익뿐).
+            # 예수금은 매수가능금액 엔드포인트에서 읽는다. 조회 실패해도 보유 파싱은
+            # 유효하므로(체결확인 등) 현금만 0 폴백(조용한 오주문 방지: 경고 출력).
+            try:
+                cash = self.overseas_cash(exchange=exchange)
+            except Exception as e:  # noqa: BLE001
+                print(f"[경고] 해외 예수금 조회 실패 → cash=0 처리: "
+                      f"{type(e).__name__}: {str(e)[:80]}")
+                cash = 0.0
         return {"holdings": holdings, "cash": cash, "raw": data}
+
+    def overseas_cash(self, exchange: str = "NASD", *, item: str = "AAPL",
+                      unit_price: float = 1.0) -> float:
+        """해외 가용현금(예수금, 외화). 매수가능금액(inquire-psamount)의
+        ord_psbl_frcr_amt. item/price는 조회 형식상 필요하나 현금액은 종목 무관."""
+        tr = TR_IDS[self.env]["psamount"]
+        r = self._get_with_retry(
+            f"{self.base}/uapi/overseas-stock/v1/trading/inquire-psamount",
+            tr,
+            {"CANO": self.cano, "ACNT_PRDT_CD": self.acnt_prdt,
+             "OVRS_EXCG_CD": exchange, "OVRS_ORD_UNPR": f"{unit_price:.2f}",
+             "ITEM_CD": item})
+        data = r.json()
+        out = data.get("output") or {}
+        if isinstance(out, list):
+            out = out[0] if out else {}
+        return _pick_amount(out, ("ord_psbl_frcr_amt", "frcr_ord_psbl_amt1"),
+                            "해외 매수가능금액(예수금)")
 
     def order(self, symbol: str, side: str, qty: float, *, exchange: str = "NASD",
               price: float = 0.0, confirm_real: bool = False) -> dict[str, Any]:
@@ -328,15 +403,14 @@ class KISClient:
         body = {
             "CANO": self.cano, "ACNT_PRDT_CD": self.acnt_prdt,
             "OVRS_EXCG_CD": exchange, "PDNO": symbol,
-            "ORD_QTY": str(int(qty)),
+            "ORD_QTY": str(_integer_qty(qty)),
             "OVRS_ORD_UNPR": f"{price:.2f}" if price else "0",
             "ORD_SVR_DVSN_CD": "0", "ORD_DVSN": "00",
         }
         hk = self._hashkey(body)
-        r = requests.post(
+        r = self._post_with_retry(
             f"{self.base}/uapi/overseas-stock/v1/trading/order",
-            headers=self._headers(tr, hashkey=hk), json=body, timeout=self.timeout)
-        r.raise_for_status()
+            tr, body, hashkey=hk)
         return r.json()
 
     # ----- 국내(KRW) 현재가/잔고/주문 -----------------------------------
@@ -356,16 +430,14 @@ class KISClient:
 
         ⚠️ 응답 필드명(output1/output2, hldg_qty, dnca_tot_amt 등) 문서 대조 필요."""
         tr = TR_IDS[f"dom_{self.env}"]["balance"]
-        r = requests.get(
+        r = self._get_with_retry(
             f"{self.base}/uapi/domestic-stock/v1/trading/inquire-balance",
-            headers=self._headers(tr),
-            params={"CANO": self.cano, "ACNT_PRDT_CD": self.acnt_prdt,
-                    "AFHR_FLPR_YN": "N", "OFL_YN": "", "INQR_DVSN": "02",
-                    "UNPR_DVSN": "01", "FUND_STTL_ICLD_YN": "N",
-                    "FNCG_AMT_AUTO_RDPT_YN": "N", "PRCS_DVSN": "01",
-                    "CTX_AREA_FK100": "", "CTX_AREA_NK100": ""},
-            timeout=self.timeout)
-        r.raise_for_status()
+            tr,
+            {"CANO": self.cano, "ACNT_PRDT_CD": self.acnt_prdt,
+             "AFHR_FLPR_YN": "N", "OFL_YN": "", "INQR_DVSN": "02",
+             "UNPR_DVSN": "01", "FUND_STTL_ICLD_YN": "N",
+             "FNCG_AMT_AUTO_RDPT_YN": "N", "PRCS_DVSN": "01",
+             "CTX_AREA_FK100": "", "CTX_AREA_NK100": ""})
         data = r.json()
         holdings = {}
         for row in data.get("output1", []):
@@ -391,12 +463,11 @@ class KISClient:
             "CANO": self.cano, "ACNT_PRDT_CD": self.acnt_prdt,
             "PDNO": self._to_code6(symbol),
             "ORD_DVSN": "00" if price else "01",  # 00=지정가, 01=시장가
-            "ORD_QTY": str(int(qty)),
+            "ORD_QTY": str(_integer_qty(qty)),
             "ORD_UNPR": str(int(price)) if price else "0",
         }
         hk = self._hashkey(body)
-        r = requests.post(
+        r = self._post_with_retry(
             f"{self.base}/uapi/domestic-stock/v1/trading/order-cash",
-            headers=self._headers(tr, hashkey=hk), json=body, timeout=self.timeout)
-        r.raise_for_status()
+            tr, body, hashkey=hk)
         return r.json()

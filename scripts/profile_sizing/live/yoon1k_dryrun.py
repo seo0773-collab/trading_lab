@@ -43,8 +43,9 @@ def _load_dotenv(path: Path) -> None:
 
 _load_dotenv(ROOT / ".env")
 
+from profile_sizing.live.execution_layer import integer_execution_plan  # noqa: E402
 from profile_sizing.live.kis_client import KISClient  # noqa: E402
-from profile_sizing.live.rebalance import load_latest_target, rebalance_plan  # noqa: E402
+from profile_sizing.live.rebalance import load_latest_target  # noqa: E402
 
 
 def load_sleeves(strategy: str):
@@ -77,8 +78,8 @@ def fx_krw_per_usd() -> float:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--strategy", default="yoon1k_lp",
-                    help="yoon1k 계열 config id (기본 저가변형 yoon1k_lp)")
+    ap.add_argument("--strategy", default="yoon2",
+                    help="2단계 계층 config id (기본 yoon2)")
     ap.add_argument("--capital-krw", type=float, default=10_000_000,
                     help="총 투자원금(원). 통화 50/50 분할.")
     args = ap.parse_args(argv)
@@ -111,8 +112,8 @@ def main(argv=None) -> int:
             kis_sym = sym  # 국내는 .KS 포함해도 _is_domestic 가 처리
             prices[sym] = last_close(client, kis_sym, exch)
 
-        plan = rebalance_plan(targets, holdings={}, prices=prices, cash=cash,
-                              min_trade_value=min_tv)
+        plan = integer_execution_plan(targets, holdings={}, prices=prices, cash=cash,
+                                      min_trade_value=min_tv)
         unit = "$" if cur == "USD" else "원"
         print(f"── {cfg_id} 슬리브 [{cur}] · 배정 {cash:,.2f}{unit} "
               f"(목표 기준일 {snap['data_through']}, 레짐 {snap.get('market_regime')})")
@@ -122,7 +123,9 @@ def main(argv=None) -> int:
                   f"{o['price']:12,.2f} {o['est_value']:14,.2f} {o['target_w']*100:6.1f}%")
         if plan["skipped_no_price"]:
             print(f"   [가격없음 제외] {plan['skipped_no_price']}")
-        print(f"   소계: 주문 {len(plan['orders'])}건 · 계좌평가 {plan['account_value']:,.2f}{unit}\n")
+        print(f"   소계: 주문 {len(plan['orders'])}건 · 계좌평가 {plan['account_value']:,.2f}{unit}"
+              f" · 예상현금 {plan['expected_cash']:,.2f}{unit}"
+              f" · 재현율 {plan['target_fit']*100:.1f}%\n")
         grand_orders += len(plan["orders"])
 
     print(f"=== 총 주문 {grand_orders}건 (DRY-RUN, 제출 안 됨) ===")

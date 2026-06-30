@@ -55,6 +55,7 @@ def _load_dotenv(path: Path) -> None:
 _load_dotenv(ROOT / ".env")
 
 from profile_sizing.live.kis_client import KISClient, KISConfigError  # noqa: E402
+from profile_sizing.live.execution_layer import integer_execution_plan  # noqa: E402
 from profile_sizing.live.rebalance import load_latest_target, rebalance_plan  # noqa: E402
 
 
@@ -217,17 +218,22 @@ def execute_sleeve(st, min_tv, execute, budget_cash=None, verify=False):
     order, exch = st["order"], st["exch"]
     cash = float(budget_cash) if budget_cash is not None else st["cash"]
     src = "배정(통합·환전후)" if budget_cash is not None else "예수금"
-    plan = rebalance_plan(st["targets"], st["holdings"], st["prices"], cash,
-                          min_trade_value=min_tv)
+    plan = integer_execution_plan(st["targets"], st["holdings"], st["prices"], cash,
+                                  min_trade_value=min_tv)
     unit = "원" if domestic else "$"
     print(f"── {cfg_id} [{currency}] {src} {cash:,.2f}{unit} · 보유 {len(st['holdings'])}종 "
-          f"· 계좌평가 {plan['account_value']:,.2f}{unit} (목표 {st['snap']['data_through']})")
+          f"· 계좌평가 {plan['account_value']:,.2f}{unit}"
+          f" · 예상현금 {plan['expected_cash']:,.2f}{unit}"
+          f" · 재현율 {plan['target_fit']*100:.1f}% (목표 {st['snap']['data_through']})")
     if not plan["orders"]:
         print("   조정 주문 없음(이미 목표 근접)\n")
         return 0
     print(f"   {'종목':10} {'side':4} {'수량':>7} {'현재가':>12} {'예상금액':>13}")
     submitted = 0
-    for o in plan["orders"]:
+    import time as _t
+    for i, o in enumerate(plan["orders"]):
+        if execute and i:
+            _t.sleep(0.4)  # 주문 간 간격(KIS 모의 rate-limit 5xx 완화)
         print(f"   {o['symbol']:10} {o['side']:4} {o['qty']:7.0f} "
               f"{o['price']:12,.2f} {o['est_value']:13,.2f}", end="")
         if execute:
@@ -246,6 +252,8 @@ def execute_sleeve(st, min_tv, execute, budget_cash=None, verify=False):
             print("  (dry-run)")
     print(f"   주문 {len(plan['orders'])}건"
           + (f" · 제출 {submitted}건" if execute else " (미제출)"))
+    if plan.get("skipped_high_price"):
+        print(f"   [주당가격/현금 제약] {plan['skipped_high_price']}")
     # 체결 사후확인: 보유 변화로 체결/부분/미체결 대조(잔량은 다음 리밸런스서 자동 보정)
     if execute and verify and submitted:
         import time as _t
@@ -273,22 +281,30 @@ def execute_sleeve(st, min_tv, execute, budget_cash=None, verify=False):
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--strategy", default="yoon1k_lp")
+    ap.add_argument("--strategy", default="yoon2")
     ap.add_argument("--execute", action="store_true", help="모의 주문 실제 제출")
     ap.add_argument("--per-sleeve", action="store_true",
                     help="통화별 독립 예수금 사이징(통화 리밸런싱 안 함=드리프트). "
-                         "기본은 통합증거금(총자본 기준 50/50 복원). A3 재백테스트상 "
+                         "기본은 통합증거금(총자본 기준 통화 목표비중 복원). A3 재백테스트상 "
                          "드리프트는 Sharpe ~0.07 손실이라 비권장.")
     ap.add_argument("--total-krw", type=float, default=None,
                     help="총 투자원금(원) 강제. 미지정 시 두 슬리브 계좌평가 합산을 총자본으로.")
     ap.add_argument("--rebalance-band", type=float, default=0.05,
-                    help="통화비중이 목표±이 값 벗어날 때만 50/50 환전(기본 0.05=±5%%p). "
+                    help="통화비중이 목표±이 값 벗어날 때만 환전(기본 0.05=±5%%p). "
                          "A3: ±5%%p 밴드가 환전 최소화+분산효과 회수 최적.")
     ap.add_argument("--max-stale-days", type=int, default=7,
                     help="페이퍼 목표 기준일이 이보다 오래면 그 슬리브 주문 거부(저널 미갱신 방지, 기본 7일).")
     ap.add_argument("--allow-stale", action="store_true", help="stale 목표 가드 무시.")
     ap.add_argument("--verify", action="store_true",
                     help="--execute 후 잔고 재조회로 체결/부분/미체결 대조.")
+    ap.add_argument("--only-currency", choices=["USD", "KRW"], default=None,
+                    help="해당 통화 슬리브만 주문 제출(시장 장중 분리 실행용). 통화배분은 "
+                         "전체 슬리브 기준 계산하되 제출만 필터(타통화는 dry-run 표시).")
+    ap.add_argument("--seed-krw", type=float, default=None,
+                    help="의도한 총 시드(원). --execute 시 감지된 잔고가 시드×배수를 넘으면 "
+                         "허깨비 예수금풀로 보고 주문 전면 중단(KIS 모의 USD풀 오염 방지).")
+    ap.add_argument("--max-capital-mult", type=float, default=1.5,
+                    help="감지 자본/시드 허용 배수(기본 1.5). 초과+--execute면 중단.")
     args = ap.parse_args(argv)
     import pandas as pd
     integrated = not args.per_sleeve
@@ -296,26 +312,16 @@ def main(argv=None) -> int:
 
     try:
         data = KISClient.from_env("KIS", env="real")          # 시세=실키
-        order = KISClient.from_env("KIS_MOCK", env="mock")    # 국내 모의(상시대회)
+        order = KISClient.from_env("KIS_MOCK", env="mock")    # 국내/해외 모의 주문
     except KISConfigError as e:
         print(f"[자격증명 오류] {e}")
         print("필요: 시세 KIS_APP_KEY/SECRET/ACCOUNT(실), 주문 KIS_MOCK_APP_KEY/SECRET/ACCOUNT(모의)")
         return 1
 
-    # 해외주식 모의는 별도 '대회 계좌' — 계좌번호만 다르고 키는 동일(별도 키면 OVS_APP_*).
-    ovs_acct = os.environ.get("KIS_MOCK_OVS_ACCOUNT")
-    order_ovs = None
-    if ovs_acct:
-        order_ovs = KISClient(
-            env="mock",
-            app_key=os.environ.get("KIS_MOCK_OVS_APP_KEY") or order.app_key,
-            app_secret=os.environ.get("KIS_MOCK_OVS_APP_SECRET") or order.app_secret,
-            account=ovs_acct)
-
     cfg = json.loads((ROOT / "configs" / "strategies" / f"{args.strategy}.json")
                      .read_text("utf-8"))
     mode = "EXECUTE(모의 제출)" if args.execute else "DRY-RUN(미제출)"
-    margin = "·통합증거금(50/50 복원)" if integrated else "·통화독립(드리프트)"
+    margin = "·통합증거금(통화 목표비중 복원)" if integrated else "·통화독립(드리프트)"
     print(f"=== {args.strategy} · KIS 모의 리밸런스 · {mode}{margin} ===")
     print(f"시세 도메인 {data.base} · 주문 도메인 {order.base}")
     today = pd.Timestamp.today().normalize()
@@ -328,18 +334,28 @@ def main(argv=None) -> int:
     for sub in cfg["sub_strategies"]:
         cur = str(sub.get("currency", "KRW"))
         exch = None if cur == "KRW" else "AMEX"
-        if cur == "KRW":
-            oc = order
-        elif order_ovs is not None:
-            oc = order_ovs
-        else:
-            print(f"── {sub['config']} [{cur}] 건너뜀: 해외 모의계좌 미설정 "
-                  f"(.env 에 KIS_MOCK_OVS_ACCOUNT 추가 필요)\n")
-            continue
+        oc = order
         st = gather_sleeve(sub["config"], cur, exch, data, oc,
                            max_stale_days=stale_guard)
         if st is not None:
             states[sub["config"]] = st
+
+    # 1.5) 안전가드: 감지 자본이 시드×배수를 넘으면 허깨비 예수금풀(KIS 모의 USD풀이
+    #      시드와 무관하게 크게 선지급되는 문제)로 보고 --execute 전면 중단.
+    if args.execute and args.seed_krw and states:
+        try:
+            fx_g = fx_krw_per_usd()
+        except Exception:  # noqa: BLE001
+            fx_g = None
+        if fx_g:
+            detected = sum(st["account_value"] * (1.0 if st["currency"] == "KRW" else fx_g)
+                           for st in states.values())
+            if detected > args.seed_krw * args.max_capital_mult:
+                print(f"[중단] 감지 자본 {detected:,.0f}원 > 시드 {args.seed_krw:,.0f}원 × "
+                      f"{args.max_capital_mult} → 허깨비 예수금풀 추정. 주문 미제출.\n"
+                      f"  KIS 모의 USD 예수금을 시드에 맞게 축소(또는 모의계좌 초기화) 후 "
+                      f"재실행. (가드 무시: --seed-krw 미지정)")
+                return 2
 
     # 2) 통합증거금: 총자본·통화비중 → ±밴드 판정 → 50/50 배정현금 계산
     budgets: dict[str, float] = {}
@@ -364,7 +380,7 @@ def main(argv=None) -> int:
                   f"→ 환전 없이 각 슬리브 내부만 리밸런스\n")
         else:
             print(f"드리프트 {drift*100:.1f}%p > 밴드 {args.rebalance_band*100:.0f}%p "
-                  f"→ 50/50 복원(환전 필요):")
+                  f"→ 통화 목표비중 복원(환전 필요):")
             for sid, st in states.items():
                 cur = st["currency"]
                 unit = "원" if cur == "KRW" else "$"
@@ -374,11 +390,15 @@ def main(argv=None) -> int:
                       f"환전 {arrow} {abs(xfer_krw):,.0f}원 상당")
             print("   ⚠️ 원↔달러 실제 환전은 KIS 자동 미지원 → 수동 환전 후 주문 실행\n")
 
-    # 3) 슬리브별 주문표 산출/제출
+    # 3) 슬리브별 주문표 산출/제출 (--only-currency 시 해당 통화만 제출)
+    if args.only_currency:
+        print(f"[통화필터] {args.only_currency} 슬리브만 제출(타통화는 dry-run 표시)\n")
     total = 0
     for sid, st in states.items():
         min_tv = 50000.0 if st["currency"] == "KRW" else 50.0
-        total += execute_sleeve(st, min_tv, args.execute, budget_cash=budgets.get(sid),
+        eff_execute = args.execute and (
+            args.only_currency is None or st["currency"] == args.only_currency)
+        total += execute_sleeve(st, min_tv, eff_execute, budget_cash=budgets.get(sid),
                                 verify=args.verify)
     print(f"=== 총 {total}건 ({mode}) ===")
     return 0

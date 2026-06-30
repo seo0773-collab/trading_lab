@@ -1,6 +1,6 @@
 # yoon1k 실거래 운영 런북
 
-검증된 전략은 `yoon1k`(원본). 실매매 프록시 `yoon1k_lp`(저가 ETF)는 원본과 상관 0.991로
+검증된 전략은 `yoon1k`(원본). 실매매 프록시 `yoon2`(구 `yoon1k_lp`, 저가 ETF)는 원본과 상관 0.991로
 충실(A1 검증). **현실 기대치**: CAGR ~11%, MDD ~-15%, Sharpe **~1.04**(시간대 보정 1.06 −
 배당세). 양도세는 계좌유형 의존(ISA/연금·기본공제로 완화). 강세장 절대수익은 시장 하회(방어형).
 
@@ -47,6 +47,62 @@ PYTHONPATH=src .venv/bin/python scripts/profile_sizing/live/yoon1k_kis_rebalance
 PYTHONPATH=src .venv/bin/python scripts/profile_sizing/live/kis_field_probe.py
 ```
 
+## yoon2a (공격형 파생) — 모의 전진검증 전용
+
+`yoon2a` = yoon2 코어 74%(내부 yoon1j_lp/yoon1j_kr 50:50) + **SSO(2x S&P500) 26%**.
+live 레이어에서는 3개 슬리브로 평탄화한다(yoon2a.json의 `sub_strategies`): `yoon1j_lp`
+0.37(USD) / `yoon1j_kr` 0.37(KRW) / `sso_bh` 0.26(USD). SSO는 손픽 섹터(QLD/USD)가 아닌
+광의 시장 레버리지라 생존편향을 피한 변형이다. SSO 비중은 Strict+Sharpe 재최적화
+(2026-06-29)로 35%→26% 변경(B&H를 MDD·Sharpe 양 축에서 동시 지배).
+
+> **게이트**: `live_eligible=False`. 실계좌(real) 주문은 스크립트에서 차단(모의 전용).
+> OOS·실거래 검증 전까지 모의 전진검증만 수행한다. 방어형 yoon2보다 공격적이나, 26%
+> 비중에선 백테스트 MDD ~-26%(B&H -31%보다 오히려 얕음).
+
+```bash
+# 1) 목표 갱신(3슬리브) — sso_bh 는 buy&hold 라 항상 {SSO:1.0}, data_through 만 갱신
+PYTHONPATH=src .venv/bin/python scripts/profile_sizing/paper_trade.py --strategy yoon1j_lp
+PYTHONPATH=src .venv/bin/python scripts/profile_sizing/paper_trade.py --strategy yoon1j_kr
+PYTHONPATH=src .venv/bin/python scripts/profile_sizing/paper_trade.py --strategy sso_bh
+
+# 2) 드라이런(통화 목표비중 복원: USD 63%/KRW 37%, ±5%p 밴드, 신선도 가드 7일)
+PYTHONPATH=src .venv/bin/python scripts/profile_sizing/live/yoon1k_kis_rebalance.py --strategy yoon2a
+
+# 3) 모의 제출 + 체결 사후확인
+PYTHONPATH=src .venv/bin/python scripts/profile_sizing/live/yoon1k_kis_rebalance.py --strategy yoon2a --execute --verify
+```
+
+> 세션창: yoon1j_lp·sso_bh(미국)는 KST 밤(여름 22:30/겨울 23:30), yoon1j_kr(한국)는
+> 15:00 KST 경. 월간이라 매월 첫 영업일 1회면 충분(SSO 슬리브도 동일 창에서 함께 처리).
+
+### 스케줄러(cron) — 로컬 시뮬 원장 (채택 방식)
+
+**왜 로컬 원장인가**: KIS 모의계좌는 원/달러 예수금 풀을 **고정·불균형**(USD풀이 의도
+시드의 ~24배)으로 선지급해(2026-06-29 확인, 사용자 확인=시드 변경 불가), 통합 리밸런싱
+NAV가 무의미하다(통화비중 1498% → 허깨비 주문). 그래서 브로커를 거치지 않고 **고정
+시드(1천만원)** 로 목표 저널을 시장가에 마크투마켓하는 로컬 원장으로 전진 NAV를 계산한다.
+일봉 기준이라 **시장 시간/영업일 무관 → 월 1회 단일 실행**으로 충분.
+
+```cron
+# TZ=UTC. 매월 1일 06:00 UTC. 목표갱신 3슬리브 → 원장 update → NAV report.
+0 6 1 * * cd ~/trading_lab && scripts/profile_sizing/live/run_yoon2a_paper.sh
+```
+
+- 래퍼 `run_yoon2a_paper.sh`: paper_trade ×3(저널 갱신) → `paper_ledger update`(월 목표
+  기록, 버퍼 보존 결합비중) → `paper_ledger report`(50/50 벤치 대비 NAV).
+- 수동 확인: `PYTHONPATH=src .venv/bin/python scripts/profile_sizing/live/paper_ledger.py report`
+- 원장: `var/live/yoon2a_ledger.json` · 로그: `var/live/yoon2a_paper.log`
+
+> 시작점 무관(누적 percentile ~4~5년 포화, period=max라 충족) → 매 실행 목표가 백테스트
+> 최신과 일치. **한계**: 결정론적 시뮬(슬리피지·체결오차 없음=낙관 상한), 실체결 아님.
+
+### (보존) KIS 실계좌 경로 — 게이트 통과 후
+
+KIS 주문 경로(`yoon1k_kis_rebalance.py`)는 **실계좌용으로 보존**한다. 시장 시간이
+겹치지 않아 `--only-currency`로 KR창(02:00 UTC)·US창(15:00 UTC) 분리 제출하고,
+`--seed-krw`(래퍼 `SEED_KRW`) 안전가드가 감지 자본>시드×1.5면 주문을 전면 중단한다
+(허깨비 풀·예외 방지). `live_eligible=True` 승격 + 실주문 TR_ID 검증 후에만 사용.
+
 ## 모의투자 전진(forward) 경향성 검증 셋업
 
 목표: 백테스트 경향(위험조정 우위 + 낙폭 방어)이 **모의 실행**에서도 유지되는지 전진 측정.
@@ -60,26 +116,24 @@ PYTHONPATH=src .venv/bin/python scripts/profile_sizing/live/kis_track.py snapsho
 PYTHONPATH=src .venv/bin/python scripts/profile_sizing/live/kis_track.py report
 ```
 
-### ⚠️ 선행 조건 — 모의 계좌 등록(현재 미충족)
+### ⚠️ 선행 조건 — 모의 주문 검증
 
-2026-06-28 점검: 모의 **잔고 조회는 성공**(국내 예수금 1억 시드 확인)하나 **주문은 거부**
-(`msg_cd 40910000 "모의투자 주문이 불가한 계좌입니다"`, 시장가·지정가 공통 = 계좌 레벨).
-→ 주문이 나가려면 KIS 포털에서 다음을 확인/처리해야 한다(코드로 해결 불가):
+2026-06-28 점검: 현재 `KIS_MOCK_ACCOUNT`로 국내/해외 모의 잔고 조회가 가능하고,
+해외 모의 주문 엔드포인트도 계좌 불가 오류 없이 응답한다. 일요일 테스트에서는
+`msg_cd 40100000 "모의투자 영업일이 아닙니다"`가 반환되었으므로, 실제 접수 여부는
+영업일/장 시간에 소액 모의 주문으로 다시 확인한다.
 
-1. **국내주식 모의투자 참가 신청**(상시 모의투자) — 모의 계좌·기간 활성화.
-2. `KIS_MOCK_ACCOUNT` 가 **모의 앱키(`KIS_MOCK_APP_KEY`)에 바인딩된 계좌**와 일치하는지.
-   (실키를 모의 도메인에 쓰면 조회는 되어도 주문은 거부된다.)
-3. **해외주식 모의투자 계좌**는 별도 → 발급 후 `.env` 에 `KIS_MOCK_OVS_ACCOUNT` 추가
-   (없으면 US 슬리브가 통째 스킵되어 50/50 통화 검증 불가 = 반쪽 트래킹).
+확인할 것:
 
-위 1~3 충족 후 `--execute`가 체결되고, `kis_track` 이 양 통화 NAV 를 적립해 전진 경향을
-측정한다. 충족 전까지는 baseline 스냅샷만 쌓인다(잔고=현금 1억, 포지션 0).
+- **국내주식 모의투자 참가 신청**(상시 모의투자)과 계좌 기간이 활성 상태인지.
+- `KIS_MOCK_ACCOUNT` 가 **모의 앱키(`KIS_MOCK_APP_KEY`)에 바인딩된 계좌**와 일치하는지.
+- 해외 주문은 `KIS_MOCK_ACCOUNT`를 그대로 사용한다. 별도 `KIS_MOCK_OVS_ACCOUNT` 경로는 쓰지 않는다.
 
 ## 게이트 상태 (2026-06-28)
 
 - A1 프록시 검증 ✅ / A2 잔고파싱 안전화 ✅(KR 필드 `dnca_tot_amt` 실측 확인) /
   A3 통화 리밸런싱(50/50 ±5%p) ✅ / 시간대·세후 기대치 보정 ✅ /
   신선도 가드·체결 확인·세션 안내 ✅
-- **남은 것**: 해외(USD) 잔고 필드 실측(`KIS_MOCK_OVS_ACCOUNT` 설정 후 probe `--overseas`),
-  해외 주문 TR_ID 소액 모의 검증, 실계좌 전환(`confirm_real` 배선)은 모의 충분 검증 후.
+- **남은 것**: 해외 주문 TR_ID 소액 모의 검증(영업일/장 시간),
+  실계좌 전환(`confirm_real` 배선)은 모의 충분 검증 후.
 - ⚠️ 실서버 주문 TR_ID·해외 잔고 필드는 아직 미검증 → **소액 모의로 먼저 확인**.
