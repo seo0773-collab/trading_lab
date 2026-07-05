@@ -1,0 +1,48 @@
+{
+  "period": "2007-01-29~2026-07-02",
+  "bars": 4084,
+  "universe_lp": [
+    "VGT",
+    "XLF",
+    "IYH",
+    "FENY",
+    "FIDU",
+    "FSTA",
+    "IYC",
+    "XLU",
+    "XLB",
+    "FREL",
+    "FCOM"
+  ],
+  "point": {
+    "yoon2m_VGT": {
+      "total_return": 9.317302963214157,
+      "sharpe": 1.1690072148300477,
+      "max_drawdown": -0.17886733687961942,
+      "cagr": 0.15489181184571454,
+      "volatility": 0.1304596011063199
+    },
+    "yoon2m_IXN(현행)": {
+      "total_return": 8.967639084052845,
+      "sharpe": 1.1533707440364218,
+      "max_drawdown": -0.18064859687691026,
+      "cagr": 0.1524374181219248,
+      "volatility": 0.13037581723630545
+    },
+    "벤치 50/50": {
+      "total_return": 10.856102108699993,
+      "sharpe": 1.0707979123496882,
+      "max_drawdown": -0.31352661593084363,
+      "cagr": 0.16484124568247327,
+      "volatility": 0.15357677509635181
+    }
+  },
+  "prob": {
+    "P(MDD<벤치)_VGT": 0.956,
+    "P(MDD<벤치)_IXN": 0.9538,
+    "P(Sharpe>벤치)_VGT": 0.6262,
+    "P(Sharpe_VGT>IXN)": 0.8458,
+    "P(CAGR_VGT>IXN)": 0.8492
+  },
+  "verdict": "채택"
+}

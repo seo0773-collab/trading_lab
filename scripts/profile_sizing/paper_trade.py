@@ -70,6 +70,10 @@ def main(argv=None) -> int:
         # 단일종목 buy&hold 슬리브(예: yoon2a의 SSO). 포트폴리오 시뮬레이션 없이
         # 목표 {symbol:1.0} 을 그대로 저널에 적립한다(리밸런스 불필요·항상 보유).
         return _buy_hold_journal(args.strategy, raw)
+    if "sub_strategies" in raw:
+        # 계층 전략(yoon2m 등): 슬리브별 목표를 overrides 적용해 산출하고
+        # 통화 가중으로 합산. 안전자산 슬리브 목표도 포함(실보유 대상이므로).
+        return _hierarchical_journal(args.strategy, raw)
     cfg = config_from_dict(raw)
     mf, sf = raw.get("market_filter") or {}, raw.get("sector_filter") or {}
     top_k = int(raw.get("top_k", 20))
@@ -169,6 +173,127 @@ def _buy_hold_journal(strategy: str, raw: dict) -> int:
     print("=" * 64)
     print(f" 데이터 기준일 : {snap['data_through']}")
     print(f" 목표          : {sym} 100%")
+    print(f"\n저널 적립: {jpath}")
+    return 0
+
+
+def _portfolio_target(raw: dict) -> dict:
+    """flat 포트폴리오 config 하나의 현재 목표(주식 + 안전자산 슬리브) 산출.
+
+    main()의 flat 경로와 달리 safe_sleeve 목표를 포함한다 — 계층 저널은 '지금 들고
+    있어야 할 전체 포트폴리오'가 목적이므로. 기존 flat 저널(live 오케스트레이터가
+    소비)은 동작 불변을 위해 이 함수를 쓰지 않는다.
+    """
+    from run_kalman_pipeline import load_yfinance
+
+    cfg = config_from_dict(raw)
+    mf, sf = raw.get("market_filter") or {}, raw.get("sector_filter") or {}
+    ss = raw.get("safe_sleeve") or {}
+    top_k = int(raw.get("top_k", 20))
+    rebal = str(raw.get("rebalance_freq", "monthly"))
+    gain = float(raw.get("exposure_gain", 1.0))
+
+    panels, spy, sect = _load_all(list(raw["universe"]), cfg, mf, sf)
+    scores, prices = compute_universe(panels, cfg)
+    if prices.empty:
+        raise RuntimeError("데이터 로드 실패")
+
+    safe_close = None
+    if ss.get("enabled"):
+        sc = {}
+        for s in ss.get("symbols", []):
+            try:
+                ser = load_yfinance(s, cfg.interval, cfg.period)["close"]
+            except Exception:  # noqa: BLE001
+                continue
+            idx = pd.DatetimeIndex(pd.to_datetime(ser.index))
+            if idx.tz is not None:
+                idx = idx.tz_localize(None)
+            sc[s] = pd.Series(ser.to_numpy(dtype=float), index=idx)
+        safe_close = sc or None
+
+    sim = simulate_portfolio(
+        scores, prices, cfg, top_k=top_k, rebal_freq=rebal,
+        market_close=spy, market_ma_len=int(mf.get("ma_len", sf.get("ma_len", 200))),
+        market_off_scale=float(mf.get("off_scale", 0.5)), exposure_gain=gain,
+        sector_close=sect, symbol_sector=(SECTOR_INDEX if sect else None),
+        sector_off_scale=float(sf.get("off_scale", 0.5)),
+        safe_close=safe_close, safe_ratio=float(ss.get("ratio", 0.0)),
+        safe_max=float(ss.get("max", 0.0)), safe_ma_len=int(ss.get("ma_len", 100)))
+
+    fc = sim["forecast"]
+    safe_targets = {}
+    stw = sim.get("safe_target_weights")
+    if stw is not None and len(stw):
+        safe_targets = {s: float(w) for s, w in stw.iloc[-1].items() if w > 1e-9}
+    return {
+        "targets": {s: float(w) for s, w in sim["last_target"].items()},
+        "safe_targets": safe_targets,
+        "last_rebal_date": str(pd.Timestamp(sim["last_rebal_date"]).date()),
+        "data_through": str(fc.index[-1].date()),
+        "exposure": float(fc["stock_exposure"].iloc[-1]),
+        "cash": float(fc["cash_ratio"].iloc[-1]),
+        "market_ok": float(fc["market_ok"].iloc[-1]),
+    }
+
+
+def _hierarchical_journal(strategy: str, raw: dict) -> int:
+    """계층 전략(sub_strategies) 페이퍼 저널: 슬리브별 목표 × 통화 가중 합산."""
+    subs = raw["sub_strategies"]
+    combined: dict[str, float] = {}
+    sleeves: dict[str, dict] = {}
+    expo = cash = 0.0
+    data_through, last_rebal, regimes = [], [], []
+    for sub in subs:
+        sid = sub["config"]
+        scfg = json.loads((ROOT / "configs" / "strategies" / f"{sid}.json").read_text())
+        if sub.get("overrides"):
+            scfg.update(sub["overrides"])
+        w = float(sub.get("weight", 1.0 / len(subs)))
+        print(f"[{strategy}] 슬리브 {sid} (w={w:g}) 계산 ...", flush=True)
+        t = _portfolio_target(scfg)
+        for s, v in {**t["targets"], **t["safe_targets"]}.items():
+            combined[s] = combined.get(s, 0.0) + v * w
+        regime = "정상" if t["market_ok"] >= 1.0 else f"약세(x{t['market_ok']:g})"
+        sleeves[sid] = {
+            "weight": w, "currency": str(sub.get("currency", "")),
+            "market_regime": regime, "exposure": round(t["exposure"], 4),
+            "safe_targets": {k: round(v, 4) for k, v in t["safe_targets"].items()},
+            "last_rebal_date": t["last_rebal_date"],
+            "data_through": t["data_through"],
+        }
+        expo += w * t["exposure"]
+        cash += w * t["cash"]
+        data_through.append(t["data_through"])
+        last_rebal.append(t["last_rebal_date"])
+        regimes.append(f"{sid}:{regime}")
+
+    snap = {
+        "run_at": dt.datetime.now().isoformat(timespec="seconds"),
+        "strategy": strategy,
+        "data_through": min(data_through),      # stale 가드: 가장 늦은 데이터 기준
+        "last_rebal_date": max(last_rebal),
+        "exposure": round(expo, 4),
+        "cash": round(cash, 4),
+        "market_regime": " · ".join(regimes),
+        "n_holdings": len(combined),
+        "targets": {s: round(v, 4) for s, v in
+                    sorted(combined.items(), key=lambda kv: -kv[1])},
+        "sleeves": sleeves,
+    }
+
+    jdir = ROOT / "var" / "paper_trading"
+    jdir.mkdir(parents=True, exist_ok=True)
+    jpath = jdir / f"{strategy}_journal.jsonl"
+    prev = None
+    if jpath.exists():
+        lines = [ln for ln in jpath.read_text().splitlines() if ln.strip()]
+        if lines:
+            prev = json.loads(lines[-1])
+    with jpath.open("a") as fh:
+        fh.write(json.dumps(snap, ensure_ascii=False) + "\n")
+
+    _print_report(snap, prev, False)
     print(f"\n저널 적립: {jpath}")
     return 0
 

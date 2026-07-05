@@ -371,6 +371,8 @@ class Yoon1kHandler:
         tf = float(config.get("train_frac", 0.6))
         vf = float(config.get("validation_frac", 0.2))
         te, ve = int(n * tf), int(n * (tf + vf))
+        if phase == "train":
+            return index[:te]
         if phase == "validation":
             return index[te:ve]
         if phase == "test":
