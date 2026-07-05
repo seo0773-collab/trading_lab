@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Any
 
 import numpy as np
@@ -21,9 +22,12 @@ EXIT_REASON_LABELS = {
     "trailing_take_profit": "트레일링 익절",
     "poc_target": "POC 도달",
     "va_stop": "VA 경계 손절",
+    "squeeze_guard": "스퀴즈 가드 청산",
 }
 
 PRICE_COLUMNS = ("open", "high", "low", "close")
+CYCLE_MULTIPLE_COLUMNS = ("cm_open", "cm_high", "cm_low", "cm_close")
+NON_INDICATOR_COLUMNS = set(PRICE_COLUMNS) | {"volume"}
 
 DERIVED_EDGE = "expected_edge_pct"
 DERIVED_THRESHOLD = "entry_threshold_pct"
@@ -325,7 +329,7 @@ def indicator_series(
     """
     series: dict[str, pd.Series] = {}
     for column in forecast.columns:
-        if column in PRICE_COLUMNS:
+        if column in NON_INDICATOR_COLUMNS:
             continue
         values = pd.to_numeric(forecast[column], errors="coerce")
         if values.notna().any():
@@ -340,6 +344,202 @@ def indicator_series(
             .quantile(confidence_quantile).shift(1)
         )
     return series
+
+
+def forecast_has_cycle_profile(forecast: pd.DataFrame) -> bool:
+    return all(column in forecast for column in CYCLE_MULTIPLE_COLUMNS)
+
+
+def _profile_display_config(config: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    profile = config.get("profile") or {}
+    smoothing = config.get("smoothing") or {}
+    dashboard = ((config.get("dashboard") or {}).get("cycle_profile") or {})
+    return profile, smoothing, dashboard
+
+
+def _gaussian_kernel(sigma: float) -> np.ndarray:
+    sigma = float(sigma)
+    if sigma <= 0.0:
+        return np.array([1.0])
+    radius = max(1, int(np.ceil(4.0 * sigma)))
+    x = np.arange(-radius, radius + 1, dtype=float)
+    kernel = np.exp(-0.5 * (x / sigma) ** 2)
+    return kernel / kernel.sum()
+
+
+def _dashboard_profile_at_anchor(
+    forecast: pd.DataFrame, config: dict[str, Any], anchor_pos: int
+) -> tuple[np.ndarray, np.ndarray]:
+    profile, smoothing, _ = _profile_display_config(config)
+    min_mult = float(profile.get("min_mult", 0.0))
+    max_mult = float(profile.get("max_mult", 5.0))
+    bin_count = int(profile.get("bin_count", 120))
+    window = max(1, int(profile.get("rolling_window", 63)))
+    mode = str(profile.get("accumulation_mode", "range_uniform")).lower()
+    weight_mode = str(profile.get("weight_mode", "time")).lower()
+    close_weight_max_share = float(profile.get("close_weight_max_share", 0.70))
+    close_weight_full_range_bins = float(
+        profile.get("close_weight_full_range_bins", 12.0)
+    )
+    sigma = float(smoothing.get("sigma_bins", 2.0))
+
+    edges = np.linspace(min_mult, max_mult, bin_count + 1)
+    centers = (edges[:-1] + edges[1:]) / 2.0
+    lo_e, hi_e = edges[:-1], edges[1:]
+    hist = np.zeros(bin_count, dtype=float)
+
+    start = max(0, anchor_pos - window + 1)
+    frame = forecast.iloc[start:anchor_pos + 1]
+    volume = (
+        pd.to_numeric(frame["volume"], errors="coerce").to_numpy(dtype=float)
+        if "volume" in frame else np.ones(len(frame), dtype=float)
+    )
+    volume = np.nan_to_num(volume, nan=0.0, posinf=0.0, neginf=0.0)
+    if weight_mode == "time":
+        weights = np.ones(len(frame), dtype=float)
+    elif weight_mode == "volume_fallback":
+        weights = np.where(volume > 0.0, volume, 1.0)
+    else:
+        weights = volume
+
+    opens = pd.to_numeric(frame["cm_open"], errors="coerce").to_numpy(dtype=float)
+    highs = pd.to_numeric(frame["cm_high"], errors="coerce").to_numpy(dtype=float)
+    lows = pd.to_numeric(frame["cm_low"], errors="coerce").to_numpy(dtype=float)
+    closes = pd.to_numeric(frame["cm_close"], errors="coerce").to_numpy(dtype=float)
+    bin_width = (max_mult - min_mult) / max(bin_count, 1)
+
+    def add_point(value: float, weight: float) -> None:
+        if not np.isfinite(value) or weight <= 0.0 or value < min_mult or value > max_mult:
+            return
+        idx = int(np.searchsorted(edges, value, side="right") - 1)
+        hist[int(np.clip(idx, 0, bin_count - 1))] += weight
+
+    for opn, high, low, close, weight in zip(opens, highs, lows, closes, weights):
+        if weight <= 0.0 or not np.isfinite([high, low, close]).all():
+            continue
+        if mode == "ohlc":
+            for value in (opn, high, low, close):
+                add_point(value, weight / 4.0)
+            continue
+
+        a = float(np.clip(min(low, high), min_mult, max_mult))
+        b = float(np.clip(max(low, high), min_mult, max_mult))
+        span = max(b - a, 1e-9)
+        overlap = np.clip(np.minimum(b, hi_e) - np.maximum(a, lo_e), 0.0, None)
+        range_contrib = overlap / span * weight
+        if mode == "range_close":
+            range_in_bins = (b - a) / bin_width if bin_width > 0.0 else 0.0
+            full_range = max(close_weight_full_range_bins, 1e-9)
+            close_share = np.clip(close_weight_max_share, 0.0, 0.95) * np.clip(
+                range_in_bins / full_range, 0.0, 1.0
+            )
+            hist += range_contrib * (1.0 - close_share)
+            add_point(close, weight * close_share)
+        else:
+            hist += range_contrib
+
+    if hist.sum() <= 0.0:
+        return centers, hist
+    smooth = np.convolve(hist, _gaussian_kernel(sigma), mode="same")
+    smooth = np.maximum(smooth, 0.0)
+    total = smooth.sum()
+    return centers, smooth / total if total > 0.0 else smooth
+
+
+def build_cycle_profile_figure(
+    forecast: pd.DataFrame,
+    config: dict[str, Any],
+    *,
+    symbol: str,
+    anchor_time: Any | None = None,
+) -> go.Figure:
+    """Cycle-multiple candle chart with an anchored rolling profile overlay."""
+    if not forecast_has_cycle_profile(forecast):
+        return go.Figure()
+    frame = forecast.dropna(subset=list(CYCLE_MULTIPLE_COLUMNS), how="any")
+    if frame.empty:
+        return go.Figure()
+    if anchor_time is None:
+        anchor_pos = len(frame) - 1
+    else:
+        indexer = frame.index.get_indexer([pd.Timestamp(anchor_time)], method="nearest")
+        anchor_pos = int(indexer[0]) if len(indexer) and indexer[0] >= 0 else len(frame) - 1
+    anchor_pos = int(np.clip(anchor_pos, 0, len(frame) - 1))
+    anchor_ts = pd.Timestamp(frame.index[anchor_pos])
+
+    centers, profile_prob = _dashboard_profile_at_anchor(frame, config, anchor_pos)
+    profile_max = float(np.nanmax(profile_prob)) if profile_prob.size else 0.0
+    _, _, dashboard = _profile_display_config(config)
+    width_bars = float(dashboard.get("max_width_bars", 60))
+    diffs = pd.Series(pd.DatetimeIndex(frame.index)).diff().dropna()
+    step = diffs.median() if not diffs.empty else pd.Timedelta(days=1)
+    if pd.isna(step) or step <= pd.Timedelta(0):
+        step = pd.Timedelta(days=1)
+    max_offset = step * width_bars
+
+    figure = go.Figure()
+    figure.add_trace(go.Candlestick(
+        x=frame.index,
+        open=frame["cm_open"],
+        high=frame["cm_high"],
+        low=frame["cm_low"],
+        close=frame["cm_close"],
+        name="Cycle multiple candle",
+        increasing_line_color="#26c6da",
+        decreasing_line_color="#ef5350",
+        opacity=0.82,
+    ))
+    for column, label, color in [
+        ("lower_band", "Lower band", "#00c853"),
+        ("poc_mult", "POC", "#ffb300"),
+        ("upper_band", "Upper band", "#ff1744"),
+    ]:
+        if column in frame:
+            figure.add_trace(go.Scatter(
+                x=frame.index,
+                y=pd.to_numeric(frame[column], errors="coerce"),
+                mode="lines",
+                name=label,
+                line={"color": color, "width": 1.0, "dash": "dot"},
+            ))
+
+    if profile_max > 0.0:
+        x_profile = [
+            anchor_ts + max_offset * float(value / profile_max)
+            for value in profile_prob
+        ]
+        x_poly = [anchor_ts, *x_profile, anchor_ts]
+        y_poly = [centers[0], *centers, centers[-1]]
+        figure.add_trace(go.Scatter(
+            x=x_poly,
+            y=y_poly,
+            mode="lines",
+            fill="toself",
+            name="Anchor rolling profile",
+            line={"color": "rgba(167,139,250,0.95)", "width": 1.1},
+            fillcolor="rgba(167,139,250,0.22)",
+            hovertemplate="%{y:.4f}x<extra>profile</extra>",
+        ))
+
+    figure.add_vline(
+        x=anchor_ts,
+        line_color="rgba(255,255,255,0.5)",
+        line_dash="dash",
+        line_width=1,
+    )
+    figure.add_hline(y=1.0, line_color="rgba(255,255,255,0.26)", line_dash="dot")
+    figure.update_layout(
+        title=f"{symbol} cycle multiple candle · rolling profile anchor",
+        height=620,
+        hovermode="x unified",
+        legend={"orientation": "h", "y": 1.06, "x": 0},
+        margin={"l": 45, "r": 35, "t": 80, "b": 40},
+        template="plotly_dark",
+        uirevision=f"cycle-profile-{symbol}",
+    )
+    figure.update_xaxes(rangeslider_visible=False)
+    figure.update_yaxes(title_text="Cycle multiple")
+    return _apply_theme(figure)
 
 
 def build_waveform_figure(
@@ -751,6 +951,162 @@ def build_scatter_figure(
     figure.update_layout(
         title=label, height=420, template="plotly_dark",
         xaxis_title=x, yaxis_title=y, showlegend=True,
+    )
+    return _apply_theme(figure)
+
+
+def field_move_threshold_options(frame: pd.DataFrame) -> list[int]:
+    """state_field형 프레임에 담긴 임계값별 move 라벨(pct 정수) 목록.
+
+    ``move_dir_<pct>``/``move_id_<pct>`` 컬럼 쌍을 발견해 임계값 노브의
+    선택지로 쓴다(전략이 아티팩트에 미리 계산해 담는다 — UI 재계산 없음).
+    """
+    out: set[int] = set()
+    for column in frame.columns:
+        match = re.fullmatch(r"move_dir_(\d+)", str(column))
+        if match and f"move_id_{match.group(1)}" in frame:
+            out.add(int(match.group(1)))
+    return sorted(out)
+
+
+def _big_move_segments(
+    dirs: pd.Series,
+    ids: pd.Series,
+    x: pd.Series,
+    y: pd.Series,
+    direction: int,
+) -> tuple[list[float | None], list[float | None]]:
+    """``direction`` 부호의 move leg들을 (x, y) 꺾은선 좌표로 잇는다.
+
+    행 순서(=시간 순서)를 유지한 채 같은 ``move_id`` 연속 구간을 한 선분으로
+    만들고, leg 사이는 ``None`` 구분자로 끊는다. leg 시작 직전 행이 다른 leg에
+    속하면(공유 pivot이 새 leg에 귀속된 경우) 그 점을 앞에 붙여 반전 지점에서
+    선이 끊기지 않게 한다.
+    """
+    d = pd.to_numeric(dirs, errors="coerce").fillna(0).astype(int).to_numpy()
+    mid = pd.to_numeric(ids, errors="coerce").fillna(-1).astype(int).to_numpy()
+    xv = pd.to_numeric(x, errors="coerce").to_numpy(dtype=float)
+    yv = pd.to_numeric(y, errors="coerce").to_numpy(dtype=float)
+
+    xs: list[float | None] = []
+    ys: list[float | None] = []
+    i, n = 0, len(d)
+    while i < n:
+        if d[i] != direction or mid[i] < 0:
+            i += 1
+            continue
+        j = i
+        while j + 1 < n and mid[j + 1] == mid[i]:
+            j += 1
+        seg_x = list(xv[i:j + 1])
+        seg_y = list(yv[i:j + 1])
+        if i > 0 and mid[i - 1] >= 0 and mid[i - 1] != mid[i]:
+            seg_x.insert(0, xv[i - 1])
+            seg_y.insert(0, yv[i - 1])
+        if xs:
+            xs.append(None)
+            ys.append(None)
+        xs.extend(seg_x)
+        ys.extend(seg_y)
+        i = j + 1
+    return xs, ys
+
+
+def build_field_dot_figure(
+    frame: pd.DataFrame,
+    *,
+    label: str,
+    show_moves: bool = True,
+    move_threshold_pct: int | None = None,
+) -> go.Figure:
+    """3x3 regime field observations as jittered dots, not a color heatmap.
+
+    ``move_dir``(±1)/``move_id``(leg 번호) 컬럼이 있으면 같은 leg의 점을
+    시간 순서대로 이어 큰 상승(초록)/하락(빨강) 궤적 선을 겹쳐 그린다 —
+    연속 좌표(x/y) 상태 필드에서 큰 파동 동안 상태가 어떻게 이동하는지 보여준다.
+
+    ``move_threshold_pct``를 주면 그 임계값의 사전 계산 라벨
+    (``move_dir_<pct>``/``move_id_<pct>``)을 대신 사용하고, ``show_moves=False``
+    면 궤적 선을 그리지 않는다 — 패널 노브(토글/슬라이더)가 이 두 인자로 잇는다.
+    """
+    if "x" in frame and "y" in frame:
+        x = pd.to_numeric(frame["x"], errors="coerce")
+        y = pd.to_numeric(frame["y"], errors="coerce")
+    else:
+        x = pd.to_numeric(frame.get("angle_bin"), errors="coerce")
+        y = pd.to_numeric(frame.get("mult_bin"), errors="coerce")
+    custom_cols = [
+        col for col in ("time", "sleeve", "symbol", "cell", "target_weight")
+        if col in frame
+    ]
+    customdata = frame[custom_cols].astype(str).to_numpy() if custom_cols else None
+    hover = "angle %{x:.2f}<br>mult %{y:.2f}<extra></extra>"
+    if custom_cols:
+        labels = "<br>".join(
+            f"{col}: %{{customdata[{i}]}}" for i, col in enumerate(custom_cols)
+        )
+        hover = labels + "<br>angle %{x:.2f}<br>mult %{y:.2f}<extra></extra>"
+    figure = go.Figure(go.Scattergl(
+        x=x,
+        y=y,
+        mode="markers",
+        name=label,
+        showlegend=False,
+        customdata=customdata,
+        marker=dict(
+            size=4,
+            color="rgba(215,227,244,0.34)",
+            line=dict(width=0),
+        ),
+        hovertemplate=hover,
+    ))
+    dir_col, id_col = "move_dir", "move_id"
+    if (move_threshold_pct is not None
+            and f"move_dir_{move_threshold_pct}" in frame
+            and f"move_id_{move_threshold_pct}" in frame):
+        dir_col = f"move_dir_{move_threshold_pct}"
+        id_col = f"move_id_{move_threshold_pct}"
+    has_moves = False
+    if show_moves and dir_col in frame and id_col in frame:
+        for direction, color, name in (
+            (1, WAVEFORM_PALETTE[6], "큰 상승 구간"),
+            (-1, WAVEFORM_PALETTE[5], "큰 하락 구간"),
+        ):
+            seg_x, seg_y = _big_move_segments(
+                frame[dir_col], frame[id_col], x, y, direction
+            )
+            if seg_x:
+                has_moves = True
+                figure.add_trace(go.Scattergl(
+                    x=seg_x,
+                    y=seg_y,
+                    mode="lines",
+                    name=name,
+                    line=dict(color=color, width=2),
+                    opacity=0.85,
+                    hoverinfo="skip",
+                ))
+    for value in (-0.5, 0.5, 1.5, 2.5):
+        figure.add_vline(x=value, line_color="rgba(255,255,255,0.10)", line_width=1)
+        figure.add_hline(y=value, line_color="rgba(255,255,255,0.10)", line_width=1)
+    figure.update_layout(
+        title=label,
+        height=560,
+        template="plotly_dark",
+        xaxis_title="angle_bin (0=하락, 2=상승)",
+        yaxis_title="mult_bin (0=저, 2=고)",
+        showlegend=has_moves,
+        legend={"orientation": "h", "y": 1.08, "x": 0},
+        margin={"l": 45, "r": 25, "t": 75, "b": 45},
+        uirevision=f"field-dots-{label}",
+    )
+    figure.update_xaxes(
+        range=[-0.55, 2.55], tickmode="array", tickvals=[0, 1, 2],
+        ticktext=["하락", "중립", "상승"],
+    )
+    figure.update_yaxes(
+        range=[-0.55, 2.55], tickmode="array", tickvals=[0, 1, 2],
+        ticktext=["저멀티플", "중멀티플", "고멀티플"],
     )
     return _apply_theme(figure)
 

@@ -1,563 +1,1406 @@
-# DI Kalman M/W 전략 수정 계획
+목표:
+TradingView Pine v6 지표의 Rolling Profile 개념을 Python 전략으로 옮기고 싶다. rolling window를 63 bars로 설정했을 때, 매 bar마다 profile 분포가 어떻게 증가/감소하는지를 이용해 smooth profile distribution을 만들고, 현재 가격이 그 분포의 상단/하단 어디에 위치하는지로 매수/매도 기대값을 추정하는 전략을 설계해줘.
 
-작성일: 2026-06-13
+현재 Pine 지표 핵심 구조:
+- baseCalcTf 기준으로 계산한다. 기본은 D.
+- cycle = smooth(close, baseLen, baseType) * baseScale
+- 각 가격은 raw price가 아니라 price / cycle 로 normalize한 multiple 공간에서 계산한다.
+- profileMinMult ~ profileMaxMult 범위를 profileBinCount개 bin으로 나눈다.
+- 각 bar의 contribution을 profile histogram에 누적한다.
+- rolling update는 다음 구조다:
 
-## 진행 상태
+    H_t = H_{t-1} + contribution(current_bar) - contribution(bar_63_bars_ago)
 
-2026-06-13 기준:
+- 즉 rollingProfileBars = 63이면, 최신 63개 base bar의 profile만 유지한다.
+- profile accumulation modes:
+    1. Range Uniform: low~high 구간을 겹치는 bin에 균등 분배
+    2. OHLC: open/high/low/close에 각각 25% 분배
+    3. Range + Close Weight: range 분배에 close bin 가중치를 추가
+- weight modes:
+    1. Time: 모든 bar weight = 1
+    2. Volume: volume 사용
+    3. Volume With 1 Fallback: volume이 있으면 volume, 없으면 1
 
-```text
-Phase 0: 완료 - 기준선 및 기존 버킷 모델 보존
-Phase 1: 완료 - split 경계 누수, 성과 귀속, P4/P5 통계 분리 수정
-Phase 2: 완료 - P1~P4 feature / P5·가격 outcome 데이터셋 구현
-Phase 3: 완료 - train-only weighted k-NN 유사도 예측기 구현
-Phase 4: 완료 - 유사 이웃 실제 가격 경로 기반 보수적 EV 구현
-Phase 5: 완료 - 온라인 P5 후보 경로 재평가 및 의사결정 로그 구현
-Phase 6: preflight 완료 - 1h 3개 데이터셋만 백테스트 실행 가능
-Phase 7: 미착수
-```
+전략화 아이디어:
+1. Python에서 각 bar를 contribution vector로 변환한다.
+2. 최근 63개 contribution vector를 deque에 보관한다.
+3. 매 bar마다 새 contribution을 더하고, 63개 초과 시 가장 오래된 contribution을 뺀다.
+4. 이 rolling histogram을 local kernel smoothing 또는 KDE로 매끄러운 분포로 근사한다. 전역 대칭 Gaussian 분포를 fit하지 않는다.
+5. smooth profile의 CDF를 계산한다.
+6. 현재 close multiple이 profile에서 몇 percentile에 위치하는지 계산한다.
 
-Phase 1 검증 결과:
+기본 점수화:
+- m_t = close_t / cycle_t
+- F_t = smooth_profile CDF at m_t
+- mean reversion score:
 
-```text
-전체 unittest: 51개 통과
-합성 4h P4 train 통계: 후보 36, 완결 36
-합성 4h P5 train 통계: 후보 36, 완결 10, 미완결/경계 제외 26
-split을 넘어간 실제 거래: 0
-train transition P1~P5 완결 사례: 74
-```
+    score = 2 * (0.5 - F_t)
 
-Phase 1 구현 내용:
+예:
+- F_t = 0.05 -> score ≈ +0.90, 강한 매수 후보
+- F_t = 0.50 -> score ≈ 0.00, 중립
+- F_t = 0.95 -> score ≈ -0.90, 강한 매도 후보
 
-- baseline trade outcome이 다음 split을 사용하면 학습에서 제외
-- transition 학습은 P4와 P5 confirmation이 모두 train인 사례만 사용
-- P4 진입 통계와 P5 confirmation 진입 통계를 별도로 적합
-- 포지션은 split 마지막 봉에서 `split_boundary`로 강제 청산
-- split 마지막 봉의 신호는 다음 split에 진입하지 않도록 차단
-- 거래 손익과 bar return이 동일 split에 귀속되도록 통일
-- 관련 회귀 테스트 추가
+주의점:
+- profile 상단이라고 무조건 매도하면 안 된다.
+- 상단 위치는 “과포화/되돌림”일 수도 있지만, “breakout/acceptance”일 수도 있다.
+- 따라서 profile 위치 점수는 raw alpha가 아니라 상태 변수로 보고, 과거 데이터에서 미래수익률로 기대값을 보정해야 한다.
 
-Phase 2~3 검증 결과(합성 4h, 9,000 bars, seed 7):
+검증 방식:
+- 각 bar에서 profile score를 계산한다.
+- 미래 수익률을 여러 horizon으로 측정한다:
 
-```text
-전체 패턴 사례: 244
-train 완결 P1~P5 사례: 154
-validation 평가 사례: 38
-similarity P5 위치 MAE: 0.8846 mean-leg
-train global median MAE: 1.5586 mean-leg
-MAE 감소율: 43.24%
-q10~q90 coverage: 81.58%
-continuation Brier score: 0.2121
-평균 effective_n: 30.06
-평균 confidence: 0.6324
-```
+    H = 1, 3, 5, 10, 20 bars
 
-이 수치는 합성 데이터의 연구 기준선일 뿐 전략 수익성을 의미하지 않는다.
-실제 가격 경로 기반 기대값과 온라인 상태 모델을 구현했더라도 Phase 6
-실데이터 validation을 통과하기 전에는 매매 우위를 주장하지 않는다.
+- score 구간별로 다음을 계산한다:
+    - mean future return
+    - win rate
+    - avg win
+    - avg loss
+    - expectancy = P(win) * avg_win - P(loss) * avg_loss - trading_cost
+    - MFE / MAE
+    - sample count
 
-Phase 4~5 검증 결과(합성 4h, 9,000 bars, seed 7):
+필요 feature 후보:
+- close_percentile: 현재 close의 profile CDF percentile
+- candle_percentile: OHLC 또는 range 평균 percentile
+- density_at_price: 현재 가격 위치의 smooth profile density
+- POC distance: 현재가와 profile peak 간 거리
+- lower/upper percentile band
+- profile_width: upper - lower
+- profile_skew: 상단 질량 / 하단 질량
+- profile_delta: H_t - H_{t-1}
+- positive_delta_mass / negative_delta_mass
+- profile stability: 최근 profile 변화량이 작은지
+- JS divergence 또는 cosine distance로 profile 변화 강도 측정
 
-```text
-가격 EV train 사례: 154
-가격 EV validation 사례: 38
-예측 순수익 MAE: 0.1354
-평균 예측 순수익: -0.0523
-평균 실현 순수익: -0.0739
-q25 하한/표본 기준 진입 가능 사례: 0
+라이브 tick 처리 주의:
+- 현재 진행 중인 봉을 tick마다 hist에 계속 더하면 중복 누적된다.
+- live에서는 closed_hist와 current live contribution을 분리해야 한다.
 
-온라인 train snapshot: 6,481
-온라인 validation snapshot: 1,758
-남은 순수익 예측 MAE: 0.1130
-온라인 hold 판단: 454
-온라인 exit 판단: 1,304
-온라인 reverse 판단: 0
-```
+구조:
+    closed_hist = 확정된 최근 봉들의 rolling histogram
+    live_contribution = 현재 진행 중인 봉의 임시 contribution
+    live_profile = closed_hist + live_contribution
 
-진입 가능 사례가 0인 것은 구현 오류로 보지 않는다. 현재 합성 데이터와
-보수적 q25 하한에서 검증된 양의 기대값이 없다는 뜻이다. 백테스트 성과를
-만들 목적으로 `entry_margin`, lower quantile, 최소 표본을 완화하지 않는다.
-온라인 판단은 현재 연구 로그만 생성하며 실제 청산/반전 주문에는 연결하지
-않았다.
+봉이 닫힐 때만 live_contribution을 deque에 확정 저장하고, 63개 초과분을 제거한다.
 
-실데이터 preflight 결과:
+요청:
+- 위 아이디어를 Python 전략/백테스트 구조로 설계해줘.
+- 가능하면 모듈 구조를 제안해줘.
+- contribution 계산, rolling histogram, smoothing, CDF percentile score, expectancy table, walk-forward 검증까지 구현 가능한 형태로 정리해줘.
+- 전략 신호는 단순 threshold가 아니라, score 구간별 historical expectancy 기반으로 판단하는 방식이 좋다.
 
-```text
-BTCUSDT 1h: ready, train 3.87년, 완결 P5 1,068
-ETHUSDT 1h: ready, train 3.87년, 완결 P5 1,077
-SOLUSDT 1h: ready, train 3.50년, 완결 P5 1,029
+중요: “profile delta를 보고 분포가 이동했다”고 해석하기보다는, bar별 contribution의 유입/유출로 해석하고, 최종 매매 판단은 smooth profile percentile과 과거 미래수익률 검증으로 기대값화해줘.
 
-BTCUSDT 4h: not ready, 완결 P5 279 / 최소 300
-ETHUSDT 4h: not ready, 완결 P5 285 / 최소 300
-SOLUSDT 4h: not ready, 완결 P5 248 / 최소 300
+---
 
-BTCUSDT 1d: not ready, train 3.87년 / 최소 10년, 완결 P5 36
-ETHUSDT 1d: not ready, train 3.87년 / 최소 10년, 완결 P5 43
-SOLUSDT 1d: not ready, train 3.50년 / 최소 10년, 완결 P5 29
-```
+우리 환경 적용안:
 
-따라서 최초 실데이터 백테스트 대상은 BTC/ETH/SOL 1h로 제한한다. 4h와
-1d를 포함하기 위해 최소 표본 기준을 낮추지 않는다.
+## 1. 전략 이름과 위치
 
-이 문서는 사용자와 Codex가 논의한 DI Kalman M/W 전략의 목표와 수정
-방향을 다음 작업자(Claude 포함)가 바로 이어받을 수 있도록 정리한 실행
-계획이다. 저장소 전체 작업 규약은 `CLAUDE.md`가 우선하며, 이 문서는
-`di-kalman-mw-v1` 전략의 연구 및 수정 범위만 다룬다.
+- strategy_id: `rolling-profile-expectancy-v1`
+- 목적: Pine의 63봉 rolling profile을 multiple 공간의 smooth 근사분포로 만들고, 그 분포 위에서 현재 multiple-cycle 캔들(OHLC/range/close)이 차지하는 위치가 과거에 어떤 미래수익률 기대값을 만들었는지 학습해 long-only 목표비중을 정한다.
+- 기존 전략과의 관계:
+    - `profile-sizing-v1`은 cumulative percentile 기반 생존/사이징 전략이다.
+    - 이번 전략은 rolling smooth distribution + multiple-cycle candle location + expectancy table 기반 예측/사이징 전략이다.
+    - 기존 `profile-sizing-v1` 성과와 계약을 보존하기 위해 별도 config/spec/handler로 시작한다.
 
-## 1. 전략 목표
-
-이 전략의 핵심은 **최근 확정 극점 4개(P1~P4)를 이용해 다음 극점 P5의
-위치를 과거 5극점 패턴 데이터로 확률 예측하는 것**이다.
-
-```text
-학습 사례: 과거에 완성된 P1, P2, P3, P4 -> 실제 P5
-현재 입력: 최근 확정된 P1, P2, P3, P4
-예측 대상: 아직 확정되지 않은 P5의 위치와 형성 가능성
-```
-
-P6를 예측하거나 6극점 구조로 확장하지 않는다.
-
-진입 후 P4에서 시작된 현재 진행 경로가 예상 P5 분포와 가까워지는지
-계속 관찰한다. 기존 방향의 유사도와 기대값이 낮아지고 다른 패턴 방향의
-유사도와 기대값이 높아지면 포지션 유지, 청산, 반전을 재검토한다.
-
-## 2. 전략 해석
-
-### 2.1 진입 전
-
-1. `+DI Kalman`, `-DI Kalman`에서 인과적으로 확정된 극점을 추출한다.
-2. 각 DI 라인의 최근 P1~P4 구조를 정규화된 특징 벡터로 만든다.
-3. train 데이터에서 P1~P4가 유사했던 과거 사례를 찾는다.
-4. 유사 사례들의 실제 P5 위치를 가중 집계해 조건부 분포를 만든다.
-5. 최근 `+DI/-DI` 극점 평균과 실제 가격 경로 결과를 조건에 포함한다.
-6. 비용과 불확실성 마진을 차감한 기대값이 기준을 넘으면 다음 봉
-   시가에 진입한다.
-
-### 2.2 진입 후
-
-P4 이후 아직 P5로 확정되지 않은 현재 Kalman 경로를 매 봉 갱신한다.
-이 값은 확정 극점으로 취급하지 않고, 과거 P4~P5 진행 경로와 비교하는
-관측값으로만 사용한다.
+핵심 목표를 수식으로 쓰면 다음과 같다.
 
 ```text
-EV_keep    = 현재 포지션을 유지할 조건부 기대값
-EV_exit    = 지금 청산했을 때의 가치(기본 0, 청산 비용 반영)
-EV_reverse = 반대 포지션의 조건부 기대값 - 청산/재진입 비용
+raw OHLCV
+  -> base_cycle_t
+  -> multiple candle C_t = (open/cycle, high/cycle, low/cycle, close/cycle)
+  -> recent 63-bar contribution histogram H_t
+  -> smooth distribution P_t(m), CDF F_t(m)
+  -> candle location features L_t = location(C_t on P_t, F_t)
+  -> E[r_{t+h} | bucket(L_t)]
+  -> target_weight_t
 ```
 
-순간적인 유사도 변화만으로 매매하지 않는다. 최소 유효 표본, 예측
-불확실성, 기대값 차이의 안전 마진, 일정 지속 시간(hysteresis)을 함께
-요구한다.
+따라서 `H_t - H_{t-1}` 자체가 매수/매도 신호가 아니다. 변화량은 분포 안정성/상태 필터고, 직접 기대값을 만드는 입력은 `P_t` 위의 캔들 위치다.
 
-## 3. 패턴 데이터 정의
-
-현재 `scripts/di_kalman_mw/extreme_transition.py`의
-`TransitionInstance`를 기반으로 확장한다.
-
-### 3.1 입력 특징: P1~P4만 사용
-
-최소 특징 후보:
+권장 파일 배치:
 
 ```text
-line                     plus / minus
-pattern                  W / M
-P1~P4 상대 높이
-leg1, leg2, leg3 정규화 진폭
-leg1, leg2, leg3 소요 봉 수
-retr_ratio
-leg3_ratio
-p3_vs_p1_norm
-right/left width_ratio
-P1~P4 전체 span_bars
-최근 +DI 극점 4개 평균
-최근 -DI 극점 4개 평균
-두 평균의 차이와 비율
-P4 시점 ATR 및 변동성 regime
+scripts/profile_sizing/profile.py
+    기존 contribution matrix와 rolling profile 계산을 확장한다.
+
+scripts/profile_sizing/rolling_expectancy.py
+    smoothing, rolling CDF percentile, feature table, forward return bucket expectancy,
+    walk-forward expectancy fitting을 담당한다.
+
+src/trading_lab/strategies/rolling_profile_expectancy.py
+    StrategyHandler. raw OHLCV를 받아 feature/expectancy/weight/equity/trades를
+    StrategyArtifacts로 변환한다.
+
+configs/strategies/rolling_profile_expectancy_v1.json
+    Pine 입력값과 검증 파라미터를 저장한다.
+
+docs/strategy/specs/rolling-profile-expectancy-v1.md
+docs/strategy/checklists/rolling-profile-expectancy-v1.md
+    Gate 0~5 문서.
 ```
 
-모든 스케일링 파라미터와 특징 가중치는 train에서만 적합한다.
-P5 값, P5 시각, P5 확인 정보는 입력 특징에 절대 포함하지 않는다.
+## 2. 현재 코드에서 재사용할 것
 
-### 3.2 예측 결과
+이미 구현된 재사용 지점:
 
-과거 각 사례에는 다음 결과를 저장한다.
+- `scripts/profile_sizing/indicators.py::compute_cycle`
+    - base cycle SMA/EMA/RMA/WMA/VWMA, scale, OHLC multiple 계산.
+- `scripts/profile_sizing/profile.py`
+    - `_bar_weights`: Time / Volume / Volume With 1 Fallback 대응.
+    - `_contrib_matrix`: Range Uniform / OHLC / Range + Close 비슷한 구조 대응.
+    - rolling profile 계산: `cum_profile[t] - cum_profile[t-window]`.
+- `scripts/profile_sizing/engine.py`
+    - weight 1봉 지연, 거래비용, equity, FIFO lot trades.
+- `src/trading_lab/strategies/profile_sizing.py`
+    - StrategyArtifacts 매핑 패턴.
+
+따라서 첫 구현은 새 엔진을 처음부터 만들지 말고, 위 모듈을 확장한다.
+
+## 3. Pine 입력값의 우리 config 매핑
+
+기본값은 Pine 원본보다는 이번 요청의 63 bars 실험을 우선한다.
+
+```json
+{
+  "version": "rolling-profile-expectancy-v1",
+  "interval": "1d",
+  "period": "max",
+  "base_cycle": {
+    "type": "SMA",
+    "length": 200,
+    "scale": 1.0
+  },
+  "profile": {
+    "min_mult": 0.0,
+    "max_mult": 5.0,
+    "bin_count": 120,
+    "rolling_window": 63,
+    "weight_mode": "volume_fallback",
+    "accumulation_mode": "range_uniform",
+    "close_weight_max_share": 0.70,
+    "close_weight_full_range_bins": 12.0
+  },
+  "smoothing": {
+    "method": "gaussian_kernel",
+    "sigma_bins": 2.0
+  },
+  "expectancy": {
+    "horizons": [1, 3, 5, 10, 20],
+    "primary_horizon": 5,
+    "score_bins": [-1.0, -0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0],
+    "min_samples": 80,
+    "train_window": 756,
+    "refit_every": 21,
+    "cost_bps_roundtrip": 20.0
+  },
+  "sizing": {
+    "long_only": true,
+    "max_weight": 1.0,
+    "neutral_weight": 0.0,
+    "expectancy_scale_bps": 50.0,
+    "min_positive_expectancy_bps": 5.0,
+    "rebalance_threshold": 0.05,
+    "max_trade_weight_per_bar": 0.25
+  },
+  "train_frac": 0.6,
+  "validation_frac": 0.2
+}
+```
+
+## 4. 구현해야 할 계산 계약
+
+### 4.1 Contribution
+
+`_contrib_matrix(cycle, cfg, weights)`는 그대로 재사용하되 `range_close`는 Pine 수식에 맞춘다.
+
+- 현재 구현: range 50% + close 50% 고정.
+- Pine 원본: candle range가 `closeWeightFullRangeBins`에 가까워질수록 close share가 0에서 `closeWeightMaxShare`까지 증가.
+- 수정 규칙:
 
 ```text
-P5.value
-P5.value - P4.value
-(P5.value - P4.value) / mean_leg(P1~P4)
-(P5.value - P3.value) / mean_leg(P1~P4)
-P5 발생까지의 봉 수
-P5 confirmation까지의 봉 수
-W일 때 P5 > P3 확률
-M일 때 P5 < P3 확률
-P4 이후 실제 가격 경로
-방향별 MFE / MAE
-고정 horizon 수익률
-stop / take-profit 선도달 결과
+range_in_bins = (high_mult - low_mult) / bin_width
+range_ratio = min(range_in_bins / close_weight_full_range_bins, 1)
+close_share = close_weight_max_share * range_ratio
+range_share = 1 - close_share
+contribution = range_uniform * range_share + close_bin * close_share
 ```
 
-P5가 데이터 끝까지 확정되지 않은 사례를 무조건 제거하면 빠르게
-확정되는 패턴만 남는 편향이 생긴다. 라이브 미완성 사례와 학습 시계열
-끝의 미확정 사례를 구분하고, 시간 예측에는 censoring 처리를 검토한다.
+### 4.2 Rolling smooth profile
 
-## 4. 유사도와 확률 예측
+새 public 함수는 다음 형태가 적당하다.
 
-현재의 tercile 버킷 및 폴백 통계는 기준선으로 유지하되, 주 모델은
-연속 거리 기반 가중 이웃 방식으로 교체한다.
+```python
+compute_rolling_profile_features(cycle, raw, cfg) -> tuple[pd.DataFrame, np.ndarray]
+```
 
-초기 구현은 해석 가능한 k-NN/kernel 방식으로 제한한다.
+반환 feature 컬럼:
+
+- `rolling_percentile`: smoothed rolling profile CDF에서 `cm_close` 위치.
+- `profile_score`: `2 * (0.5 - rolling_percentile)`.
+- `open_percentile`, `high_percentile`, `low_percentile`, `close_percentile`: multiple candle OHLC가 smoothed CDF에서 차지하는 위치.
+- `candle_mid_percentile`: `(high_percentile + low_percentile) / 2`.
+- `body_mid_percentile`: `(open_percentile + close_percentile) / 2`.
+- `range_percentile_width`: `high_percentile - low_percentile`.
+- `close_in_candle_percentile`: 캔들 range 안에서 close가 어느 쪽에 닫혔는지.
+- `density_at_price`: smoothed density에서 현재 close bin 값 / 총 질량.
+- `poc_mult`: smoothed profile 최대 bin 중심.
+- `poc_distance`: `cm_close - poc_mult`.
+- `lower_band`, `upper_band`: 20/80% 또는 config percentile band.
+- `profile_width`: `upper_band - lower_band`.
+- `profile_skew`: upper half mass / lower half mass.
+- `profile_turnover`: `sum(abs(contrib_in - contrib_out)) / rolling_total`.
+- `profile_jsd`: 직전 smoothed profile과 현재 smoothed profile의 Jensen-Shannon distance.
+
+중요 해석:
+
+- `profile_delta`, `profile_turnover`, `profile_jsd`는 "분포가 예측적으로 이동했다"는 신호가 아니다.
+- 이것들은 최신 봉이 들어오고 63봉 전 봉이 빠진 유입/유출 강도, 즉 상태 안정성/불안정성 필터로만 쓴다.
+
+### 4.3 Smoothing
+
+첫 버전은 KDE 대신 bin histogram에 local Gaussian kernel convolution을 적용한다.
+
+- 이유: Pine histogram 구조와 가장 가깝고 빠르며, walk-forward에서 반복 계산 비용이 작다.
+- 주의: 여기서 Gaussian은 smoothing kernel일 뿐이다. profile 전체를 평균/분산 하나의 대칭 Gaussian으로 근사하지 않으므로, 비대칭·fat-tail·multi-modal 분포 형태를 그대로 허용한다.
+- 구현: `scipy.ndimage.gaussian_filter1d`가 있으면 사용하고, 없으면 numpy kernel convolution fallback.
+- smoothing 후에는 음수 방지와 재정규화:
 
 ```text
-distance_i = weighted_distance(current_features, train_pattern_i)
-weight_i   = exp(-(distance_i ** 2) / temperature)
+smooth = max(smooth, 0)
+prob = smooth / smooth.sum()
+cdf = cumsum(prob)
 ```
 
-가중 이웃으로 다음을 계산한다.
+## 5. Expectancy 모델
+
+feature score를 직접 threshold로 쓰지 않는다. 각 시점 t에서 과거 학습 구간만 사용해 "multiple-cycle 캔들 위치 bucket"별 미래수익률 통계를 만든 뒤, t의 bucket에 해당하는 기대값을 조회한다.
+
+기본 bucket key는 첫 버전에서 단순하게 유지한다.
 
 ```text
-P5 변위의 q10/q25/median/q75/q90
-P(continuation)
-P5까지 예상 봉 수의 분위수
-유효 표본 크기(effective sample size)
-최근접 거리
-가중치 집중도
-예측 신뢰도
+location_score = 2 * (0.5 - close_percentile)
+location_bucket = bucket(location_score)
 ```
 
-신뢰도는 유사도 자체와 분리한다. 가까운 사례가 하나뿐인 경우 높은
-유사도처럼 보여도 신뢰도는 낮아야 한다.
-
-최소 출력 계약:
+두 번째 단계에서 아래 조건을 추가해 세분화한다.
 
 ```text
-prediction_median
-prediction_quantiles
-p_continuation
-effective_n
-nearest_distance
-confidence
-model_fallback
+close_zone = bucket(close_percentile)
+density_zone = low / mid / high density_at_price
+range_zone = narrow / normal / wide range_percentile_width
+stability_zone = stable / unstable profile_jsd
 ```
 
-## 5. 최근 극점 평균과 기대값
-
-최근 `+DI/-DI` 극점 평균은 기대이익에 임의 배수를 곱하는 용도로 쓰지
-않는다. 우선 유사 패턴 검색의 조건 특징으로 사용한다.
-
-현재 `expected_values()`의 다음 방식은 검증 전까지 주 모델에서 제거한다.
+최종적으로 학습하는 값은 다음 조건부 기대값이다.
 
 ```text
-평균 이익 * pressure_rr_factor
-평균 손실 / pressure_rr_factor
-continuation factor를 EV와 TP 양쪽에 중복 반영
+E[future_return_h | close_zone, density_zone, range_zone, stability_zone]
 ```
 
-기대값은 유사 과거 사례의 **실제 가격 경로 결과**로 직접 추정한다.
+forward return:
 
 ```text
-EV_long  = weighted_mean(realized_long_net_return)
-EV_short = weighted_mean(realized_short_net_return)
+future_ret_h[t] = close[t+h] / close[t] - 1
+net_ret_h[t] = future_ret_h[t] - roundtrip_cost
 ```
 
-또는 stop/TP 결과를 사용할 경우:
+bucket별 산출:
+
+- `n`
+- `mean_future_return`
+- `win_rate`
+- `avg_win`
+- `avg_loss`
+- `expectancy = win_rate * avg_win - (1 - win_rate) * abs(avg_loss) - trading_cost`
+- `mfe`
+- `mae`
+
+walk-forward 규칙:
 
 ```text
-EV = P(TP first) * avg_net_win
-     - P(SL first) * avg_net_loss
-     - expected_cost
+for t:
+    train = [t - train_window, t - primary_horizon)
+    label이 확정된 과거 샘플만 사용
+    t가 속한 score_bucket의 expectancy를 조회
+    n < min_samples이면 neutral 처리
 ```
 
-신호 조건에는 점 추정치뿐 아니라 보수적 하한을 사용한다.
+추천 초기 매매 규칙:
 
 ```text
-진입 후보 = EV_lower_bound > entry_margin
+if expectancy_bps <= min_positive_expectancy_bps:
+    target_weight = neutral_weight
+else:
+    target_weight = min(max_weight, expectancy_bps / expectancy_scale_bps)
 ```
 
-## 6. 온라인 재평가
+long-only 첫 버전에서는 음수 expectancy를 short으로 연결하지 않는다. 음수 bucket은 현금/축소 신호로만 쓴다.
 
-P4 확정 후 각 봉에서 현재 Kalman 값과 경과 시간을 이용해 기존 P1~P4
-이웃들의 가중치를 갱신한다. 이 과정은 새로운 확정 P5를 만들어내는 것이
-아니다.
+## 6. 백테스트와 대시보드 계약
 
-예상 경로에서 멀어질수록 기존 방향의 가중치는 낮아지고, 현재 경로와
-더 잘 맞는 다른 P1~P4 패턴 사례의 가중치는 높아질 수 있다.
+전략 핸들러는 `ProfileSizingHandler` 패턴을 따른다.
 
-재평가 규칙 초안:
+`forecast` 필수/권장 컬럼:
+
+- `close`
+- `base_cycle`
+- `cm_close`
+- `rolling_percentile`
+- `profile_score`
+- `expectancy_bps`
+- `expectancy_samples`
+- `target_weight`
+- `actual_weight`
+- `density_at_price`
+- `poc_mult`
+- `poc_distance`
+- `profile_width`
+- `profile_jsd`
+
+성과 계산:
+
+- `scripts/profile_sizing/engine.py::portfolio_returns`
+- `equity_from_returns`
+- `buy_hold_equity`
+- `lot_trades`
+- `performance`
+
+무누수 규칙:
+
+- profile은 t 봉까지의 OHLCV로 만들 수 있다.
+- expectancy table은 t 시점에서 label이 확정된 과거 샘플만 사용한다. horizon=5면 최소 t-5 이전의 샘플까지만 학습에 포함한다.
+- t에서 결정한 weight는 기존 엔진처럼 t+1 수익률에 적용한다.
+
+## 7. 검증 순서
+
+1. Unit test
+    - contribution 행 합계가 weight와 일치하는지 확인.
+    - rolling window=63에서 `roll[t] = contrib[t-62:t].sum(axis=0)`과 일치하는지 확인.
+    - smoothed CDF가 단조 증가하고 0~1 범위인지 확인.
+    - expectancy 학습이 미래 label을 사용하지 않는지 synthetic 데이터로 확인.
+
+2. 단일 자산 smoke
+
+```bash
+source .venv/bin/activate
+trading-lab backtest --strategy rolling-profile-expectancy-v1 --symbol SPY --phase validation
+trading-lab backtest --strategy rolling-profile-expectancy-v1 --symbol QQQ --phase validation
+```
+
+3. 일반화 배치
+
+```bash
+python scripts/profile_sizing/batch.py --strategy rolling-profile-expectancy-v1 --phase validation
+```
+
+4. 리포트
 
 ```text
-유지:
-  EV_keep_lower_bound > 0
-  기존 방향 confidence >= hold_threshold
-
-청산:
-  EV_keep_lower_bound <= exit_threshold
-  위 상태가 confirm_bars 이상 지속
-
-반전:
-  EV_reverse_lower_bound >
-      EV_keep_upper_bound + switch_cost + reversal_margin
-  반대 방향 effective_n >= minimum
-  위 상태가 confirm_bars 이상 지속
+reports/profile_sizing/rolling_profile_expectancy_v1.md
 ```
 
-하드 ATR stop은 모델 오류와 급변 위험에 대한 최종 안전장치로 유지한다.
-모델 기반 청산은 hard stop을 대체하지 않는다.
+필수 표:
 
-## 7. 먼저 수정해야 할 검증 결함
+- horizon별 score bucket expectancy table
+- validation 자산별 전략 vs buy & hold: CAGR, Sharpe, MDD, total return
+- bucket sample count 부족 구간
+- parameter sensitivity: `rolling_window` 42/63/126, `sigma_bins` 1/2/3, `primary_horizon` 3/5/10
 
-다음 결함을 해결하기 전의 validation/test 성능은 신뢰하지 않는다.
+## 8. Gate 0 합격/폐기 기준 초안
 
-### 7.1 split 경계 누수
+결과를 보기 전에 아래 기준을 명세에 고정한다.
 
-현재 train 이벤트의 baseline trade와 P5 outcome이 validation 구간까지
-진행될 수 있다.
+- validation에서 전체 자산 평균 `expectancy_bps`가 비용 차감 후 양수여야 한다.
+- score bucket이 단조일 필요는 없지만, 최소 하나의 long bucket이 `n >= min_samples` 및 `expectancy_bps > 5`를 만족해야 한다.
+- buy & hold 대비 Sharpe가 평균 -0.10보다 더 나쁘면 폐기 또는 v2로 재설계한다.
+- MDD가 buy & hold보다 깊어진 자산 비율이 50%를 넘으면 long-only sizing 규칙을 재설계한다.
+- `rolling_window`, `sigma_bins`, `primary_horizon`의 작은 변화에서 성과 방향이 뒤집히면 과적합으로 보고 폐기한다.
 
-- train 통계에는 결과까지 train 안에서 완결된 사례만 포함한다.
-- 또는 split 경계 앞에 최대 보유/확정 기간만큼 purge 구간을 둔다.
-- transition 학습 사례는 `p4_conf_idx`뿐 아니라 `p5_conf_idx`도 train
-  경계 안에 있어야 한다.
+## 9. 라이브 적용 메모
 
-### 7.2 split 성과 귀속 불일치
-
-현재 거래는 signal split, bar return은 달력 split에 귀속될 수 있다.
-
-- 연구 비교용으로 split 경계에서 포지션을 강제 청산하는 방식을 우선한다.
-- 거래, 수익률, 지표의 split 귀속 기준을 하나로 통일한다.
-
-### 7.3 P4/P5 통계 혼용
-
-P4 다음 봉 진입 결과로 만든 통계를 P5 확인 진입에 적용하지 않는다.
-
-- 주 전략은 P1~P4에서 P5를 예측하는 P4 진입 모델로 명확히 고정한다.
-- P5 confirmation 진입은 별도 비교 기준으로 남기되 별도 outcome
-  통계를 사용한다.
-
-### 7.4 표본 충분성
-
-캔들 수 하나만 충족해도 충분하다고 판단하지 않는다.
+실시간 KIS/paper 적용은 validation 통과 전까지 하지 않는다. 나중에 붙일 경우 구조는 다음과 같다.
 
 ```text
-충분성 = 최소 기간 충족 AND 최소 완결 P5 사례 수 충족
+closed_contrib_deque: 확정 봉 contribution만 저장, 최대 63개
+closed_hist: 확정 봉 rolling histogram
+current_live_contribution: 진행 중 봉의 임시 contribution
+live_hist = closed_hist + current_live_contribution
 ```
 
-방향, 라인, 패턴, regime별 `effective_n`도 별도로 보고한다.
+틱마다 `current_live_contribution`만 재계산하고, deque에는 봉 마감 시 한 번만 append한다. 이 규칙을 어기면 진행 중 봉이 중복 누적되어 profile percentile이 왜곡된다.
 
-## 8. 구현 단계
+## 10. 1차 구현 우선순위
 
-### Phase 0: 기준선 동결
+1. `profile.py`에 Pine 호환 `range_close` close share를 추가한다.
+2. `rolling_expectancy.py`에 smoothing/CDF/features/expectancy table을 구현한다.
+3. synthetic unit test로 무누수와 rolling update를 먼저 잠근다.
+4. `rolling-profile-expectancy-v1` config/spec/checklist/registry/handler를 추가한다.
+5. SPY/QQQ validation smoke 후 generalization 배치를 돌린다.
 
-- 현재 전체 테스트 42개 통과 상태를 기준선으로 기록한다.
-- 현재 버킷 모델 결과를 baseline artifact로 보존한다.
-- test 구간은 모델/파라미터 선택에 사용하지 않는다.
+---
 
-완료 기준:
+## 참고: yoon_profile_3 타겟 방침 (2026-07-04)
 
-```text
-동일 입력/config 재현 가능
-기존 h72 전략 계약 유지
-현재 결과와 config snapshot 보존
-```
+**yoon_profile_3(3×3 상태 필드 + path_tilt)의 타겟 자산은 크립토로 한정하지
+않는다.** 멀티에셋 검증(`reports/profile_sizing/yoon_profile_3_multiasset_eval.md`)
+에서 ETF(SPY/QQQ/GLD)가 기각된 것은 **BTC 튜닝 state_weights를 무수정 이식**한
+조건이지 구조 자체가 아니다 — 필드 구조(대각선 궤적·하락 종착지·노출 정합)는
+자산·타임프레임을 가로질러 자기유사함이 확인됐다
+(`state_field_trend_analysis.md` §5).
 
-### Phase 1: 데이터 경계와 누수 수정
+타 자산(주식·ETF·금 등)에 적용할 때의 전제:
 
-상태: 완료 (2026-06-13)
+1. 해당 자산 데이터로 `scripts/profile_sizing/yoon_profile_study.py`
+   (state_weights 재추정) 재실행.
+2. `scripts/profile_sizing/yoon_profile_path_study.py`(path_tilt 검정) 재실행 —
+   path_tilt는 BTC에서만 +기여가 확인된 상태라 자산별 재검정 없이 켜지 않는다.
+3. 현 가중치를 그대로 쓸 거면 base yoon_profile(tilt off)을 사용한다
+   (예: SOL은 base가 우위).
 
-대상:
+아래는 파인스크립트 원본이야. 
 
-```text
-scripts/di_kalman_mw/run.py
-scripts/di_kalman_mw/stats.py
-scripts/di_kalman_mw/extreme_transition.py
-scripts/di_kalman_mw/metrics.py
-tests/test_di_kalman_mw.py
-```
+//@version=6
+indicator(
+     "평면차트 Light - Rolling Profile Modes + Anchor Scale",
+     shorttitle = "CycleMult Light Anchor Scale",
+     overlay = false,
+     max_lines_count = 300,
+     max_labels_count = 50,
+     max_polylines_count = 80,
+     max_bars_back = 5000
+)
 
-작업:
+//==================================================
+// Inputs
+//==================================================
+groupCore = "Core"
 
-- split 경계 완결 조건 및 purge 적용
-- transition outcome의 `p5_conf_idx` 경계 검사
-- split 경계 포지션 처리 규칙 고정
-- P4/P5 통계 분리
-- 누수 회귀 테스트 추가
+baseCalcTf = input.timeframe(
+     "D",
+     "Base Calculation Timeframe",
+     group = groupCore,
+     tooltip = "cycle / rolling profile / percentile을 계산할 고정 TF입니다. 기본값 D."
+)
 
-### Phase 2: 패턴 데이터셋 확장
+baseLen = input.int(
+     200,
+     "Base Cycle Length",
+     minval = 10,
+     maxval = 1000,
+     group = groupCore
+)
 
-상태: 완료 (2026-06-13)
+baseType = input.string(
+     "SMA",
+     "Base Cycle Type",
+     options = ["SMA", "EMA", "RMA", "WMA", "VWMA"],
+     group = groupCore
+)
 
-- P1~P4 시간/진폭/pressure/regime 특징 추가
-- P5 위치, 시간, 가격 경로 outcome 추가
-- 학습 입력과 outcome 컬럼을 명시적으로 분리
-- dataset schema/version 저장
+baseScale = input.float(
+     1.0,
+     "Base Cycle Scale",
+     minval = 0.1,
+     maxval = 10.0,
+     step = 0.05,
+     group = groupCore
+)
 
-예상 신규 모듈:
+// ---- Rolling Profile ----
+groupProfile = "Rolling Profile"
 
-```text
-scripts/di_kalman_mw/pattern_dataset.py
-```
+rollingProfileBars = input.int(
+     126,
+     "Rolling Window Bars",
+     minval = 20,
+     maxval = 1000,
+     group = groupProfile,
+     tooltip = "baseCalcTf 기준 rolling profile 길이입니다. D 기준 126은 대략 6개월 거래일, 코인은 180 전후를 사용할 수 있습니다."
+)
 
-기존 `extreme_transition.py`를 무리하게 비대하게 만들지 말고, 극점 전이
-기초 자료형은 유지하면서 데이터셋 조립 책임을 분리한다.
+profileBinCount = input.int(
+     120,
+     "Profile Bin Count",
+     minval = 20,
+     maxval = 250,
+     group = groupProfile,
+     tooltip = "가볍게 보기 위한 기본값 120. 이전 400보다 훨씬 가볍습니다."
+)
 
-### Phase 3: 유사도 예측기
+profilePercentileValue = input.float(
+     20.0,
+     "Upper / Lower Profile Percent",
+     minval = 1.0,
+     maxval = 49.0,
+     step = 1.0,
+     group = groupProfile
+)
 
-상태: 완료 (2026-06-13)
+profilePercentileSmoothLen = input.int(
+     5,
+     "Percentile EMA Smoothing",
+     minval = 1,
+     maxval = 100,
+     group = groupProfile
+)
 
-- train-only scaler와 특징 가중치
-- weighted k-NN/kernel predictor
-- 거리, effective_n, confidence 계산
-- 버킷 모델 대비 MAE/Brier/coverage 비교
-- validation에서만 k, temperature, 특징 집합 선택
+profileMinMult = input.float(
+     0.0,
+     "Profile Min Multiple",
+     minval = 0.0,
+     maxval = 5.0,
+     step = 0.1,
+     group = groupProfile
+)
 
-예상 신규 모듈:
+profileMaxMult = input.float(
+     5.0,
+     "Profile Max Multiple",
+     minval = 0.5,
+     maxval = 10.0,
+     step = 0.1,
+     group = groupProfile
+)
 
-```text
-scripts/di_kalman_mw/similarity.py
-```
+profileWeightMode = input.string(
+     "Volume With 1 Fallback",
+     "Profile Weight Mode",
+     options = ["Volume With 1 Fallback", "Volume", "Time"],
+     group = groupProfile
+)
 
-### Phase 4: 가격 기대값 모델
+profileAccumulationMode = input.string(
+     "Range Uniform",
+     "Profile Accumulation Mode",
+     options = ["Range Uniform", "OHLC", "Range + Close Weight"],
+     group = groupProfile,
+     tooltip = "Range Uniform: 기존 방식. 캔들의 low~high 구간을 겹친 bin에 균등 분배합니다. OHLC: 시가/고가/저가/종가에 25%씩 분배합니다. Range + Close Weight: 기본 range 분배에 더해, 캔들이 길어질수록 종가 bin 비중을 높입니다."
+)
 
-상태: 완료 (2026-06-13)
+closeWeightMaxShare = input.float(
+     70.0,
+     "Close Weight Max Share (%)",
+     minval = 10.0,
+     maxval = 95.0,
+     step = 5.0,
+     group = groupProfile,
+     tooltip = "Range + Close Weight 모드에서 장대캔들이 될수록 종가 bin에 배정할 최대 비중입니다."
+)
 
-- 각 유사 사례의 P4 이후 long/short 실제 가격 결과 연결
-- 비용 차감 순수익 분포 계산
-- EV 점 추정과 보수적 하한 계산
-- pressure 임의 배수 제거 후 ablation 비교
+closeWeightFullRangeBins = input.float(
+     12.0,
+     "Close Weight Full Range (bins)",
+     minval = 1.0,
+     maxval = 100.0,
+     step = 1.0,
+     group = groupProfile,
+     tooltip = "캔들 길이가 bin 몇 개를 넘으면 Close Weight Max Share에 도달할지 정합니다."
+)
 
-비교군:
+// ---- 6M Snapshots ----
+groupSnapshot = "6M Rolling Profile Snapshots"
 
-```text
-패턴만
-패턴 + 최근 극점 평균
-패턴 + 평균 + volatility regime
-기존 버킷/pressure 보정식
-```
+showRollingSnapshots = input.bool(
+     true,
+     "Show 6M Snapshots",
+     group = groupSnapshot,
+     tooltip = "Jan / Jul 전환 시점마다 직전 rolling window profile을 보조창에 스냅샷으로 표시합니다."
+)
 
-### Phase 5: 온라인 재평가와 청산
+snapshotYearsToKeep = input.int(
+     4,
+     "Years To Keep",
+     minval = 1,
+     maxval = 10,
+     group = groupSnapshot
+)
 
-상태: 완료 (2026-06-13, 연구 판단 로그까지)
+snapshotWidthDays = input.int(
+     90,
+     "Snapshot Width Days",
+     minval = 10,
+     maxval = 240,
+     group = groupSnapshot
+)
 
-실제 체결 엔진 연결은 Phase 6 백테스트에서 별도 비교군으로 수행한다.
+snapshotColor = input.color(
+     color.silver,
+     "Snapshot Color",
+     group = groupSnapshot
+)
 
-- P4 이후 미확정 경로 snapshot 생성
-- 매 봉 유사도, P5 분포, EV 갱신
-- hold/exit/reverse 의사결정 기록
-- hysteresis, 최소 표본, 비용 마진 적용
-- 기존 opposite-pattern exit와 성과 비교
+snapshotTransparency = input.int(
+     82,
+     "Snapshot Transparency",
+     minval = 0,
+     maxval = 100,
+     group = groupSnapshot
+)
 
-예상 신규 모듈:
+snapshotOutlineWidth = input.int(
+     1,
+     "Snapshot Outline Width",
+     minval = 1,
+     maxval = 4,
+     group = groupSnapshot
+)
 
-```text
-scripts/di_kalman_mw/online_state.py
-```
+showCurrentRollingProfile = input.bool(
+     true,
+     "Show Current Rolling Profile",
+     group = groupSnapshot,
+     tooltip = "마지막 봉 오른쪽에 현재 진행 중인 rolling profile을 표시합니다."
+)
 
-### Phase 6: 실데이터 walk-forward 검증
+currentProfileRightOffsetBars = input.int(
+     6,
+     "Current Profile Right Offset Bars",
+     minval = 1,
+     maxval = 100,
+     group = groupSnapshot
+)
 
-상태: 데이터 수집 및 preflight 완료, 백테스트 실행 대기
+currentProfileMaxWidthBars = input.int(
+     70,
+     "Current Profile Max Width Bars",
+     minval = 10,
+     maxval = 300,
+     group = groupSnapshot
+)
 
-- BTC/ETH/SOL의 1h/4h/1d native OHLCV 수집
-- anchored 또는 rolling walk-forward
-- train에서 적합, validation에서 선택, test는 최종 1회 평가
-- 비용 1x/2x, regime, 방향, strong/weak별 결과 보고
+currentProfileColor = input.color(
+     color.gray,
+     "Current Profile Color",
+     group = groupSnapshot
+)
 
-현재 `data/raw`가 비어 있으므로 이 단계 전에는 전략 유효성을 주장하지
-않는다.
+currentProfileTransparency = input.int(
+     72,
+     "Current Profile Transparency",
+     minval = 0,
+     maxval = 100,
+     group = groupSnapshot
+)
 
-### Phase 7: 대시보드 연결
+currentProfileOutlineWidth = input.int(
+     1,
+     "Current Profile Outline Width",
+     minval = 1,
+     maxval = 4,
+     group = groupSnapshot
+)
 
-연구 모델이 독립 테스트를 통과한 뒤에만 공통
-`StrategyArtifacts` 핸들러로 연결한다.
+showAnchorRollingProfile = input.bool(
+     true,
+     "Show Draggable Anchor Profile",
+     group = groupSnapshot,
+     tooltip = "드래그 가능한 Anchor Time 세로선 기준의 rolling profile을 세로선 오른쪽에 표시합니다. Anchor Time은 설정창 또는 차트 위 입력 마커를 드래그해서 조정합니다."
+)
 
-추가 표시 후보:
+anchorProfileTime = input.time(
+     1704067200000,
+     "Anchor Time",
+     confirm = true,
+     group = groupSnapshot,
+     tooltip = "이 시간에 해당하는 baseCalcTf 봉에서 rolling window profile을 저장하고, 해당 세로선 오른쪽에 표시합니다."
+)
 
-```text
-P5 예측 중앙값/구간
-p_continuation
-effective_n
-confidence
-현재 EV_long / EV_short
-온라인 결정 사유
-```
+anchorProfileRightOffsetDays = input.int(
+     3,
+     "Anchor Profile Right Offset Days",
+     minval = 0,
+     maxval = 120,
+     group = groupSnapshot
+)
 
-공통 UI에 전략 이름이나 전용 컬럼을 하드코딩하지 않는다.
+anchorProfileMaxWidthDays = input.int(
+     70,
+     "Anchor Profile Max Width Days",
+     minval = 5,
+     maxval = 240,
+     group = groupSnapshot
+)
 
-## 9. 검증 계획
+anchorLineColor = input.color(
+     color.orange,
+     "Anchor Line Color",
+     group = groupSnapshot
+)
 
-### 9.1 인과성
+anchorLineTransparency = input.int(
+     20,
+     "Anchor Line Transparency",
+     minval = 0,
+     maxval = 100,
+     group = groupSnapshot
+)
 
-- P5 값을 변경해도 P1~P4 특징과 진입 시점 예측은 변하지 않아야 한다.
-- 시계열을 시점 `t`에서 잘랐을 때 `t` 이전 예측은 전체 데이터 실행과
-  동일해야 한다.
-- 학습 사례의 P5 확인과 가격 outcome은 train 경계 안에서 끝나야 한다.
-- 온라인 업데이트는 해당 봉까지의 값만 사용해야 한다.
+anchorProfileColor = input.color(
+     color.orange,
+     "Anchor Profile Color",
+     group = groupSnapshot
+)
 
-### 9.2 예측 품질
+anchorProfileTransparency = input.int(
+     76,
+     "Anchor Profile Transparency",
+     minval = 0,
+     maxval = 100,
+     group = groupSnapshot
+)
 
-- P5 정규화 위치 MAE
-- global median 대비 MAE 감소
-- quantile coverage 및 calibration
-- continuation Brier score
-- effective_n 및 거리 구간별 오차
-- P5 형성 시간 오차
+anchorProfileOutlineWidth = input.int(
+     1,
+     "Anchor Profile Outline Width",
+     minval = 1,
+     maxval = 4,
+     group = groupSnapshot
+)
 
-### 9.3 매매 품질
+profileDisplayScaleMode = input.string(
+     "Pane Scale",
+     "Profile Display Scale",
+     options = ["Pane Scale", "Full Profile Range"],
+     group = groupSnapshot,
+     tooltip = "Pane Scale: 오른쪽 cycle-multiple 축/가이드 범위에 맞춰 profile y범위를 제한합니다. Full Profile Range: Profile Min/Max Multiple 전체 범위로 표시합니다."
+)
 
-- net expectancy와 신뢰구간
-- profit factor, max drawdown, turnover
-- long/short 및 symbol/timeframe별 일관성
-- 상위 소수 거래 이익 집중도
-- 비용 2배 민감도
-- 기존 단순 M/W, DMI crossover, 무신호/항상 보유 기준선 비교
+// ---- Display ----
+groupDisplay = "Display"
 
-### 9.4 Ablation
+showPlaneCandles = input.bool(true, "Cycle Multiple Candles", group = groupDisplay)
+showOverlayCycleLines = input.bool(true, "Cycle Multiple Lines (price)", group = groupDisplay)
+showPaneCycleLines = input.bool(true, "Cycle Multiple Guide Lines (pane)", group = groupDisplay)
+showPercentilePriceLines = input.bool(true, "Upper / Lower Percentile Price Lines", group = groupDisplay)
+limitLinesToTouched = input.bool(true, "Limit Cycle Lines To Highest Touched", group = groupDisplay)
 
-각 요소의 실제 추가 가치를 분리한다.
+// ---- Style ----
+groupStyle = "Style"
 
-```text
-P1~P4 형상만
-+ 시간 특징
-+ 최근 극점 평균
-+ volatility regime
-+ 온라인 경로 업데이트
-+ 모델 기반 청산
-```
+upColor = input.color(color.lime, "Up Candle", group = groupStyle)
+downColor = input.color(color.red, "Down Candle", group = groupStyle)
+wickColor = input.color(color.gray, "Wick", group = groupStyle)
+cycleLineColor = input.color(color.gray, "Cycle Line Color", group = groupStyle)
+cycleLineTransparency = input.int(72, "Cycle Line Transparency", minval = 0, maxval = 100, group = groupStyle)
+lowerLineColor = input.color(color.red, "Lower Percentile Price", group = groupStyle)
+upperLineColor = input.color(color.lime, "Upper Percentile Price", group = groupStyle)
+percentileLineWidth = input.int(2, "Percentile Price Line Width", minval = 1, maxval = 4, group = groupStyle)
 
-## 10. 승인 기준
+// Fixed performance settings
+profileCalcBars = 5000
+paneGuideMinMult = 0.5
+paneGuideMaxMult = 5.0
+paneGuideStepMult = 0.5
+paneGuideBackBars = 5000
+paneGuideForwardBars = 120
 
-다음 조건 전에는 실전 가능 또는 검증 완료로 표시하지 않는다.
+//==================================================
+// Functions
+//==================================================
+f_smooth(src, len, mode) =>
+    mode == "SMA" ? ta.sma(src, len) :
+     mode == "EMA" ? ta.ema(src, len) :
+     mode == "RMA" ? ta.rma(src, len) :
+     mode == "WMA" ? ta.wma(src, len) :
+     mode == "VWMA" ? ta.vwma(src, len) :
+     ta.sma(src, len)
 
-- split 누수 테스트 통과
-- validation에서 global/bucket 기준선보다 P5 예측 개선
-- 충분한 완결 P5 사례와 OOS 거래 수 확보
-- 주요 symbol/timeframe 다수에서 기대값 부호가 일관됨
-- 비용 2배에서도 결과가 완전히 붕괴하지 않음
-- test는 모든 모델 선택 후 단 한 번 평가
-- 온라인 청산이 단순 hard stop/time stop 대비 OOS 위험조정 성과 개선
+f_add_point_to_profile(float[] _vp, float _mult, float _weight, float _sign, float _binWidth) =>
+    if not na(_mult) and not na(_weight) and _weight > 0 and not na(_binWidth) and _binWidth > 0 and array.size(_vp) == profileBinCount
+        if _mult >= profileMinMult and _mult <= profileMaxMult
+            idx = int(math.floor((_mult - profileMinMult) / _binWidth))
+            idx := math.max(0, math.min(idx, profileBinCount - 1))
+            oldValue = array.get(_vp, idx)
+            array.set(_vp, idx, math.max(oldValue + _sign * _weight, 0.0))
 
-## 11. 작업 시 금지 사항
+f_add_range_to_profile(float[] _vp, float _lowMult, float _highMult, float _weight, float _sign, float _binWidth) =>
+    if not na(_lowMult) and not na(_highMult) and not na(_weight) and _weight > 0 and not na(_binWidth) and _binWidth > 0 and array.size(_vp) == profileBinCount
+        barLowMult = math.min(_lowMult, _highMult)
+        barHighMult = math.max(_lowMult, _highMult)
 
-- P6 또는 6극점 예측으로 범위를 확장하지 않는다.
-- P5 outcome을 P1~P4 입력 특징에 포함하지 않는다.
-- test 결과를 보고 특징, k, temperature, 임계값을 조정하지 않는다.
-- DI 평균 비율을 근거 없이 수익/손실에 곱해 EV를 부풀리지 않는다.
-- 유사도가 높다는 이유만으로 표본 수와 불확실성을 무시하지 않는다.
-- 모델 기반 청산만 믿고 hard risk stop을 제거하지 않는다.
-- 전략 연구를 이유로 공통 서비스/UI에 전략별 분기를 추가하지 않는다.
+        clippedLow = math.max(barLowMult, profileMinMult)
+        clippedHigh = math.min(barHighMult, profileMaxMult)
 
-## 12. 다음 작업 순서
+        if not na(clippedLow) and not na(clippedHigh) and clippedHigh >= clippedLow
+            if clippedHigh == clippedLow
+                singleIdx = int(math.floor((clippedLow - profileMinMult) / _binWidth))
+                singleIdx := math.max(0, math.min(singleIdx, profileBinCount - 1))
+                oldValue = array.get(_vp, singleIdx)
+                array.set(_vp, singleIdx, math.max(oldValue + _sign * _weight, 0.0))
+            else
+                lowIdx = int(math.floor((clippedLow - profileMinMult) / _binWidth))
+                highIdx = int(math.floor((clippedHigh - profileMinMult) / _binWidth))
+                lowIdx := math.max(0, math.min(lowIdx, profileBinCount - 1))
+                highIdx := math.max(0, math.min(highIdx, profileBinCount - 1))
 
-다음 작업자는 바로 유사도 모델부터 구현하지 말고 아래 순서를 따른다.
+                barRange = clippedHigh - clippedLow
 
-1. split 경계 누수 재현 테스트 작성
-2. baseline trade와 P5 outcome의 train 완결 조건 수정
-3. split 성과 귀속 통일
-4. P4 주 전략과 P5 비교 전략의 통계 분리
-5. 패턴 데이터셋 schema 및 특징/outcome 분리
-6. 버킷 baseline 평가 고정
-7. 연속 유사도 예측기 구현
-8. 실제 가격 경로 기반 기대값 구현
-9. 온라인 재평가 및 청산 구현
-10. 실데이터 walk-forward 평가
+                if barRange > 0
+                    for b = lowIdx to highIdx
+                        binLow = profileMinMult + b * _binWidth
+                        binHigh = binLow + _binWidth
+                        overlapLow = math.max(clippedLow, binLow)
+                        overlapHigh = math.min(clippedHigh, binHigh)
+                        overlap = math.max(overlapHigh - overlapLow, 0.0)
+                        addValue = _weight * overlap / barRange
 
-이 순서를 바꾸면 누수가 남은 결과를 최적화하거나, P5 예측 정확도와
-매매 기대값을 혼동할 가능성이 높다.
+                        if addValue > 0
+                            oldBinValue = array.get(_vp, b)
+                            array.set(_vp, b, math.max(oldBinValue + _sign * addValue, 0.0))
+
+f_add_bar_to_profile(float[] _vp, float _cycleSeries, int _barsAgo, float _sign, float _binWidth) =>
+    rawVol = nz(volume[_barsAgo])
+    barWeight =
+         profileWeightMode == "Time" ? 1.0 :
+         profileWeightMode == "Volume" ? rawVol :
+         rawVol > 0 ? rawVol : 1.0
+
+    cyc = _cycleSeries[_barsAgo]
+    validCycle = not na(cyc) and cyc > 0
+
+    if validCycle and barWeight > 0 and not na(_binWidth) and _binWidth > 0 and array.size(_vp) == profileBinCount
+        openMult = open[_barsAgo] / cyc
+        highMult = high[_barsAgo] / cyc
+        lowMult = low[_barsAgo] / cyc
+        closeMult = close[_barsAgo] / cyc
+
+        if profileAccumulationMode == "OHLC"
+            pointWeight = barWeight / 4.0
+            f_add_point_to_profile(_vp, openMult, pointWeight, _sign, _binWidth)
+            f_add_point_to_profile(_vp, highMult, pointWeight, _sign, _binWidth)
+            f_add_point_to_profile(_vp, lowMult, pointWeight, _sign, _binWidth)
+            f_add_point_to_profile(_vp, closeMult, pointWeight, _sign, _binWidth)
+        else if profileAccumulationMode == "Range + Close Weight"
+            rawLowMult = math.min(lowMult, highMult)
+            rawHighMult = math.max(lowMult, highMult)
+            candleRange = rawHighMult - rawLowMult
+            rangeInBins = _binWidth > 0 ? candleRange / _binWidth : 0.0
+            rangeRatio = closeWeightFullRangeBins > 0 ? math.min(rangeInBins / closeWeightFullRangeBins, 1.0) : 1.0
+            maxCloseShare = math.max(0.0, math.min(closeWeightMaxShare / 100.0, 0.95))
+            closeShare = maxCloseShare * rangeRatio
+            closeShare := math.max(0.0, math.min(closeShare, 0.95))
+            rangeShare = 1.0 - closeShare
+
+            if rangeShare > 0
+                f_add_range_to_profile(_vp, lowMult, highMult, barWeight * rangeShare, _sign, _binWidth)
+
+            if closeShare > 0
+                f_add_point_to_profile(_vp, closeMult, barWeight * closeShare, _sign, _binWidth)
+        else
+            f_add_range_to_profile(_vp, lowMult, highMult, barWeight, _sign, _binWidth)
+
+f_calc_profile_stats(float[] _vp, float _binWidth) =>
+    totalValue = 0.0
+    maxValue = 0.0
+
+    for b = 0 to profileBinCount - 1
+        v = array.get(_vp, b)
+        totalValue += v
+        maxValue := math.max(maxValue, v)
+
+    float lowerRaw = na
+    float upperRaw = na
+
+    if totalValue > 0 and not na(_binWidth) and _binWidth > 0
+        targetValue = totalValue * profilePercentileValue / 100.0
+
+        lowerCum = 0.0
+        for b = 0 to profileBinCount - 1
+            v = array.get(_vp, b)
+            before = lowerCum
+            after = before + v
+
+            if na(lowerRaw) and after >= targetValue
+                hitRatio = v > 0 ? (targetValue - before) / v : 1.0
+                hitRatio := math.max(0.0, math.min(hitRatio, 1.0))
+                lowerRaw := profileMinMult + b * _binWidth + hitRatio * _binWidth
+
+            lowerCum := after
+
+        upperCum = 0.0
+        for j = 0 to profileBinCount - 1
+            b = profileBinCount - 1 - j
+            v = array.get(_vp, b)
+            before = upperCum
+            after = before + v
+
+            if na(upperRaw) and after >= targetValue
+                hitRatio = v > 0 ? (targetValue - before) / v : 1.0
+                hitRatio := math.max(0.0, math.min(hitRatio, 1.0))
+                binHigh = profileMinMult + (b + 1) * _binWidth
+                upperRaw := binHigh - hitRatio * _binWidth
+
+            upperCum := after
+
+    [lowerRaw, upperRaw, totalValue, maxValue]
+
+f_visible_profile_max(float[] _bins, int _offset, float _binWidth, float _displayMin, float _displayMax) =>
+    visibleMax = 0.0
+    binsOk = array.size(_bins) >= _offset + profileBinCount
+
+    if binsOk and not na(_binWidth) and _binWidth > 0 and not na(_displayMin) and not na(_displayMax)
+        lowDisplay = math.min(_displayMin, _displayMax)
+        highDisplay = math.max(_displayMin, _displayMax)
+
+        for b = 0 to profileBinCount - 1
+            midMult = profileMinMult + (b + 0.5) * _binWidth
+            if midMult >= lowDisplay and midMult <= highDisplay
+                visibleMax := math.max(visibleMax, array.get(_bins, _offset + b))
+
+    visibleMax
+
+f_engine() =>
+    var float[] vp = array.new_float()
+    var int[] snapTimes = array.new_int()
+    var float[] snapFlat = array.new_float()
+    var float[] snapMax = array.new_float()
+    var float[] anchorBins = array.new_float()
+    var float anchorMax = na
+    var int anchorHitTime = na
+    var float[] emptyFloatArr = array.new_float()
+    var int[] emptyIntArr = array.new_int()
+
+    cycle = f_smooth(close, baseLen, baseType) * baseScale
+
+    validRange = profileMaxMult > profileMinMult
+    binWidth = validRange ? (profileMaxMult - profileMinMult) / profileBinCount : na
+
+    if barstate.isfirst
+        array.clear(vp)
+        array.clear(anchorBins)
+        anchorMax := na
+        anchorHitTime := na
+        for i = 0 to profileBinCount - 1
+            array.push(vp, 0.0)
+
+    // Rolling profile update: add current bar, subtract bar that left the window.
+    if validRange and not na(binWidth) and binWidth > 0 and array.size(vp) == profileBinCount
+        f_add_bar_to_profile(vp, cycle, 0, 1.0, binWidth)
+
+        if bar_index >= rollingProfileBars
+            f_add_bar_to_profile(vp, cycle, rollingProfileBars, -1.0, binWidth)
+
+    [lowerRaw, upperRaw, totalProfileValue, maxProfileValue] = f_calc_profile_stats(vp, binWidth)
+
+    // Capture the rolling profile ending at the draggable anchor time.
+    // If the selected time is between two base-TF bars, the first bar at or after the anchor time is used.
+    isAnchorHit =
+         showAnchorRollingProfile and
+         not na(anchorProfileTime) and
+         time >= anchorProfileTime and
+         (na(time[1]) or time[1] < anchorProfileTime)
+
+    if isAnchorHit and maxProfileValue > 0 and totalProfileValue > 0 and array.size(vp) == profileBinCount
+        array.clear(anchorBins)
+
+        for b = 0 to profileBinCount - 1
+            array.push(anchorBins, array.get(vp, b))
+
+        anchorMax := maxProfileValue
+        anchorHitTime := time
+
+    lowerSmooth = profilePercentileSmoothLen > 1 ? ta.ema(lowerRaw, profilePercentileSmoothLen) : lowerRaw
+    upperSmooth = profilePercentileSmoothLen > 1 ? ta.ema(upperRaw, profilePercentileSmoothLen) : upperRaw
+
+    // Store 6-month snapshots at Jan / Jul month transitions.
+    prevBarTime = time[1]
+    isMonthTransition = not na(prevBarTime) and (year(time) != year(prevBarTime) or month(time) != month(prevBarTime))
+    isSixMonthReport = isMonthTransition and (month(prevBarTime) == 1 or month(prevBarTime) == 7)
+
+    if isSixMonthReport and maxProfileValue > 0 and totalProfileValue > 0 and array.size(vp) == profileBinCount
+        array.push(snapTimes, prevBarTime)
+        array.push(snapMax, maxProfileValue)
+
+        for b = 0 to profileBinCount - 1
+            array.push(snapFlat, array.get(vp, b))
+
+        maxSnapshots = snapshotYearsToKeep * 2
+
+        while array.size(snapTimes) > maxSnapshots
+            array.shift(snapTimes)
+            array.shift(snapMax)
+            for b = 0 to profileBinCount - 1
+                if array.size(snapFlat) > 0
+                    array.shift(snapFlat)
+
+    float[] outCurrentBins = emptyFloatArr
+    currentMaxValue = na(maxProfileValue) ? na : maxProfileValue
+    float[] outAnchorBins = emptyFloatArr
+    anchorMaxValue = anchorMax
+    anchorCapturedTime = anchorHitTime
+    float[] outSnapFlat = emptyFloatArr
+    float[] outSnapMax = emptyFloatArr
+    int[] outSnapTimes = emptyIntArr
+
+    if barstate.islast
+        outCurrentBins := array.copy(vp)
+        outAnchorBins := array.copy(anchorBins)
+        outSnapFlat := array.copy(snapFlat)
+        outSnapMax := array.copy(snapMax)
+        outSnapTimes := array.copy(snapTimes)
+
+    [cycle, lowerSmooth, upperSmooth, binWidth, outCurrentBins, currentMaxValue, outAnchorBins, anchorMaxValue, anchorCapturedTime, outSnapTimes, outSnapFlat, outSnapMax]
+
+//==================================================
+// Base TF engine
+//==================================================
+[baseCycle, lowerProfileCutMult, upperProfileCutMult, fixedProfileBinWidth, currentProfileBins, currentProfileMaxValue, anchorProfileBins, anchorProfileMaxValue, anchorProfileCapturedTime, snapshotTimes, snapshotFlatBins, snapshotMaxValues] =
+     request.security(
+         syminfo.tickerid,
+         baseCalcTf,
+         f_engine(),
+         barmerge.gaps_off,
+         barmerge.lookahead_off,
+         calc_bars_count = profileCalcBars
+     )
+
+validBaseCycle = not na(baseCycle) and baseCycle > 0
+
+lowerProfileCutPrice = validBaseCycle and not na(lowerProfileCutMult) ? lowerProfileCutMult * baseCycle : na
+upperProfileCutPrice = validBaseCycle and not na(upperProfileCutMult) ? upperProfileCutMult * baseCycle : na
+
+//==================================================
+// Cycle multiple candles
+//==================================================
+cmOpen = validBaseCycle ? open / baseCycle : na
+cmHigh = validBaseCycle ? high / baseCycle : na
+cmLow = validBaseCycle ? low / baseCycle : na
+cmClose = validBaseCycle ? close / baseCycle : na
+
+baseCandleColor = cmClose >= cmOpen ? upColor : downColor
+
+plotcandle(
+     showPlaneCandles ? cmOpen : na,
+     showPlaneCandles ? cmHigh : na,
+     showPlaneCandles ? cmLow : na,
+     showPlaneCandles ? cmClose : na,
+     title = "Cycle Multiple Candles",
+     color = baseCandleColor,
+     wickcolor = wickColor,
+     bordercolor = baseCandleColor
+)
+
+// No cycle close line, no POC line.
+
+//==================================================
+// Upper / Lower percentile price lines
+//==================================================
+plot(
+     showPercentilePriceLines ? lowerProfileCutPrice : na,
+     title = "Lower Rolling Profile Percentile Price",
+     color = color.new(lowerLineColor, 0),
+     linewidth = percentileLineWidth,
+     force_overlay = true
+)
+
+plot(
+     showPercentilePriceLines ? upperProfileCutPrice : na,
+     title = "Upper Rolling Profile Percentile Price",
+     color = color.new(upperLineColor, 0),
+     linewidth = percentileLineWidth,
+     force_overlay = true
+)
+
+//==================================================
+// Cycle multiple price lines
+//==================================================
+var float maxTouchedMult = na
+if not na(cmHigh)
+    maxTouchedMult := na(maxTouchedMult) ? cmHigh : math.max(maxTouchedMult, cmHigh)
+
+f_show_mult(_mult) =>
+    not limitLinesToTouched or na(maxTouchedMult) or _mult <= maxTouchedMult + 0.05
+
+paneScaleTop = limitLinesToTouched and not na(maxTouchedMult) ? math.min(paneGuideMaxMult, math.max(paneGuideMinMult, maxTouchedMult + 0.05)) : paneGuideMaxMult
+profileDisplayMinMult = profileDisplayScaleMode == "Pane Scale" ? paneGuideMinMult : profileMinMult
+rawProfileDisplayMaxMult = profileDisplayScaleMode == "Pane Scale" ? paneScaleTop : profileMaxMult
+profileDisplayStep = not na(fixedProfileBinWidth) and fixedProfileBinWidth > 0 ? fixedProfileBinWidth : 0.01
+profileDisplayMaxMult = math.max(rawProfileDisplayMaxMult, profileDisplayMinMult + profileDisplayStep)
+
+cycleLineCol = color.new(cycleLineColor, cycleLineTransparency)
+
+plot(showOverlayCycleLines and f_show_mult(0.5) ? baseCycle * 0.5 : na, title = "Cycle 0.5x Price", color = cycleLineCol, linewidth = 1, force_overlay = true)
+plot(showOverlayCycleLines and f_show_mult(1.0) ? baseCycle * 1.0 : na, title = "Cycle 1.0x Price", color = color.new(cycleLineColor, 55), linewidth = 1, force_overlay = true)
+plot(showOverlayCycleLines and f_show_mult(1.5) ? baseCycle * 1.5 : na, title = "Cycle 1.5x Price", color = cycleLineCol, linewidth = 1, force_overlay = true)
+plot(showOverlayCycleLines and f_show_mult(2.0) ? baseCycle * 2.0 : na, title = "Cycle 2.0x Price", color = cycleLineCol, linewidth = 1, force_overlay = true)
+plot(showOverlayCycleLines and f_show_mult(2.5) ? baseCycle * 2.5 : na, title = "Cycle 2.5x Price", color = cycleLineCol, linewidth = 1, force_overlay = true)
+plot(showOverlayCycleLines and f_show_mult(3.0) ? baseCycle * 3.0 : na, title = "Cycle 3.0x Price", color = cycleLineCol, linewidth = 1, force_overlay = true)
+plot(showOverlayCycleLines and f_show_mult(3.5) ? baseCycle * 3.5 : na, title = "Cycle 3.5x Price", color = cycleLineCol, linewidth = 1, force_overlay = true)
+plot(showOverlayCycleLines and f_show_mult(4.0) ? baseCycle * 4.0 : na, title = "Cycle 4.0x Price", color = cycleLineCol, linewidth = 1, force_overlay = true)
+plot(showOverlayCycleLines and f_show_mult(4.5) ? baseCycle * 4.5 : na, title = "Cycle 4.5x Price", color = cycleLineCol, linewidth = 1, force_overlay = true)
+plot(showOverlayCycleLines and f_show_mult(5.0) ? baseCycle * 5.0 : na, title = "Cycle 5.0x Price", color = cycleLineCol, linewidth = 1, force_overlay = true)
+
+//==================================================
+// Pane guide lines
+//==================================================
+var line[] paneGuideLines = array.new_line()
+var label[] paneGuideLabels = array.new_label()
+var int lastGuideBar = na
+
+if barstate.islast and showPaneCycleLines and (na(lastGuideBar) or lastGuideBar != bar_index)
+    lastGuideBar := bar_index
+
+    paneGuideLineCount = array.size(paneGuideLines)
+    if paneGuideLineCount > 0
+        for i = 0 to paneGuideLineCount - 1
+            line.delete(array.get(paneGuideLines, i))
+    array.clear(paneGuideLines)
+
+    paneGuideLabelCount = array.size(paneGuideLabels)
+    if paneGuideLabelCount > 0
+        for i = 0 to paneGuideLabelCount - 1
+            label.delete(array.get(paneGuideLabels, i))
+    array.clear(paneGuideLabels)
+
+    guideMax = limitLinesToTouched and not na(maxTouchedMult) ? math.min(paneGuideMaxMult, maxTouchedMult + 0.05) : paneGuideMaxMult
+    guideCount = int(math.floor((guideMax - paneGuideMinMult) / paneGuideStepMult))
+    guideCount := math.max(guideCount, 0)
+
+    leftX = math.max(0, bar_index - paneGuideBackBars)
+    rightX = bar_index + paneGuideForwardBars
+
+    for i = 0 to guideCount
+        mult = paneGuideMinMult + i * paneGuideStepMult
+        isWhole = math.abs(mult - math.round(mult)) < 0.001
+        ln = line.new(
+             x1 = leftX,
+             y1 = mult,
+             x2 = rightX,
+             y2 = mult,
+             xloc = xloc.bar_index,
+             extend = extend.none,
+             color = color.new(cycleLineColor, isWhole ? 55 : 78),
+             style = isWhole ? line.style_solid : line.style_dotted,
+             width = isWhole ? 2 : 1
+        )
+        array.push(paneGuideLines, ln)
+
+        lb = label.new(
+             x = rightX,
+             y = mult,
+             text = str.tostring(mult, "#.0") + "x",
+             xloc = xloc.bar_index,
+             style = label.style_label_left,
+             textcolor = color.white,
+             color = color.new(color.black, 85),
+             size = size.tiny
+        )
+        array.push(paneGuideLabels, lb)
+
+if barstate.islast and not showPaneCycleLines
+    paneGuideLineCount = array.size(paneGuideLines)
+    if paneGuideLineCount > 0
+        for i = 0 to paneGuideLineCount - 1
+            line.delete(array.get(paneGuideLines, i))
+    array.clear(paneGuideLines)
+
+    paneGuideLabelCount = array.size(paneGuideLabels)
+    if paneGuideLabelCount > 0
+        for i = 0 to paneGuideLabelCount - 1
+            label.delete(array.get(paneGuideLabels, i))
+    array.clear(paneGuideLabels)
+
+//==================================================
+// Draggable anchor line + rolling profile at anchor time
+//==================================================
+var line anchorTimeLine = na
+var polyline anchorProfilePolyline = na
+var label anchorProfileLabel = na
+
+if barstate.islast
+    if not na(anchorTimeLine)
+        line.delete(anchorTimeLine)
+        anchorTimeLine := na
+
+    if not na(anchorProfilePolyline)
+        polyline.delete(anchorProfilePolyline)
+        anchorProfilePolyline := na
+
+    if not na(anchorProfileLabel)
+        label.delete(anchorProfileLabel)
+        anchorProfileLabel := na
+
+    if showAnchorRollingProfile and not na(anchorProfileTime)
+        anchorTimeLine := line.new(
+             x1 = anchorProfileTime,
+             y1 = profileDisplayMinMult,
+             x2 = anchorProfileTime,
+             y2 = profileDisplayMaxMult,
+             xloc = xloc.bar_time,
+             extend = extend.none,
+             color = color.new(anchorLineColor, anchorLineTransparency),
+             style = line.style_dashed,
+             width = 1
+        )
+
+        anchorProfileReady =
+             array.size(anchorProfileBins) == profileBinCount and
+             not na(anchorProfileMaxValue) and
+             anchorProfileMaxValue > 0 and
+             not na(fixedProfileBinWidth) and
+             fixedProfileBinWidth > 0
+
+        if anchorProfileReady
+            anchorOffsetMs = anchorProfileRightOffsetDays * 86400000
+            anchorWidthMs = anchorProfileMaxWidthDays * 86400000
+            baseTime = anchorProfileTime + anchorOffsetMs
+            ptsAnchor = array.new<chart.point>()
+
+            anchorVisibleMax = f_visible_profile_max(anchorProfileBins, 0, fixedProfileBinWidth, profileDisplayMinMult, profileDisplayMaxMult)
+
+            array.push(ptsAnchor, chart.point.from_time(baseTime, profileDisplayMinMult))
+
+            for b = 0 to profileBinCount - 1
+                anchorValue = array.get(anchorProfileBins, b)
+                midMult = profileMinMult + (b + 0.5) * fixedProfileBinWidth
+                if midMult >= profileDisplayMinMult and midMult <= profileDisplayMaxMult
+                    widthMs = anchorVisibleMax > 0 ? int(math.round(anchorWidthMs * anchorValue / anchorVisibleMax)) : 0
+                    widthMs := math.max(widthMs, 0)
+                    array.push(ptsAnchor, chart.point.from_time(baseTime + widthMs, midMult))
+
+            array.push(ptsAnchor, chart.point.from_time(baseTime, profileDisplayMaxMult))
+
+            if array.size(ptsAnchor) >= 3
+                fillTransp = anchorProfileTransparency
+                lineTransp = int(math.max(0.0, fillTransp - 18.0))
+
+                anchorProfilePolyline := polyline.new(
+                     points = ptsAnchor,
+                     curved = false,
+                     closed = true,
+                     xloc = xloc.bar_time,
+                     line_color = color.new(anchorProfileColor, lineTransp),
+                     fill_color = color.new(anchorProfileColor, fillTransp),
+                     line_width = anchorProfileOutlineWidth
+                )
+
+                anchorProfileLabel := label.new(
+                     x = baseTime,
+                     y = profileDisplayMaxMult,
+                     text = "Anchor rolling profile",
+                     xloc = xloc.bar_time,
+                     style = label.style_label_left,
+                     textcolor = color.white,
+                     color = color.new(color.black, 82),
+                     size = size.tiny
+                )
+        else
+            anchorProfileLabel := label.new(
+                 x = anchorProfileTime,
+                 y = profileDisplayMaxMult,
+                 text = "Anchor profile not loaded",
+                 xloc = xloc.bar_time,
+                 style = label.style_label_down,
+                 textcolor = color.white,
+                 color = color.new(color.black, 82),
+                 size = size.tiny
+            )
+
+//==================================================
+// Current rolling profile on the right
+//==================================================
+var polyline currentProfilePolyline = na
+
+if barstate.islast
+    if not na(currentProfilePolyline)
+        polyline.delete(currentProfilePolyline)
+        currentProfilePolyline := na
+
+    currentProfileReady =
+         showCurrentRollingProfile and
+         array.size(currentProfileBins) == profileBinCount and
+         not na(currentProfileMaxValue) and
+         currentProfileMaxValue > 0 and
+         not na(fixedProfileBinWidth) and
+         fixedProfileBinWidth > 0
+
+    if currentProfileReady
+        baseX = bar_index + currentProfileRightOffsetBars
+        ptsCurrent = array.new<chart.point>()
+
+        currentVisibleMax = f_visible_profile_max(currentProfileBins, 0, fixedProfileBinWidth, profileDisplayMinMult, profileDisplayMaxMult)
+
+        array.push(ptsCurrent, chart.point.from_index(baseX, profileDisplayMinMult))
+
+        for b = 0 to profileBinCount - 1
+            currValue = array.get(currentProfileBins, b)
+            midMult = profileMinMult + (b + 0.5) * fixedProfileBinWidth
+            if midMult >= profileDisplayMinMult and midMult <= profileDisplayMaxMult
+                widthBars = currentVisibleMax > 0 ? int(math.round(currentProfileMaxWidthBars * currValue / currentVisibleMax)) : 0
+                widthBars := math.max(widthBars, 0)
+                array.push(ptsCurrent, chart.point.from_index(baseX + widthBars, midMult))
+
+        array.push(ptsCurrent, chart.point.from_index(baseX, profileDisplayMaxMult))
+
+        if array.size(ptsCurrent) >= 3
+            fillTransp = currentProfileTransparency
+            lineTransp = int(math.max(0.0, fillTransp - 18.0))
+
+            currentProfilePolyline := polyline.new(
+                 points = ptsCurrent,
+                 curved = false,
+                 closed = true,
+                 xloc = xloc.bar_index,
+                 line_color = color.new(currentProfileColor, lineTransp),
+                 fill_color = color.new(currentProfileColor, fillTransp),
+                 line_width = currentProfileOutlineWidth
+            )
+
+//==================================================
+// 6M rolling profile snapshots
+//==================================================
+var polyline[] snapshotPolylines = array.new<polyline>()
+
+if barstate.islast
+    snapshotPolylineCount = array.size(snapshotPolylines)
+    if snapshotPolylineCount > 0
+        for i = 0 to snapshotPolylineCount - 1
+            polyline.delete(array.get(snapshotPolylines, i))
+    array.clear(snapshotPolylines)
+
+    snapCount = array.size(snapshotTimes)
+    flatOk = snapCount > 0 and array.size(snapshotFlatBins) >= snapCount * profileBinCount and array.size(snapshotMaxValues) >= snapCount
+
+    if showRollingSnapshots and flatOk and not na(fixedProfileBinWidth) and fixedProfileBinWidth > 0
+        snapshotWidthMs = snapshotWidthDays * 86400000
+
+        for s = 0 to snapCount - 1
+            snapTime = array.get(snapshotTimes, s)
+            snapMax = array.get(snapshotMaxValues, s)
+            snapOffset = s * profileBinCount
+
+            if snapMax > 0
+                pts = array.new<chart.point>()
+                snapVisibleMax = f_visible_profile_max(snapshotFlatBins, snapOffset, fixedProfileBinWidth, profileDisplayMinMult, profileDisplayMaxMult)
+
+                array.push(pts, chart.point.from_time(snapTime, profileDisplayMinMult))
+
+                for b = 0 to profileBinCount - 1
+                    snapValue = array.get(snapshotFlatBins, snapOffset + b)
+                    midMult = profileMinMult + (b + 0.5) * fixedProfileBinWidth
+                    if midMult >= profileDisplayMinMult and midMult <= profileDisplayMaxMult
+                        widthMs = snapVisibleMax > 0 ? int(math.round(snapshotWidthMs * snapValue / snapVisibleMax)) : 0
+                        widthMs := math.max(widthMs, 0)
+                        array.push(pts, chart.point.from_time(snapTime + widthMs, midMult))
+
+                array.push(pts, chart.point.from_time(snapTime, profileDisplayMaxMult))
+
+                recentRatio = snapCount > 1 ? s * 1.0 / (snapCount - 1) : 1.0
+                ageExtra = int(math.round(12.0 * (1.0 - recentRatio)))
+                fillTransp = int(math.min(100.0, snapshotTransparency + ageExtra))
+                lineTransp = int(math.max(0.0, fillTransp - 18.0))
+
+                poly = polyline.new(
+                     points = pts,
+                     curved = false,
+                     closed = true,
+                     xloc = xloc.bar_time,
+                     line_color = color.new(snapshotColor, lineTransp),
+                     fill_color = color.new(snapshotColor, fillTransp),
+                     line_width = snapshotOutlineWidth
+                )
+                array.push(snapshotPolylines, poly)

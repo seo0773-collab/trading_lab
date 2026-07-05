@@ -1,0 +1,77 @@
+{
+  "version": "yoon_profile_3-v1",
+  "interval": "1d",
+  "period": "max",
+  "asset_class": "crypto",
+  "exchange": "binance",
+  "since": "2017-08-17",
+  "cycle": {
+    "length": 200,
+    "slope_lookback": 5,
+    "z_window": 252,
+    "grid_bins": 3,
+    "min_bin_history": 252
+  },
+  "state_weights": [
+    [0.0, 1.0, 1.0],
+    [0.5, 0.8, 0.3],
+    [0.0, 0.3, 1.0]
+  ],
+  "path_tilt": {
+    "enabled": true,
+    "vel_window": 10,
+    "overrides": [
+      {"mult_bin": 1, "angle_bin": 1, "arrival": "up", "weight": 1.0},
+      {"mult_bin": 1, "angle_bin": 1, "arrival": "down", "weight": 0.5}
+    ]
+  },
+  "sizing": {
+    "max_weight": 1.0,
+    "rebalance_threshold": 0.05,
+    "max_trade_weight_per_bar": 0.25
+  },
+  "costs": {
+    "fee_bps_per_side": 5.0,
+    "slippage_bps": 5.0
+  },
+  "train_frac": 0.6,
+  "validation_frac": 0.2,
+  "synthetic_bars": 3000,
+  "seed": 7,
+  "state_field": {
+    "move_threshold": 0.3
+  },
+  "dashboard": {
+    "default_indicators": [
+      "actual_weight",
+      "target_weight",
+      "multiple",
+      "angle_deg"
+    ],
+    "indicator_labels": {
+      "base_cycle": "base cycle(SMA200)",
+      "multiple": "멀티플(가격/SMA200)",
+      "slope_pct": "기울기 %(5봉)",
+      "slope_z": "기울기 z-score",
+      "angle_deg": "기울기 각도(°)",
+      "mult_bin": "멀티플 분위(0=저)",
+      "angle_bin": "기울기 분위(0=하락)",
+      "mult_pct": "멀티플 percentile(0~1)",
+      "angle_pct": "기울기 percentile(0~1)",
+      "path_vel": "필드 속도(mult_pct 10봉 변화)",
+      "target_weight": "목표 비중",
+      "actual_weight": "실제 비중"
+    },
+    "panels": [
+      {
+        "kind": "state_field",
+        "type": "field_dots",
+        "label": "2D 상태 필드 궤적 (멀티플 × 기울기, 큰 파동 초록/빨강)",
+        "move_threshold": 0.3,
+        "default": true
+      }
+    ]
+  },
+  "_comment_path_tilt": "yoon_profile + path_tilt(경로 조건부 비중) 활성 파생. M1A1을 필드 속도(vel=mult_pct.diff(10)) 부호로 분리 — 상승 진입 1.0/하강 진입 0.5. 근거: yoon_profile_path_study.md (PA 채택: delta fwd20 t=2.32·fwd60 t=2.10, WF 3/3, BTC holdout +18.5%/Sharpe 0.439/MDD −20.2% vs base +15.7%/0.391/−21.4%). M2A1 하강→0(PB)은 WF 1/3로 기각·미포함. vel_window·가중치는 사전 등록 고정값 — 재튜닝 시 스터디 재실행 필수.",
+  "_comment_state_weights": "행=mult_bin(0=저멀티플), 열=angle_bin(0=하락기울기). yoon_profile과 동일(yoon_profile_study.json 근거). path_tilt가 M1A1(0.8)만 경로에 따라 1.0/0.5로 오버라이드."
+}

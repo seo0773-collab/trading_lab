@@ -1,0 +1,70 @@
+{
+  "version": "yoon_profile_2-v1",
+  "interval": "1d",
+  "period": "max",
+  "asset_class": "equity",
+  "cycle": {
+    "length": 200,
+    "slope_lookback": 5,
+    "z_window": 252,
+    "grid_bins": 3,
+    "min_bin_history": 252
+  },
+  "state_weights": [
+    [0.85, 1.0, 1.0],
+    [0.95, 1.0, 0.90],
+    [0.85, 0.90, 1.0]
+  ],
+  "short": {
+    "enabled": false,
+    "trail_pct": 0.0
+  },
+  "sizing": {
+    "max_weight": 1.0,
+    "warmup_weight": 1.0,
+    "rebalance_threshold": 0.05,
+    "max_trade_weight_per_bar": 1.0
+  },
+  "costs": {
+    "fee_bps_per_side": 5.0,
+    "slippage_bps": 5.0
+  },
+  "train_frac": 0.6,
+  "validation_frac": 0.2,
+  "synthetic_bars": 3000,
+  "seed": 7,
+  "state_field": {
+    "move_threshold": 0.15
+  },
+  "dashboard": {
+    "default_indicators": [
+      "actual_weight",
+      "target_weight",
+      "multiple",
+      "angle_deg"
+    ],
+    "indicator_labels": {
+      "base_cycle": "base cycle(SMA200)",
+      "multiple": "멀티플(가격/SMA200)",
+      "slope_pct": "기울기 %(5봉)",
+      "slope_z": "기울기 z-score",
+      "angle_deg": "기울기 각도(°)",
+      "mult_bin": "멀티플 분위(0=저)",
+      "angle_bin": "기울기 분위(0=하락)",
+      "mult_pct": "멀티플 percentile(0~1)",
+      "angle_pct": "기울기 percentile(0~1)",
+      "target_weight": "목표 비중",
+      "actual_weight": "실제 비중"
+    },
+    "panels": [
+      {
+        "kind": "state_field",
+        "type": "field_dots",
+        "label": "2D 상태 필드 궤적 (멀티플 × 기울기, 큰 파동 초록/빨강)",
+        "move_threshold": 0.15,
+        "default": true
+      }
+    ]
+  },
+  "_comment_stock": "주식형 yoon_profile. BTC용 yoon_profile_1의 숏/현금 방어를 제거하고, SPY 같은 장기 우상향 자산에 맞춰 상태별 노출을 85~100%로 유지한다. (0,0) 저멀티플+하락기울기는 숏이 아니라 85% 점진 매수/보유 구간으로 해석. warmup_weight=1.0으로 상태 워밍업 중 B&H 복리 손실을 피한다."
+}

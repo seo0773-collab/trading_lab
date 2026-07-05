@@ -1,0 +1,92 @@
+{
+  "version": "yoon2m_defensive",
+  "_comment": "yoon2m 구조(top_k=3, US/KR 50:50, 월간, 시장필터, safe sleeve)를 유지하되 하위 profile 점수를 y2m_defensive 3x3 필드로 대체한다. 각 종목/일봉의 (mult_bin, angle_bin) 위치를 누적해 dashboard 보조 패널로 노출한다.",
+  "interval": "1d",
+  "period": "max",
+  "base_currency": "KRW",
+  "fx_symbol": "KRW=X",
+  "rebalance_freq": "monthly",
+  "profile_field": {
+    "cycle": {
+      "length": 200,
+      "slope_lookback": 5,
+      "z_window": 252,
+      "grid_bins": 3,
+      "min_bin_history": 252
+    },
+    "state_weights": [
+      [0.30, 0.55, 0.80],
+      [0.50, 0.85, 0.70],
+      [0.30, 0.50, 0.85]
+    ],
+    "warmup_weight": 1.0,
+    "labels": {
+      "M0A0": "저멀티플/하락",
+      "M0A1": "저멀티플/중립",
+      "M0A2": "저멀티플/상승",
+      "M1A0": "중멀티플/하락",
+      "M1A1": "중멀티플/중립",
+      "M1A2": "중멀티플/상승",
+      "M2A0": "고멀티플/하락",
+      "M2A1": "고멀티플/중립",
+      "M2A2": "고멀티플/상승"
+    }
+  },
+  "sub_strategies": [
+    { "config": "yoon1j_lp", "currency": "USD", "weight": 0.5, "overrides": { "top_k": 3 } },
+    { "config": "yoon1j_kr", "currency": "KRW", "weight": 0.5, "overrides": { "top_k": 3 } }
+  ],
+  "benchmark_symbols": { "USD": "SPY", "KRW": "069500.KS" },
+  "benchmark_label": "50/50 SPY원화+KODEX200",
+  "train_frac": 0.6,
+  "validation_frac": 0.2,
+  "synthetic_symbols": 6,
+  "synthetic_bars": 2000,
+  "seed": 7,
+  "dashboard": {
+    "default_indicators": [
+      "sleeve_yoon1j_lp",
+      "sleeve_yoon1j_kr"
+    ],
+    "indicator_labels": {
+      "sleeve_yoon1j_lp": "미국 슬리브(원화환산, y2m defensive)",
+      "sleeve_yoon1j_kr": "한국 슬리브(y2m defensive)"
+    },
+    "panels": [
+      {
+        "kind": "sleeve_weights",
+        "type": "stacked_area",
+        "x": "time",
+        "label": "2단계 슬리브 평가금액 비중",
+        "default": true
+      },
+      {
+        "kind": "regime_field_cumulative",
+        "type": "stacked_area",
+        "x": "time",
+        "label": "3x3 레짐 필드 누적 점유율",
+        "default": true
+      },
+      {
+        "kind": "regime_field_points",
+        "type": "field_dots",
+        "label": "3x3 레짐 필드 관측점 분포",
+        "default": true
+      },
+      {
+        "kind": "regime_field_heatmap",
+        "type": "heatmap",
+        "x": "angle_bin",
+        "label": "3x3 레짐 필드 최종 점유율",
+        "yaxis_title": "mult_bin",
+        "default": false
+      },
+      {
+        "kind": "regime_field_summary",
+        "type": "table",
+        "label": "슬리브별 3x3 레짐 점유율",
+        "default": false
+      }
+    ]
+  }
+}

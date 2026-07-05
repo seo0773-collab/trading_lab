@@ -111,12 +111,13 @@ def rebalance_dates(index: pd.DatetimeIndex, freq: str) -> set:
     f = freq.lower()
     if f in ("d", "daily", "1d"):
         return set(index)
-    rule = {"w": "W", "weekly": "W", "m": "ME", "monthly": "ME"}.get(f, "ME")
+    rule = {"w": "W", "weekly": "W", "m": "ME", "monthly": "ME",
+            "q": "QE", "quarterly": "QE"}.get(f, "ME")
     s = pd.Series(index, index=index)
     try:
         picks = s.groupby(pd.Grouper(freq=rule)).last().dropna()
-    except ValueError:  # 옛 pandas: ME 미지원
-        picks = s.groupby(pd.Grouper(freq="M")).last().dropna()
+    except ValueError:  # 옛 pandas: ME/QE 미지원
+        picks = s.groupby(pd.Grouper(freq=rule[0])).last().dropna()
     return set(pd.DatetimeIndex(picks.values))
 
 

@@ -89,3 +89,5 @@ PYTHONPATH=src python -m unittest discover tests -q
 
 - `docs/strategy/DASHBOARD_GUIDE.md` — 대시보드 데이터 계약 (forecast/trades/equity 컬럼, 보조지표 자동 노출, config `dashboard` 블록). **권위 있는 최신 문서.**
 - `docs/strategy/README.md` — 전략 등록 워크플로와 게이트(Gate 0~5). 단, 신호 생성을 `research_adapter.py` 단일 디스패치로 설명한 부분은 **구식**이다. 현재 확장 지점은 위 2절의 `StrategyHandler`다.
+
+https://github.com/multica-ai/andrej-karpathy-skills/blob/main/CLAUDE.md

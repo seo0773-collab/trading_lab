@@ -1,0 +1,72 @@
+{
+  "version": "yoon_profile_1-v1",
+  "interval": "1d",
+  "period": "max",
+  "asset_class": "crypto",
+  "exchange": "binance",
+  "since": "2017-08-17",
+  "cycle": {
+    "length": 200,
+    "slope_lookback": 5,
+    "z_window": 252,
+    "grid_bins": 3,
+    "min_bin_history": 252
+  },
+  "state_weights": [
+    [-0.5, 1.0, 1.0],
+    [0.5, 0.8, 0.3],
+    [0.0, 0.3, 1.0]
+  ],
+  "short": {
+    "enabled": true,
+    "trail_pct": 0.15
+  },
+  "sizing": {
+    "max_weight": 1.0,
+    "rebalance_threshold": 0.05,
+    "max_trade_weight_per_bar": 0.25
+  },
+  "costs": {
+    "fee_bps_per_side": 5.0,
+    "slippage_bps": 5.0
+  },
+  "train_frac": 0.6,
+  "validation_frac": 0.2,
+  "synthetic_bars": 3000,
+  "seed": 7,
+  "state_field": {
+    "move_threshold": 0.3
+  },
+  "dashboard": {
+    "default_indicators": [
+      "actual_weight",
+      "target_weight",
+      "multiple",
+      "angle_deg"
+    ],
+    "indicator_labels": {
+      "base_cycle": "base cycle(SMA200)",
+      "multiple": "멀티플(가격/SMA200)",
+      "slope_pct": "기울기 %(5봉)",
+      "slope_z": "기울기 z-score",
+      "angle_deg": "기울기 각도(°)",
+      "mult_bin": "멀티플 분위(0=저)",
+      "angle_bin": "기울기 분위(0=하락)",
+      "mult_pct": "멀티플 percentile(0~1)",
+      "angle_pct": "기울기 percentile(0~1)",
+      "target_weight": "목표 비중",
+      "actual_weight": "실제 비중",
+      "squeeze_guard": "스퀴즈 가드 발동"
+    },
+    "panels": [
+      {
+        "kind": "state_field",
+        "type": "field_dots",
+        "label": "2D 상태 필드 궤적 (멀티플 × 기울기, 큰 파동 초록/빨강)",
+        "move_threshold": 0.3,
+        "default": true
+      }
+    ]
+  },
+  "_comment_short": "yoon_profile + (0,0) 떨어지는 칼 숏 −0.5 + trail15 스퀴즈 가드(숏 에피소드 최저 종가 +15% 반등 시 에피소드 종료까지 숏 금지). 근거: yoon_profile_short_study.md(무방비 숏=2022 단일 에피소드 의존으로 보류) → yoon_profile_squeeze_guard_study.md(trail15만 전 구간 개선: test +23.1%/Sharpe 0.487 vs long-only +15.7%/0.395, 기여 에피소드 2022+2026 두 개. ma20·fast_exit 기각). 유보: trail {10,15} 중 선택·펀딩비용 미반영·하락장 표본 2개."
+}

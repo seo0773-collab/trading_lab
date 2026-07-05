@@ -1,0 +1,391 @@
+{
+  "top_k": 3,
+  "initial_krw": 2000000.0,
+  "cost_kr": 0.0015,
+  "cost_us": 0.006,
+  "bench": {
+    "cagr": 0.16460199227423677,
+    "mdd": -0.3135265926812475,
+    "sharpe": 1.0691403742561592,
+    "total_return": 10.816698098155204
+  },
+  "rows": [
+    {
+      "key": "monthly",
+      "label": "월간 고정",
+      "description": "현행 기준선",
+      "fractional": {
+        "cagr": 0.11924185216989214,
+        "mdd": -0.18609802694612076,
+        "sharpe": 0.9544089768677303,
+        "total_return": 5.206953338048488,
+        "rebalance_count": 211,
+        "rebalance_per_year": 13.01958863858962,
+        "gross_turnover": 172.40296982578218,
+        "turnover_per_year": 10.637989323236315,
+        "cost_paid": 0.6357673969676906,
+        "cost_per_year": 0.03922952596372626
+      },
+      "integer": {
+        "cagr": 0.12065048027341296,
+        "mdd": -0.1865936487596439,
+        "sharpe": 0.9557623811767476,
+        "total_return": 5.334772724687333,
+        "rebalance_count": 211,
+        "rebalance_per_year": 13.01958863858962,
+        "gross_turnover": 96.79260871014631,
+        "turnover_per_year": 5.972511605033514,
+        "cost_paid": 0.6566590624178363,
+        "cost_per_year": 0.040518629708446316
+      }
+    },
+    {
+      "key": "weekly",
+      "label": "주간 고정",
+      "description": "거래 빈도 증가 비교군",
+      "fractional": {
+        "cagr": 0.0829789308260882,
+        "mdd": -0.31007445151080104,
+        "sharpe": 0.7149693362522354,
+        "total_return": 2.6396861191403675,
+        "rebalance_count": 901,
+        "rebalance_per_year": 55.59549461312439,
+        "gross_turnover": 284.21918722614686,
+        "turnover_per_year": 17.537520857245106,
+        "cost_paid": 1.0245427013517812,
+        "cost_per_year": 0.06321859959369464
+      },
+      "integer": {
+        "cagr": 0.08175906908436259,
+        "mdd": -0.3136952529161131,
+        "sharpe": 0.6971242022341791,
+        "total_return": 2.573810566497766,
+        "rebalance_count": 901,
+        "rebalance_per_year": 55.59549461312439,
+        "gross_turnover": 233.05955494270532,
+        "turnover_per_year": 14.38075608363412,
+        "cost_paid": 1.063044674590983,
+        "cost_per_year": 0.06559433349581971
+      }
+    },
+    {
+      "key": "quarterly",
+      "label": "분기 고정",
+      "description": "거래 절감 비교군",
+      "fractional": {
+        "cagr": 0.10860291801353394,
+        "mdd": -0.32413926780289837,
+        "sharpe": 0.8139115564611221,
+        "total_return": 4.316866720469347,
+        "rebalance_count": 72,
+        "rebalance_per_year": 4.442703232125368,
+        "gross_turnover": 96.24695421466693,
+        "turnover_per_year": 5.938842424607264,
+        "cost_paid": 0.3812686082042152,
+        "cost_per_year": 0.02352587886078899
+      },
+      "integer": {
+        "cagr": 0.10901144596811996,
+        "mdd": -0.3247777039993519,
+        "sharpe": 0.8112385777459208,
+        "total_return": 4.348708986297134,
+        "rebalance_count": 72,
+        "rebalance_per_year": 4.442703232125368,
+        "gross_turnover": 52.79400243519669,
+        "turnover_per_year": 3.2576122952178173,
+        "cost_paid": 0.38526493745385204,
+        "cost_per_year": 0.023772469206261193
+      }
+    },
+    {
+      "key": "monthly_skip_5",
+      "label": "월말 gap 5%",
+      "description": "월말에 gross gap >= 5%일 때만",
+      "fractional": {
+        "cagr": 0.11973035422355327,
+        "mdd": -0.186098026946121,
+        "sharpe": 0.9572675408991439,
+        "total_return": 5.2510035400400845,
+        "rebalance_count": 181,
+        "rebalance_per_year": 11.168462291870716,
+        "gross_turnover": 172.12198063094135,
+        "turnover_per_year": 10.620651106512542,
+        "cost_paid": 0.6355066795332389,
+        "cost_per_year": 0.039213438599994176
+      },
+      "integer": {
+        "cagr": 0.12067389194581635,
+        "mdd": -0.1867564524615396,
+        "sharpe": 0.9559766563788523,
+        "total_return": 5.336917824336721,
+        "rebalance_count": 181,
+        "rebalance_per_year": 11.168462291870716,
+        "gross_turnover": 96.30999219932019,
+        "turnover_per_year": 5.942732133748454,
+        "cost_paid": 0.6538546776272509,
+        "cost_per_year": 0.04034558735603997
+      }
+    },
+    {
+      "key": "monthly_skip_10",
+      "label": "월말 gap 10%",
+      "description": "월말에 gross gap >= 10%일 때만",
+      "fractional": {
+        "cagr": 0.11979586404365228,
+        "mdd": -0.18624655490994835,
+        "sharpe": 0.9573339568366224,
+        "total_return": 5.256933081197201,
+        "rebalance_count": 169,
+        "rebalance_per_year": 10.428011753183155,
+        "gross_turnover": 170.61689679507955,
+        "turnover_per_year": 10.527781095093058,
+        "cost_paid": 0.6312064587078936,
+        "cost_per_year": 0.038948096864443976
+      },
+      "integer": {
+        "cagr": 0.12164093532220654,
+        "mdd": -0.18615324231508323,
+        "sharpe": 0.9618891386029437,
+        "total_return": 5.426121266498116,
+        "rebalance_count": 168,
+        "rebalance_per_year": 10.366307541625858,
+        "gross_turnover": 95.7514516511019,
+        "turnover_per_year": 5.908267829597865,
+        "cost_paid": 0.6530128364679424,
+        "cost_per_year": 0.04029364221104836
+      }
+    },
+    {
+      "key": "monthly_skip_mix",
+      "label": "월말 혼합스킵",
+      "description": "월말에 gross 5%/종목 3%p/통화 4%p 중 하나 충족",
+      "fractional": {
+        "cagr": 0.11973035422355327,
+        "mdd": -0.186098026946121,
+        "sharpe": 0.9572675408991439,
+        "total_return": 5.2510035400400845,
+        "rebalance_count": 181,
+        "rebalance_per_year": 11.168462291870716,
+        "gross_turnover": 172.12198063094135,
+        "turnover_per_year": 10.620651106512542,
+        "cost_paid": 0.6355066795332389,
+        "cost_per_year": 0.039213438599994176
+      },
+      "integer": {
+        "cagr": 0.12067389194581635,
+        "mdd": -0.1867564524615396,
+        "sharpe": 0.9559766563788523,
+        "total_return": 5.336917824336721,
+        "rebalance_count": 181,
+        "rebalance_per_year": 11.168462291870716,
+        "gross_turnover": 96.30999219932019,
+        "turnover_per_year": 5.942732133748454,
+        "cost_paid": 0.6538546776272509,
+        "cost_per_year": 0.04034558735603997
+      }
+    },
+    {
+      "key": "target_gap_10",
+      "label": "목표변화 10%",
+      "description": "현재 보유비중과 일별 목표의 gross gap >= 10%시에만",
+      "fractional": {
+        "cagr": 0.0773712771113575,
+        "mdd": -0.31492466882342784,
+        "sharpe": 0.669897909464604,
+        "total_return": 2.345991714710605,
+        "rebalance_count": 576,
+        "rebalance_per_year": 35.54162585700294,
+        "gross_turnover": 271.94617492816576,
+        "turnover_per_year": 16.780224309965174,
+        "cost_paid": 0.9671687662818824,
+        "cost_per_year": 0.059678386166266986
+      },
+      "integer": {
+        "cagr": 0.07752963927035017,
+        "mdd": -0.29547508607050044,
+        "sharpe": 0.6629698233723693,
+        "total_return": 2.3539713217157225,
+        "rebalance_count": 578,
+        "rebalance_per_year": 35.66503428011753,
+        "gross_turnover": 228.23524639768277,
+        "turnover_per_year": 14.083075928554374,
+        "cost_paid": 1.0024744459953947,
+        "cost_per_year": 0.061856895296483715
+      }
+    },
+    {
+      "key": "leaf_drift_5",
+      "label": "종목 드리프트 5%p",
+      "description": "단일 종목 목표-현재 차이 >= 5%p",
+      "fractional": {
+        "cagr": 0.07851214465689016,
+        "mdd": -0.3149246688234284,
+        "sharpe": 0.6781495724271019,
+        "total_return": 2.403878571133338,
+        "rebalance_count": 561,
+        "rebalance_per_year": 34.61606268364349,
+        "gross_turnover": 270.46245667041194,
+        "turnover_per_year": 16.68867264469731,
+        "cost_paid": 0.9580180663404805,
+        "cost_per_year": 0.05911374944118538
+      },
+      "integer": {
+        "cagr": 0.07855721286029138,
+        "mdd": -0.3169580643823967,
+        "sharpe": 0.670664057545537,
+        "total_return": 2.406184481624979,
+        "rebalance_count": 568,
+        "rebalance_per_year": 35.04799216454457,
+        "gross_turnover": 231.00326978341593,
+        "turnover_per_year": 14.253874629143198,
+        "cost_paid": 0.9997739164693834,
+        "cost_per_year": 0.06169026125129398
+      }
+    },
+    {
+      "key": "currency_drift_5",
+      "label": "통화 드리프트 5%p",
+      "description": "USD/KRW 슬리브 목표-현재 차이 >= 5%p",
+      "fractional": {
+        "cagr": 0.1026266170201775,
+        "mdd": -0.19046580751188047,
+        "sharpe": 0.8514062105984903,
+        "total_return": 3.8709159233904735,
+        "rebalance_count": 263,
+        "rebalance_per_year": 16.22820763956905,
+        "gross_turnover": 216.82111074343325,
+        "turnover_per_year": 13.378775687400877,
+        "cost_paid": 0.8010893967694459,
+        "cost_per_year": 0.04943058961456914
+      },
+      "integer": {
+        "cagr": 0.10151988621546337,
+        "mdd": -0.16978177504007586,
+        "sharpe": 0.8452881668695533,
+        "total_return": 3.7922841346968346,
+        "rebalance_count": 258,
+        "rebalance_per_year": 15.919686581782567,
+        "gross_turnover": 133.68281548066093,
+        "turnover_per_year": 8.24879272799377,
+        "cost_paid": 0.8506145356420887,
+        "cost_per_year": 0.052486499260971195
+      }
+    },
+    {
+      "key": "regime_event",
+      "label": "레짐 전환",
+      "description": "월말 + SPY/KODEX200 100MA 레짐 전환",
+      "fractional": {
+        "cagr": 0.10061317608370435,
+        "mdd": -0.21315054280357493,
+        "sharpe": 0.8288423362085775,
+        "total_return": 3.7287528067941924,
+        "rebalance_count": 327,
+        "rebalance_per_year": 20.177277179236043,
+        "gross_turnover": 209.51083127455635,
+        "turnover_per_year": 12.927700656510334,
+        "cost_paid": 0.7836876890274879,
+        "cost_per_year": 0.04835683095860111
+      },
+      "integer": {
+        "cagr": 0.10101022050055941,
+        "mdd": -0.21272496674646568,
+        "sharpe": 0.8224144281560117,
+        "total_return": 3.756475012947835,
+        "rebalance_count": 327,
+        "rebalance_per_year": 20.177277179236043,
+        "gross_turnover": 141.16982043122917,
+        "turnover_per_year": 8.710772465394161,
+        "cost_paid": 0.8130756006655279,
+        "cost_per_year": 0.05017018887554188
+      }
+    },
+    {
+      "key": "drawdown_event",
+      "label": "드로다운 트리거",
+      "description": "월말 + NAV 고점 대비 -5% 하향돌파",
+      "fractional": {
+        "cagr": 0.11252536499600185,
+        "mdd": -0.1880660208762993,
+        "sharpe": 0.9051373469106584,
+        "total_return": 4.630082499754708,
+        "rebalance_count": 249,
+        "rebalance_per_year": 15.364348677766897,
+        "gross_turnover": 188.64418884820012,
+        "turnover_per_year": 11.640140937743984,
+        "cost_paid": 0.7145552052707049,
+        "cost_per_year": 0.0440910655553912
+      },
+      "integer": {
+        "cagr": 0.11530895153922205,
+        "mdd": -0.18745918115379634,
+        "sharpe": 0.9171409315564819,
+        "total_return": 4.862771468012946,
+        "rebalance_count": 252,
+        "rebalance_per_year": 15.549461312438787,
+        "gross_turnover": 105.84748920107944,
+        "turnover_per_year": 6.531235866472091,
+        "cost_paid": 0.7499200882879871,
+        "cost_per_year": 0.046273227778788624
+      }
+    },
+    {
+      "key": "vol_event",
+      "label": "변동성 트리거",
+      "description": "월말 + 벤치 20일 변동성의 1년 80% 분위 상향돌파",
+      "fractional": {
+        "cagr": 0.11708441525504698,
+        "mdd": -0.20421791849780357,
+        "sharpe": 0.9441000952311074,
+        "total_return": 5.015869307474315,
+        "rebalance_count": 237,
+        "rebalance_per_year": 14.623898139079335,
+        "gross_turnover": 180.39371437396025,
+        "turnover_per_year": 11.13105191533741,
+        "cost_paid": 0.6747251014577881,
+        "cost_per_year": 0.041633380403369884
+      },
+      "integer": {
+        "cagr": 0.11784227531349734,
+        "mdd": -0.20452691827943337,
+        "sharpe": 0.9424279258210869,
+        "total_return": 5.0823550014902645,
+        "rebalance_count": 237,
+        "rebalance_per_year": 14.623898139079335,
+        "gross_turnover": 103.03624082731893,
+        "turnover_per_year": 6.357770002077467,
+        "cost_paid": 0.6939494464787345,
+        "cost_per_year": 0.042819603455592825
+      }
+    },
+    {
+      "key": "hybrid_final",
+      "label": "하이브리드 최종후보",
+      "description": "월말 정기 점검 + gross gap 10% 이상일 때만 실행",
+      "fractional": {
+        "cagr": 0.11979586404365228,
+        "mdd": -0.18624655490994835,
+        "sharpe": 0.9573339568366224,
+        "total_return": 5.256933081197201,
+        "rebalance_count": 169,
+        "rebalance_per_year": 10.428011753183155,
+        "gross_turnover": 170.61689679507955,
+        "turnover_per_year": 10.527781095093058,
+        "cost_paid": 0.6312064587078936,
+        "cost_per_year": 0.038948096864443976
+      },
+      "integer": {
+        "cagr": 0.12164093532220654,
+        "mdd": -0.18615324231508323,
+        "sharpe": 0.9618891386029437,
+        "total_return": 5.426121266498116,
+        "rebalance_count": 168,
+        "rebalance_per_year": 10.366307541625858,
+        "gross_turnover": 95.7514516511019,
+        "turnover_per_year": 5.908267829597865,
+        "cost_paid": 0.6530128364679424,
+        "cost_per_year": 0.04029364221104836
+      }
+    }
+  ]
+}

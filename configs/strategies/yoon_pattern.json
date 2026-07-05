@@ -1,0 +1,69 @@
+{
+  "version": "yoon_pattern",
+  "_comment": "L틱 패턴 투영(유사 패턴 앙상블) 기대값 사이징. 직전 300일봉 패턴과 유사한 과거 구간 top-50의 '직후 21틱' 실현수익 중앙값을 점수로, 점수 버킷 기대값(무누수 확장창 워크포워드)을 long-only 비중으로 매핑. 근거: yoon_pattern_study(2026-07-02) — analog L300/H21 SPY IC +0.056(1/3구간 전부 양수·5분위 단조 31→131bps), self(자기 패턴 연장)는 L300에서 일관 음수라 기각. QQQ는 신호 약함(일반화 주의). 버킷 3개·확장창·min_samples 200은 rolling_expectancy 표본 설계 교훈.",
+  "interval": "1d",
+  "period": "max",
+  "pattern": {
+    "length": 450,
+    "_comment_length": "2026-07-02 멀티심볼(SPY·QQQ·IWM·EFA) 결판: L=450이 유일하게 val/test 전 칸 양수(val Sharpe 중앙 0.643·min 0.302, test 4/4 양수). L=300은 EFA val 음수, L=600은 IWM test 음수. 사용자 원가설 300틱은 yoon_pattern_multisymbol.json에 보존.",
+    "horizon": 21,
+    "method": "analog",
+    "step": 5,
+    "matches": 50
+  },
+  "risk_overlay": {
+    "enabled": true,
+    "vol_target": 0.15,
+    "vol_lookback": 21,
+    "_comment": "확장창 기대값 테이블의 급락 전환 지연을 외생 변동성 신호로 보완. 실측(yoon_pattern_sweep 2026-07-02): test MDD -23.3→-16.4%, test Sharpe 개선, CAGR -1.8%p 비용."
+  },
+  "expectancy": {
+    "horizons": [21],
+    "primary_horizon": 21,
+    "score_bins": [-1.0, -0.01, 0.01, 1.0],
+    "min_samples": 200,
+    "train_window": 100000000,
+    "refit_every": 21,
+    "cost_bps_roundtrip": 20.0
+  },
+  "expectancy_sizing": {
+    "long_only": true,
+    "max_weight": 1.0,
+    "neutral_weight": 0.0,
+    "expectancy_scale_bps": 100.0,
+    "min_positive_expectancy_bps": 10.0,
+    "rebalance_threshold": 0.05,
+    "max_trade_weight_per_bar": 0.25
+  },
+  "costs": {
+    "fee_bps_per_side": 5.0,
+    "slippage_bps": 5.0
+  },
+  "train_frac": 0.6,
+  "validation_frac": 0.2,
+  "synthetic_bars": 2000,
+  "seed": 7,
+  "dashboard": {
+    "default_indicators": ["pattern_score", "actual_weight"],
+    "indicator_labels": {
+      "pattern_score": "패턴 투영 점수 (H틱 예상 로그수익)",
+      "expectancy_bps": "버킷 기대값 (bps)",
+      "target_weight": "목표 비중",
+      "actual_weight": "실제 비중"
+    },
+    "panels": [
+      {
+        "kind": "expectancy_table",
+        "type": "table",
+        "label": "최신 점수 버킷 기대값 테이블",
+        "default": true
+      },
+      {
+        "kind": "perf_vs_bnh",
+        "type": "table",
+        "label": "B&H 대비 성과",
+        "default": true
+      }
+    ]
+  }
+}

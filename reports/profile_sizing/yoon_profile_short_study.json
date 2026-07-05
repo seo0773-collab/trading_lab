@@ -1,0 +1,245 @@
+{
+  "variants": {
+    "base_long_only": {
+      "overrides": {},
+      "short_bars": 0,
+      "short_bars_share": 0.0,
+      "short_side_cum_return_simple": 0.0
+    },
+    "knife_short_-0.5": {
+      "overrides": {
+        "0,0": -0.5
+      },
+      "short_bars": 451,
+      "short_bars_share": 0.1391,
+      "short_side_cum_return_simple": 0.1808
+    },
+    "knife_short_-1.0": {
+      "overrides": {
+        "0,0": -1.0
+      },
+      "short_bars": 464,
+      "short_bars_share": 0.1431,
+      "short_side_cum_return_simple": 0.4028
+    },
+    "decel_short_-0.3": {
+      "overrides": {
+        "2,1": -0.3
+      },
+      "short_bars": 262,
+      "short_bars_share": 0.0808,
+      "short_side_cum_return_simple": 0.1413
+    },
+    "knife-0.5_decel-0.3": {
+      "overrides": {
+        "0,0": -0.5,
+        "2,1": -0.3
+      },
+      "short_bars": 713,
+      "short_bars_share": 0.2199,
+      "short_side_cum_return_simple": 0.3221
+    }
+  },
+  "results": [
+    {
+      "variant": "base_long_only",
+      "window": "all",
+      "total_return": 19.160555497422543,
+      "sharpe": 0.872619059311171,
+      "max_drawdown": -0.44313093490550337,
+      "cagr": 0.2628955890198803
+    },
+    {
+      "variant": "base_long_only",
+      "window": "validation",
+      "total_return": 2.4567062396280286,
+      "sharpe": 1.6153758399539606,
+      "max_drawdown": -0.2014797103311632,
+      "cagr": 0.6186653779019005
+    },
+    {
+      "variant": "base_long_only",
+      "window": "test",
+      "total_return": 0.1572237499163911,
+      "sharpe": 0.3946453757106252,
+      "max_drawdown": -0.21396060767986802,
+      "cagr": 0.05833777535463125
+    },
+    {
+      "variant": "base_long_only",
+      "window": "bear_2022",
+      "total_return": -0.31266028810627533,
+      "sharpe": -1.1781503368651096,
+      "max_drawdown": -0.31266028810627533,
+      "cagr": -0.2280638574455225
+    },
+    {
+      "variant": "base_long_only",
+      "window": "bull_2024~",
+      "total_return": 0.9371782597731793,
+      "sharpe": 0.8177742666437369,
+      "max_drawdown": -0.2139606076798667,
+      "cagr": 0.19974604995359257
+    },
+    {
+      "variant": "knife_short_-0.5",
+      "window": "all",
+      "total_return": 23.38791855241058,
+      "sharpe": 0.8978821120765921,
+      "max_drawdown": -0.44313093490550337,
+      "cagr": 0.28171527867638146
+    },
+    {
+      "variant": "knife_short_-0.5",
+      "window": "validation",
+      "total_return": 2.520807377827755,
+      "sharpe": 1.6375609830085214,
+      "max_drawdown": -0.20147971033116352,
+      "cagr": 0.630255028423629
+    },
+    {
+      "variant": "knife_short_-0.5",
+      "window": "test",
+      "total_return": 0.17419060125808739,
+      "sharpe": 0.39524404021062454,
+      "max_drawdown": -0.22729729199644,
+      "cagr": 0.0643360647093949
+    },
+    {
+      "variant": "knife_short_-0.5",
+      "window": "bear_2022",
+      "total_return": -0.18055008119762983,
+      "sharpe": -0.3101407851819423,
+      "max_drawdown": -0.28322593899094306,
+      "cagr": -0.12844473920547117
+    },
+    {
+      "variant": "knife_short_-0.5",
+      "window": "bull_2024~",
+      "total_return": 0.9655805592924513,
+      "sharpe": 0.8026360019953875,
+      "max_drawdown": -0.227297291996438,
+      "cagr": 0.20456507282101377
+    },
+    {
+      "variant": "knife_short_-1.0",
+      "window": "all",
+      "total_return": 24.34781649288966,
+      "sharpe": 0.860161698748276,
+      "max_drawdown": -0.4740827619060475,
+      "cagr": 0.28556595632346915
+    },
+    {
+      "variant": "knife_short_-1.0",
+      "window": "validation",
+      "total_return": 2.6138242695810487,
+      "sharpe": 1.66605942678483,
+      "max_drawdown": -0.2014797103311633,
+      "cagr": 0.6468454248236384
+    },
+    {
+      "variant": "knife_short_-1.0",
+      "window": "test",
+      "total_return": 0.1438385282356931,
+      "sharpe": 0.325361241059361,
+      "max_drawdown": -0.32978520436179926,
+      "cagr": 0.05356762947452243
+    },
+    {
+      "variant": "knife_short_-1.0",
+      "window": "bear_2022",
+      "total_return": -0.12569670767152807,
+      "sharpe": 0.04456659686201199,
+      "max_drawdown": -0.3601163457724298,
+      "cagr": -0.08857091369266323
+    },
+    {
+      "variant": "knife_short_-1.0",
+      "window": "bull_2024~",
+      "total_return": 0.9147715640551173,
+      "sharpe": 0.717061436414332,
+      "max_drawdown": -0.3297852043617989,
+      "cagr": 0.19590804721436217
+    },
+    {
+      "variant": "decel_short_-0.3",
+      "window": "all",
+      "total_return": 25.018848323981246,
+      "sharpe": 0.9406710355519873,
+      "max_drawdown": -0.44313093490550237,
+      "cagr": 0.2881787515260703
+    },
+    {
+      "variant": "decel_short_-0.3",
+      "window": "validation",
+      "total_return": 2.608126343030266,
+      "sharpe": 1.6778446283601356,
+      "max_drawdown": -0.20147971033116385,
+      "cagr": 0.6458367107958993
+    },
+    {
+      "variant": "decel_short_-0.3",
+      "window": "test",
+      "total_return": 0.06356103936513735,
+      "sharpe": 0.22110755550520703,
+      "max_drawdown": -0.2139606076798677,
+      "cagr": 0.02421603617682555
+    },
+    {
+      "variant": "decel_short_-0.3",
+      "window": "bear_2022",
+      "total_return": -0.31266028810627533,
+      "sharpe": -1.1781503368651096,
+      "max_drawdown": -0.31266028810627533,
+      "cagr": -0.2280638574455225
+    },
+    {
+      "variant": "decel_short_-0.3",
+      "window": "bull_2024~",
+      "total_return": 0.7803880395202467,
+      "sharpe": 0.7310502747910388,
+      "max_drawdown": -0.21396060767986647,
+      "cagr": 0.17217972088414335
+    },
+    {
+      "variant": "knife-0.5_decel-0.3",
+      "window": "all",
+      "total_return": 30.474606631444466,
+      "sharpe": 0.9635154728356609,
+      "max_drawdown": -0.44313093490550237,
+      "cagr": 0.3073752112624091
+    },
+    {
+      "variant": "knife-0.5_decel-0.3",
+      "window": "validation",
+      "total_return": 2.675035414650297,
+      "sharpe": 1.7002810162687518,
+      "max_drawdown": -0.20147971033116352,
+      "cagr": 0.65762090816885
+    },
+    {
+      "variant": "knife-0.5_decel-0.3",
+      "window": "test",
+      "total_return": 0.07915463744764573,
+      "sharpe": 0.2446443169493108,
+      "max_drawdown": -0.22729729199643978,
+      "cagr": 0.03002093541584161
+    },
+    {
+      "variant": "knife-0.5_decel-0.3",
+      "window": "bear_2022",
+      "total_return": -0.18055008119762983,
+      "sharpe": -0.3101407851819423,
+      "max_drawdown": -0.28322593899094306,
+      "cagr": -0.12844473920547117
+    },
+    {
+      "variant": "knife-0.5_decel-0.3",
+      "window": "bull_2024~",
+      "total_return": 0.8064915300502837,
+      "sharpe": 0.7205057641601232,
+      "max_drawdown": -0.2272972919964379,
+      "cagr": 0.17688801801076148
+    }
+  ]
+}

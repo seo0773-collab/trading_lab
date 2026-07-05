@@ -15,6 +15,8 @@ from trading_lab.ui.presentation import (
     available_extra_kinds,
     build_account_figure,
     build_bar_figure,
+    build_cycle_profile_figure,
+    build_field_dot_figure,
     build_heatmap_figure,
     build_heatmap_trace,
     build_price_indicator_figure,
@@ -22,6 +24,8 @@ from trading_lab.ui.presentation import (
     build_stacked_area_figure,
     build_trade_overview,
     build_trade_report,
+    field_move_threshold_options,
+    forecast_has_cycle_profile,
     forecast_is_portfolio,
     indicator_series,
     resolve_extra_panels,
@@ -106,6 +110,35 @@ def render_backtest_detail(
             width="stretch",
             config={"scrollZoom": True, "displaylogo": False},
         )
+        if forecast_has_cycle_profile(forecast) and bool(
+            (dashboard_config.get("cycle_profile") or {}).get("enabled", True)
+        ):
+            with st.expander("Cycle multiple · rolling profile anchor", expanded=True):
+                valid = forecast.dropna(
+                    subset=["cm_open", "cm_high", "cm_low", "cm_close"],
+                    how="any",
+                )
+                if not valid.empty:
+                    anchor_pos = st.slider(
+                        "Anchor",
+                        min_value=0,
+                        max_value=max(0, len(valid) - 1),
+                        value=len(valid) - 1,
+                        format="%d",
+                        key=f"cycle-profile-anchor-{run['run_id']}",
+                    )
+                    anchor_time = valid.index[int(anchor_pos)]
+                    st.caption(pd.Timestamp(anchor_time).strftime("%Y-%m-%d %H:%M"))
+                    st.plotly_chart(
+                        build_cycle_profile_figure(
+                            forecast,
+                            config,
+                            symbol=run["symbol"],
+                            anchor_time=anchor_time,
+                        ),
+                        width="stretch",
+                        config={"scrollZoom": True, "displaylogo": False},
+                    )
     currency_sym, currency_dec, currency_step, _ = currency_spec(
         config.get("base_currency"))
     invest_mode = st.radio(
@@ -275,6 +308,38 @@ def _panel_heatmap(frame: pd.DataFrame, spec: dict[str, Any]) -> Any:
         yaxis_title=str(spec.get("yaxis_title", "가격")))
 
 
+def _panel_field_dots(frame: pd.DataFrame, spec: dict[str, Any]) -> Any:
+    """상태 필드 점 분포 + 궤적 노브(궤적 on/off, 파동 임계값 선택).
+
+    임계값 선택지는 프레임에 사전 계산된 ``move_dir_<pct>`` 컬럼에서 발견한다
+    (없으면 노브 없이 기존 동작). 기본값은 패널 선언의 ``move_threshold``.
+    """
+    options = field_move_threshold_options(frame)
+    show_moves, pct = True, None
+    if options or "move_dir" in frame:
+        key = f"field-{spec['kind']}"
+        toggle_col, slider_col = st.columns([1, 3])
+        with toggle_col:
+            show_moves = st.toggle(
+                "큰 파동 궤적", value=True, key=f"{key}-moves"
+            )
+        if options and show_moves:
+            default_pct = int(round(float(spec.get("move_threshold", 0.0)) * 100))
+            if default_pct not in options:
+                default_pct = options[len(options) // 2]
+            with slider_col:
+                pct = st.select_slider(
+                    "파동 임계값 % (이 진폭 이상의 상승/하락만 궤적으로)",
+                    options=options,
+                    value=default_pct,
+                    key=f"{key}-threshold",
+                )
+    return build_field_dot_figure(
+        frame, label=spec["label"], show_moves=show_moves,
+        move_threshold_pct=pct,
+    )
+
+
 # 패널 type → figure 빌더 레지스트리. 새 시각화를 추가할 때는 presentation.py에
 # 빌더를 만들고 여기 한 줄만 등록하면 된다 — render_extra_panels 디스패치 본체는
 # 더 이상 수정하지 않는다(Open-Closed). 미등록 타입은 원본 테이블로 폴백한다.
@@ -283,6 +348,7 @@ PANEL_RENDERERS: dict[str, Any] = {
     "bar": _panel_bar,
     "stacked_area": _panel_stacked_area,
     "heatmap": _panel_heatmap,
+    "field_dots": _panel_field_dots,
 }
 
 

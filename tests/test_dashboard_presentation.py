@@ -10,6 +10,8 @@ from trading_lab.ui.presentation import (
     available_extra_kinds,
     build_account_figure,
     build_bar_figure,
+    build_cycle_profile_figure,
+    build_field_dot_figure,
     build_heatmap_figure,
     build_price_indicator_figure,
     build_price_figure,
@@ -18,6 +20,8 @@ from trading_lab.ui.presentation import (
     build_trade_overview,
     build_trade_report,
     build_waveform_figure,
+    field_move_threshold_options,
+    forecast_has_cycle_profile,
     indicator_series,
     resolve_extra_panels,
 )
@@ -167,6 +171,45 @@ class TradeReportTests(unittest.TestCase):
         self.assertEqual(combined.layout.xaxis.matches, "x3")
         self.assertEqual(combined.layout.xaxis2.matches, "x3")
 
+    def test_cycle_profile_figure_uses_multiple_candles_and_anchor_profile(self):
+        forecast = pd.DataFrame({
+            "open": [100, 101, 100, 102, 104],
+            "high": [102, 103, 104, 105, 106],
+            "low": [99, 100, 99, 101, 103],
+            "close": [101, 100, 103, 104, 105],
+            "cm_open": [1.00, 1.01, 1.00, 1.02, 1.04],
+            "cm_high": [1.02, 1.03, 1.04, 1.05, 1.06],
+            "cm_low": [0.99, 1.00, 0.99, 1.01, 1.03],
+            "cm_close": [1.01, 1.00, 1.03, 1.04, 1.05],
+            "poc_mult": [1.0, 1.0, 1.01, 1.02, 1.03],
+            "lower_band": [0.99, 0.99, 0.99, 1.00, 1.01],
+            "upper_band": [1.02, 1.03, 1.04, 1.05, 1.06],
+            "volume": [1, 1, 1, 1, 1],
+        }, index=self.index)
+        config = {
+            "profile": {
+                "min_mult": 0.8,
+                "max_mult": 1.2,
+                "bin_count": 20,
+                "rolling_window": 3,
+                "weight_mode": "time",
+                "accumulation_mode": "range_uniform",
+                "percentile_value": 20.0,
+            },
+            "smoothing": {"sigma_bins": 1.0},
+            "dashboard": {"cycle_profile": {"max_width_bars": 4}},
+        }
+        self.assertTrue(forecast_has_cycle_profile(forecast))
+        figure = build_cycle_profile_figure(
+            forecast, config, symbol="TEST", anchor_time=self.index[-1]
+        )
+        self.assertGreaterEqual(len(figure.data), 5)
+        self.assertEqual(figure.data[0].type, "candlestick")
+        names = {trace.name for trace in figure.data}
+        self.assertIn("Anchor rolling profile", names)
+        self.assertIn("POC", names)
+        self.assertEqual(figure.layout.yaxis.title.text, "Cycle multiple")
+
     def test_portfolio_forecast_uses_nav_axis_and_no_synthetic_buy_hold(self):
         forecast = pd.DataFrame({
             "close": [10_000, 10_200, 10_100, 10_500, 10_800],
@@ -284,6 +327,62 @@ class ExtraPanelTests(unittest.TestCase):
         )
         self.assertGreaterEqual(len(scatter.data), 1)
         self.assertEqual(len(bar.data), 1)
+
+    def test_field_dot_figure_draws_big_move_lines(self):
+        # 연속 좌표 점 + move_dir/move_id → 상승(초록)/하락(빨강) 궤적 선 오버레이
+        frame = pd.DataFrame({
+            "time": [f"2024-01-0{i}" for i in range(1, 7)],
+            "x": [0.1, 0.4, 0.9, 1.4, 1.8, 2.2],
+            "y": [0.2, 0.5, 1.0, 1.5, 1.9, 2.1],
+            "move_dir": [1, 1, 1, -1, -1, 0],
+            "move_id": [0, 0, 0, 1, 1, -1],
+        })
+        fig = build_field_dot_figure(frame, label="상태 필드")
+        names = [trace.name for trace in fig.data]
+        self.assertIn("큰 상승 구간", names)
+        self.assertIn("큰 하락 구간", names)
+        up = fig.data[names.index("큰 상승 구간")]
+        down = fig.data[names.index("큰 하락 구간")]
+        self.assertEqual(list(up.x), [0.1, 0.4, 0.9])
+        # 공유 pivot(상승 leg의 마지막 점)을 하락 leg 앞에 붙여 선이 이어진다.
+        self.assertEqual(list(down.x), [0.9, 1.4, 1.8])
+        self.assertTrue(fig.layout.showlegend)
+
+    def test_field_dot_figure_without_moves_keeps_single_trace(self):
+        frame = pd.DataFrame({"x": [0.0, 1.0], "y": [1.0, 2.0]})
+        fig = build_field_dot_figure(frame, label="상태 필드")
+        self.assertEqual(len(fig.data), 1)
+        self.assertFalse(fig.layout.showlegend)
+
+    def test_field_dot_figure_knobs_select_threshold_and_toggle_lines(self):
+        # 임계값 그리드 라벨(move_dir_<pct>) 중 하나를 골라 궤적을 다시 그린다.
+        frame = pd.DataFrame({
+            "x": [0.1, 0.5, 0.9, 1.3],
+            "y": [0.2, 0.6, 1.0, 1.4],
+            "move_dir_20": [1, 1, -1, -1],
+            "move_id_20": [0, 0, 1, 1],
+            "move_dir_40": [0, 0, 0, 0],
+            "move_id_40": [-1, -1, -1, -1],
+        })
+        self.assertEqual(field_move_threshold_options(frame), [20, 40])
+        fig20 = build_field_dot_figure(
+            frame, label="상태 필드", move_threshold_pct=20
+        )
+        names = [trace.name for trace in fig20.data]
+        self.assertIn("큰 상승 구간", names)
+        self.assertIn("큰 하락 구간", names)
+        # 40%에서는 라벨된 leg가 없어 궤적 trace가 붙지 않는다.
+        fig40 = build_field_dot_figure(
+            frame, label="상태 필드", move_threshold_pct=40
+        )
+        self.assertEqual(len(fig40.data), 1)
+        self.assertFalse(fig40.layout.showlegend)
+        # 토글 off → 라벨이 있어도 점만 남는다.
+        fig_off = build_field_dot_figure(
+            frame, label="상태 필드", show_moves=False, move_threshold_pct=20
+        )
+        self.assertEqual(len(fig_off.data), 1)
+        self.assertFalse(fig_off.layout.showlegend)
 
     def test_heatmap_panel_figure_builds(self):
         # wide 프레임(time + 가격 bin 컬럼) → heatmap trace (z = price x time)

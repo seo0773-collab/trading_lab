@@ -23,10 +23,19 @@ from dataclasses import replace  # noqa: E402
 from profile_sizing.config import (  # noqa: E402
     ProfileSizingConfig, TrendOverlay, config_from_dict,
 )
+from profile_sizing.cycle_state import (  # noqa: E402
+    expanding_percentile_rank, zigzag_moves,
+)
 from profile_sizing.engine import buy_hold_equity, portfolio_returns  # noqa: E402
 from profile_sizing.indicators import compute_cycle, moving_average  # noqa: E402
-from profile_sizing.profile import compute_profile  # noqa: E402
+from profile_sizing.profile import (  # noqa: E402
+    compute_profile, contribution_matrix, rolling_profile_matrix,
+)
 from profile_sizing.regime import classify  # noqa: E402
+from profile_sizing.rolling_expectancy import (  # noqa: E402
+    compute_rolling_profile_features, expectancy_weights,
+    run_rolling_expectancy_pipeline, walk_forward_expectancy,
+)
 from profile_sizing.run import rebased_equity, run_pipeline, slice_window  # noqa: E402
 from profile_sizing.sizing import (  # noqa: E402
     base_target_weight, build_weights, trend_boost,
@@ -90,6 +99,97 @@ class ProfileTests(unittest.TestCase):
         b = prof2["cumulative_percentile"].to_numpy()
         both = ~(np.isnan(a) | np.isnan(b))
         np.testing.assert_allclose(a[both], b[both], rtol=1e-9, atol=1e-9)
+
+
+class RollingExpectancyTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.cfg = config_from_dict({
+            "base_cycle": {"length": 20},
+            "profile": {
+                "min_mult": 0.0,
+                "max_mult": 3.0,
+                "bin_count": 60,
+                "rolling_window": 10,
+                "weight_mode": "time",
+                "accumulation_mode": "range_uniform",
+            },
+            "smoothing": {"sigma_bins": 1.5},
+            "expectancy": {
+                "primary_horizon": 5,
+                "score_bins": [-1.0, -0.5, 0.0, 0.5, 1.0],
+                "min_samples": 5,
+                "train_window": 80,
+                "refit_every": 7,
+                "cost_bps_roundtrip": 10.0,
+            },
+            "sizing": {
+                "expectancy_scale_bps": 25.0,
+                "min_positive_expectancy_bps": 1.0,
+                "rebalance_threshold": 0.0,
+                "max_trade_weight_per_bar": 0.5,
+            },
+        })
+        self.raw = make_synthetic_ohlcv(320, 11)
+        self.cycle = compute_cycle(self.raw, self.cfg.base_cycle)
+
+    def test_rolling_profile_matrix_matches_direct_window_sum(self) -> None:
+        contrib, _ = contribution_matrix(self.cycle, self.raw, self.cfg.profile)
+        roll = rolling_profile_matrix(contrib, self.cfg.profile.rolling_window)
+        t = 120
+        direct = contrib[t - self.cfg.profile.rolling_window + 1:t + 1].sum(axis=0)
+        np.testing.assert_allclose(roll[t], direct, rtol=1e-12, atol=1e-12)
+
+    def test_smooth_distribution_candle_location_features_are_bounded(self) -> None:
+        features, prob = compute_rolling_profile_features(
+            self.cycle, self.raw, self.cfg
+        )
+        row_sum = prob.sum(axis=1)
+        valid_rows = row_sum > 0.0
+        np.testing.assert_allclose(row_sum[valid_rows], 1.0, rtol=1e-9, atol=1e-9)
+        for col in (
+            "open_percentile", "high_percentile", "low_percentile",
+            "close_percentile", "rolling_percentile", "candle_mid_percentile",
+            "body_mid_percentile", "close_in_candle_percentile",
+        ):
+            vals = features[col].dropna()
+            self.assertTrue(((vals >= 0.0) & (vals <= 1.0)).all(), col)
+        score = features["profile_score"].dropna()
+        self.assertTrue(((score >= -1.0) & (score <= 1.0)).all())
+
+    def test_walk_forward_expectancy_unchanged_by_future_tail(self) -> None:
+        features, _ = compute_rolling_profile_features(self.cycle, self.raw, self.cfg)
+        exp, _ = walk_forward_expectancy(features, self.raw["close"], self.cfg)
+
+        cut = 240
+        raw2 = self.raw.iloc[:cut]
+        cycle2 = compute_cycle(raw2, self.cfg.base_cycle)
+        features2, _ = compute_rolling_profile_features(cycle2, raw2, self.cfg)
+        exp2, _ = walk_forward_expectancy(features2, raw2["close"], self.cfg)
+
+        a = exp["expectancy_bps"].iloc[:cut].to_numpy()
+        b = exp2["expectancy_bps"].to_numpy()
+        both = ~(np.isnan(a) | np.isnan(b))
+        np.testing.assert_allclose(a[both], b[both], rtol=1e-9, atol=1e-9)
+
+    def test_expectancy_weights_are_long_only_and_step_limited(self) -> None:
+        exp = pd.Series([np.nan, -10.0, 10.0, 60.0], dtype=float)
+        weights = expectancy_weights(exp, self.cfg)
+        self.assertTrue(((weights["actual_weight"] >= 0.0)
+                         & (weights["actual_weight"] <= 1.0)).all())
+        self.assertLessEqual(
+            float(weights["actual_weight"].diff().abs().max()),
+            self.cfg.expectancy_sizing.max_trade_weight_per_bar + 1e-9,
+        )
+
+    def test_pipeline_returns_forecast_equity_and_tables(self) -> None:
+        out = run_rolling_expectancy_pipeline(self.raw, self.cfg)
+        self.assertEqual(len(out["forecast"]), len(self.raw))
+        self.assertEqual(len(out["equity"]), len(self.raw))
+        self.assertIn("close_percentile", out["forecast"])
+        self.assertIn("expectancy_bps", out["forecast"])
+        self.assertIn("actual_weight", out["forecast"])
+        self.assertGreater(float(out["equity"].iloc[-1]), 0.0)
+        self.assertFalse(out["expectancy_tables"].empty)
 
 
 class SizingTests(unittest.TestCase):
@@ -235,6 +335,125 @@ class AccountSimTests(unittest.TestCase):
             window = slice_window(self.raw.index, phase, self.cfg)
             equity = rebased_equity(self.out["port_ret"], window)
             self.assertAlmostEqual(float(equity.iloc[0]), 1.0)
+
+
+class CycleStateFieldTests(unittest.TestCase):
+    """2D 상태 필드 재료: 연속 percentile rank(인과) + zigzag 큰 파동 라벨."""
+
+    def test_expanding_rank_is_causal_and_bounded(self) -> None:
+        rng = np.random.default_rng(3)
+        idx = pd.date_range("2020-01-01", periods=400, freq="D")
+        values = pd.Series(rng.normal(size=400).cumsum(), index=idx)
+        rank_full = expanding_percentile_rank(values, 50)
+        rank_head = expanding_percentile_rank(values.iloc[:200], 50)
+        self.assertTrue(rank_full.iloc[:49].isna().all())
+        finite = rank_full.dropna()
+        self.assertTrue(((finite > 0.0) & (finite <= 1.0)).all())
+        # 무누수: 미래 데이터를 붙여도 과거 시점의 rank는 변하지 않는다.
+        pd.testing.assert_series_equal(rank_full.iloc[:200], rank_head)
+
+    def test_zigzag_labels_three_legs_with_signs(self) -> None:
+        # 100→200(+100%) → 120(−40%) → 180(+50%), threshold 30%
+        path = np.concatenate([
+            np.linspace(100.0, 200.0, 40),
+            np.linspace(200.0, 120.0, 30),
+            np.linspace(120.0, 180.0, 30),
+        ])
+        idx = pd.date_range("2021-01-01", periods=len(path), freq="D")
+        moves = zigzag_moves(pd.Series(path, index=idx), threshold=0.3)
+        mid = moves["move_id"].to_numpy()
+        mdir = moves["move_dir"].to_numpy()
+        self.assertEqual(sorted(set(mid[mid >= 0])), [0, 1, 2])
+        for leg, want_dir in ((0, 1), (1, -1), (2, 1)):
+            bars = np.flatnonzero(mid == leg)
+            self.assertTrue((mdir[bars] == want_dir).all())
+            # leg 구간은 연속이고 진폭은 임계 이상
+            self.assertTrue((np.diff(bars) == 1).all())
+            amp = path[bars[-1]] / path[bars[0]] - 1.0
+            self.assertGreaterEqual(abs(amp), 0.3)
+        # 인접 leg가 공유하는 pivot 봉은 새 leg에 귀속 → 라벨은 서로 겹치지 않는다.
+        self.assertEqual(mid[39], 1)
+        self.assertEqual(mid[69], 2)
+
+    def test_zigzag_small_oscillation_has_no_labels(self) -> None:
+        t = np.arange(200, dtype=float)
+        path = 100.0 + 5.0 * np.sin(t / 7.0)   # ±5% 진동 — 30% 임계 미달
+        moves = zigzag_moves(pd.Series(path), threshold=0.3)
+        self.assertTrue((moves["move_dir"].to_numpy() == 0).all())
+        self.assertTrue((moves["move_id"].to_numpy() == -1).all())
+
+    def test_path_tilt_default_off_keeps_targets(self) -> None:
+        from profile_sizing.yoon_profile import (
+            apply_path_tilt, state_target_weights, yoon_profile_config,
+        )
+        state = pd.DataFrame({
+            "mult_bin": [1, 1, 2, 0], "angle_bin": [1, 1, 1, 0],
+            "mult_pct": [0.5, 0.4, 0.9, 0.1],
+        })
+        ycfg = yoon_profile_config({})
+        target = state_target_weights(state, ycfg)
+        tilted, _ = apply_path_tilt(target, state, ycfg)
+        pd.testing.assert_series_equal(tilted, target)
+
+    def test_path_tilt_overrides_by_cell_and_velocity_sign(self) -> None:
+        from profile_sizing.yoon_profile import (
+            apply_path_tilt, state_target_weights, yoon_profile_config,
+        )
+        n = 30
+        state = pd.DataFrame({
+            "mult_bin": [1] * n, "angle_bin": [1] * n,
+            # 앞 절반 상승(vel>=0), 뒤 절반 하강(vel<0)
+            "mult_pct": list(np.linspace(0.2, 0.8, 15))
+            + list(np.linspace(0.8, 0.2, 15)),
+        })
+        ycfg = yoon_profile_config({"path_tilt": {
+            "enabled": True, "vel_window": 3,
+            "overrides": [
+                {"mult_bin": 1, "angle_bin": 1, "arrival": "up", "weight": 1.0},
+                {"mult_bin": 1, "angle_bin": 1, "arrival": "down", "weight": 0.5},
+            ],
+        }})
+        target = state_target_weights(state, ycfg)
+        tilted, vel = apply_path_tilt(target, state, ycfg)
+        # vel NaN 워밍업(앞 3봉)은 base 0.8 유지
+        self.assertTrue((tilted.iloc[:3] == 0.8).all())
+        self.assertTrue((tilted[vel >= 0].dropna() == 1.0).all())
+        self.assertTrue((tilted[vel < 0] == 0.5).all())
+
+    def test_state_field_points_carry_threshold_grid_labels(self) -> None:
+        # 대시보드 임계값 노브용 사전 계산 라벨(move_dir_<pct>) 계약
+        from trading_lab.strategies.yoon_profile import YoonProfileHandler
+
+        path = np.concatenate([
+            np.linspace(100.0, 200.0, 40),
+            np.linspace(200.0, 120.0, 30),
+        ])
+        idx = pd.date_range("2022-01-01", periods=len(path), freq="D")
+        forecast = pd.DataFrame({
+            "close": path,
+            "mult_pct": np.linspace(0.05, 0.95, len(path)),
+            "angle_pct": np.linspace(0.05, 0.95, len(path)),
+            "mult_bin": 1,
+            "angle_bin": 1,
+            "target_weight": 0.5,
+        }, index=idx)
+        points = YoonProfileHandler._state_field_points(
+            forecast, {"state_field": {"move_threshold": 0.3}}
+        )
+        for pct in (10, 15, 20, 25, 30, 40, 50):
+            self.assertIn(f"move_dir_{pct}", points.columns)
+            self.assertIn(f"move_id_{pct}", points.columns)
+        # 평문 라벨 = 기본 임계값(30%) 그리드 라벨
+        self.assertTrue(
+            (points["move_dir"] == points["move_dir_30"]).all()
+        )
+        # 낮은 임계값일수록 라벨 봉이 줄지 않는다(단조 포함 관계는 아님 — 최소한
+        # 30% leg(+100%/−40%)는 모든 임계값에서 잡힌다)
+        self.assertGreater(int((points["move_dir_10"] != 0).sum()), 0)
+        self.assertGreater(int((points["move_dir_50"] != 0).sum()), 0)
+        # 좌표는 bin 셀(1) 안으로 클립
+        self.assertTrue(((points["x"] > 0.5) & (points["x"] < 1.5)).all())
+        self.assertTrue(((points["y"] > 0.5) & (points["y"] < 1.5)).all())
 
 
 class PortfolioTests(unittest.TestCase):

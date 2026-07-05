@@ -56,12 +56,17 @@ def _contrib_matrix(cycle: pd.DataFrame, cfg: Profile, weights: np.ndarray) -> n
         frac = overlap / span[:, None]
         contrib = frac * weights[:, None]
         if mode == "range_close":
-            # 절반은 range uniform, 절반은 close bin에 집중.
-            contrib *= 0.5
+            bin_width = (cfg.max_mult - cfg.min_mult) / max(cfg.bin_count, 1)
+            range_in_bins = np.where(bin_width > 0.0, (b - a) / bin_width, 0.0)
+            full_range = max(float(cfg.close_weight_full_range_bins), 1e-9)
+            max_share = float(np.clip(cfg.close_weight_max_share, 0.0, 0.95))
+            close_share = max_share * np.clip(range_in_bins / full_range, 0.0, 1.0)
+            range_share = 1.0 - close_share
+            contrib *= range_share[:, None]
             close_idx = _bin_index(cm_close, edges, cfg.bin_count)
             for i in range(bars):
                 if valid[i] and close_idx[i] >= 0:
-                    contrib[i, close_idx[i]] += 0.5 * weights[i]
+                    contrib[i, close_idx[i]] += close_share[i] * weights[i]
     elif mode == "ohlc":
         for arr in (cm_open, cm_high, cm_low, cm_close):
             idx = _bin_index(arr, edges, cfg.bin_count)
@@ -73,6 +78,28 @@ def _contrib_matrix(cycle: pd.DataFrame, cfg: Profile, weights: np.ndarray) -> n
 
     contrib[~valid] = 0.0
     return contrib
+
+
+def contribution_matrix(
+    cycle: pd.DataFrame, raw: pd.DataFrame, cfg: Profile
+) -> tuple[np.ndarray, np.ndarray]:
+    """Return (bar contribution matrix, bin edges) for profile research modules."""
+    weights = _bar_weights(raw, cfg.weight_mode.lower())
+    contrib = _contrib_matrix(cycle, cfg, weights)
+    edges = np.linspace(cfg.min_mult, cfg.max_mult, cfg.bin_count + 1)
+    return contrib, edges
+
+
+def rolling_profile_matrix(contrib: np.ndarray, window: int) -> np.ndarray:
+    """Causal rolling histogram where row t contains contributions through t."""
+    if contrib.ndim != 2:
+        raise ValueError("contrib must be a 2D bars x bins matrix")
+    window = max(1, int(window))
+    cum_profile = np.cumsum(contrib, axis=0)
+    roll_profile = cum_profile.copy()
+    if window < len(contrib):
+        roll_profile[window:] = cum_profile[window:] - cum_profile[:-window]
+    return roll_profile
 
 
 def _bin_index(mult: np.ndarray, edges: np.ndarray, bin_count: int) -> np.ndarray:
@@ -179,15 +206,10 @@ def _va_position(
 
 def compute_profile(cycle: pd.DataFrame, raw: pd.DataFrame, cfg: Profile) -> pd.DataFrame:
     """봉별 percentile/mid_50 시리즈 프레임을 cycle 인덱스로 반환."""
-    weights = _bar_weights(raw, cfg.weight_mode.lower())
-    contrib = _contrib_matrix(cycle, cfg, weights)
-    edges = np.linspace(cfg.min_mult, cfg.max_mult, cfg.bin_count + 1)
+    contrib, edges = contribution_matrix(cycle, raw, cfg)
 
     cum_profile = np.cumsum(contrib, axis=0)
-    window = max(1, cfg.rolling_window)
-    roll_profile = cum_profile.copy()
-    if window < len(contrib):
-        roll_profile[window:] = cum_profile[window:] - cum_profile[:-window]
+    roll_profile = rolling_profile_matrix(contrib, cfg.rolling_window)
 
     cm_close = np.asarray(cycle["cm_close"], dtype=float)
     pv = cfg.percentile_value / 100.0

@@ -1,0 +1,365 @@
+{
+  "short_cell": [
+    0,
+    0
+  ],
+  "short_weight": -0.5,
+  "detail": {
+    "base_long_only": {
+      "guard_bars": 0,
+      "short_bars": 0,
+      "turnover_sum": 67.4
+    },
+    "knife-0.5_naked": {
+      "guard_bars": 0,
+      "short_bars": 451,
+      "turnover_sum": 72.4
+    },
+    "knife-0.5_ma20": {
+      "guard_bars": 156,
+      "short_bars": 317,
+      "turnover_sum": 90.9
+    },
+    "knife-0.5_trail10": {
+      "guard_bars": 340,
+      "short_bars": 108,
+      "turnover_sum": 72.4
+    },
+    "knife-0.5_trail15": {
+      "guard_bars": 153,
+      "short_bars": 297,
+      "turnover_sum": 72.9
+    },
+    "knife-0.5_ma20_fastexit": {
+      "guard_bars": 156,
+      "short_bars": 291,
+      "turnover_sum": 93.4
+    },
+    "knife-0.5_trail15_fastexit": {
+      "guard_bars": 153,
+      "short_bars": 289,
+      "turnover_sum": 73.9
+    }
+  },
+  "results": [
+    {
+      "variant": "base_long_only",
+      "window": "all",
+      "total_return": 19.160555497422543,
+      "sharpe": 0.872619059311171,
+      "max_drawdown": -0.44313093490550337
+    },
+    {
+      "variant": "base_long_only",
+      "window": "validation",
+      "total_return": 2.4567062396280286,
+      "sharpe": 1.6153758399539606,
+      "max_drawdown": -0.2014797103311632
+    },
+    {
+      "variant": "base_long_only",
+      "window": "test",
+      "total_return": 0.1572237499163911,
+      "sharpe": 0.3946453757106252,
+      "max_drawdown": -0.21396060767986802
+    },
+    {
+      "variant": "base_long_only",
+      "window": "bear_2022",
+      "total_return": -0.31266028810627533,
+      "sharpe": -1.1781503368651096,
+      "max_drawdown": -0.31266028810627533
+    },
+    {
+      "variant": "base_long_only",
+      "window": "bull_2024~",
+      "total_return": 0.9371782597731793,
+      "sharpe": 0.8177742666437369,
+      "max_drawdown": -0.2139606076798667
+    },
+    {
+      "variant": "knife-0.5_naked",
+      "window": "all",
+      "total_return": 23.38791855241058,
+      "sharpe": 0.8978821120765921,
+      "max_drawdown": -0.44313093490550337
+    },
+    {
+      "variant": "knife-0.5_naked",
+      "window": "validation",
+      "total_return": 2.520807377827755,
+      "sharpe": 1.6375609830085214,
+      "max_drawdown": -0.20147971033116352
+    },
+    {
+      "variant": "knife-0.5_naked",
+      "window": "test",
+      "total_return": 0.17419060125808739,
+      "sharpe": 0.39524404021062454,
+      "max_drawdown": -0.22729729199644
+    },
+    {
+      "variant": "knife-0.5_naked",
+      "window": "bear_2022",
+      "total_return": -0.18055008119762983,
+      "sharpe": -0.3101407851819423,
+      "max_drawdown": -0.28322593899094306
+    },
+    {
+      "variant": "knife-0.5_naked",
+      "window": "bull_2024~",
+      "total_return": 0.9655805592924513,
+      "sharpe": 0.8026360019953875,
+      "max_drawdown": -0.227297291996438
+    },
+    {
+      "variant": "knife-0.5_ma20",
+      "window": "all",
+      "total_return": 19.513956911352786,
+      "sharpe": 0.8625184750410004,
+      "max_drawdown": -0.44313093490550337
+    },
+    {
+      "variant": "knife-0.5_ma20",
+      "window": "validation",
+      "total_return": 2.4302049510482093,
+      "sharpe": 1.605809647925077,
+      "max_drawdown": -0.20147971033116363
+    },
+    {
+      "variant": "knife-0.5_ma20",
+      "window": "test",
+      "total_return": 0.15695063053734892,
+      "sharpe": 0.3741696088162391,
+      "max_drawdown": -0.23114840507344658
+    },
+    {
+      "variant": "knife-0.5_ma20",
+      "window": "bear_2022",
+      "total_return": -0.3004465669747264,
+      "sharpe": -0.7382786881298389,
+      "max_drawdown": -0.3004465669747264
+    },
+    {
+      "variant": "knife-0.5_ma20",
+      "window": "bull_2024~",
+      "total_return": 0.9367210613070738,
+      "sharpe": 0.7953659144498726,
+      "max_drawdown": -0.23114840507344503
+    },
+    {
+      "variant": "knife-0.5_trail10",
+      "window": "all",
+      "total_return": 19.153104450828998,
+      "sharpe": 0.8671660543217617,
+      "max_drawdown": -0.44313093490550337
+    },
+    {
+      "variant": "knife-0.5_trail10",
+      "window": "validation",
+      "total_return": 2.4302049510482093,
+      "sharpe": 1.605809647925077,
+      "max_drawdown": -0.20147971033116363
+    },
+    {
+      "variant": "knife-0.5_trail10",
+      "window": "test",
+      "total_return": 0.11520439979319441,
+      "sharpe": 0.3152122024480647,
+      "max_drawdown": -0.2661144972763414
+    },
+    {
+      "variant": "knife-0.5_trail10",
+      "window": "bear_2022",
+      "total_return": -0.2870258863386861,
+      "sharpe": -0.8555764050238371,
+      "max_drawdown": -0.2870258863386861
+    },
+    {
+      "variant": "knife-0.5_trail10",
+      "window": "bull_2024~",
+      "total_return": 0.8668383868191942,
+      "sharpe": 0.7744849668055499,
+      "max_drawdown": -0.2661144972763403
+    },
+    {
+      "variant": "knife-0.5_trail15",
+      "window": "all",
+      "total_return": 23.36120424229589,
+      "sharpe": 0.9024666903644407,
+      "max_drawdown": -0.44313093490550337
+    },
+    {
+      "variant": "knife-0.5_trail15",
+      "window": "validation",
+      "total_return": 2.520807377827755,
+      "sharpe": 1.6375609830085214,
+      "max_drawdown": -0.20147971033116352
+    },
+    {
+      "variant": "knife-0.5_trail15",
+      "window": "test",
+      "total_return": 0.23136848772468044,
+      "sharpe": 0.4869554280509028,
+      "max_drawdown": -0.22104900839086716
+    },
+    {
+      "variant": "knife-0.5_trail15",
+      "window": "bear_2022",
+      "total_return": -0.2194567039831914,
+      "sharpe": -0.48435387569512667,
+      "max_drawdown": -0.29883601395929216
+    },
+    {
+      "variant": "knife-0.5_trail15",
+      "window": "bull_2024~",
+      "total_return": 1.0612956348004174,
+      "sharpe": 0.8554338348039303,
+      "max_drawdown": -0.22104900839086594
+    },
+    {
+      "variant": "knife-0.5_ma20_fastexit",
+      "window": "all",
+      "total_return": 18.90525612980011,
+      "sharpe": 0.8558046658429297,
+      "max_drawdown": -0.44313093490550337
+    },
+    {
+      "variant": "knife-0.5_ma20_fastexit",
+      "window": "validation",
+      "total_return": 2.4242454296982916,
+      "sharpe": 1.6037414505845755,
+      "max_drawdown": -0.2014797103311633
+    },
+    {
+      "variant": "knife-0.5_ma20_fastexit",
+      "window": "test",
+      "total_return": 0.15657436595228758,
+      "sharpe": 0.3737563340890441,
+      "max_drawdown": -0.22129128333441106
+    },
+    {
+      "variant": "knife-0.5_ma20_fastexit",
+      "window": "bear_2022",
+      "total_return": -0.3209832492157584,
+      "sharpe": -0.8159816477002666,
+      "max_drawdown": -0.3209832492157584
+    },
+    {
+      "variant": "knife-0.5_ma20_fastexit",
+      "window": "bull_2024~",
+      "total_return": 0.9360911990404577,
+      "sharpe": 0.7952832061741331,
+      "max_drawdown": -0.22129128333440962
+    },
+    {
+      "variant": "knife-0.5_trail15_fastexit",
+      "window": "all",
+      "total_return": 22.49665290529829,
+      "sharpe": 0.8940463941753695,
+      "max_drawdown": -0.44313093490550337
+    },
+    {
+      "variant": "knife-0.5_trail15_fastexit",
+      "window": "validation",
+      "total_return": 2.4451363007749443,
+      "sharpe": 1.6111751207690967,
+      "max_drawdown": -0.20147971033116352
+    },
+    {
+      "variant": "knife-0.5_trail15_fastexit",
+      "window": "test",
+      "total_return": 0.22387825594702204,
+      "sharpe": 0.4757930977830965,
+      "max_drawdown": -0.22104900839086716
+    },
+    {
+      "variant": "knife-0.5_trail15_fastexit",
+      "window": "bear_2022",
+      "total_return": -0.242549837853117,
+      "sharpe": -0.5573568429644687,
+      "max_drawdown": -0.31220156161909796
+    },
+    {
+      "variant": "knife-0.5_trail15_fastexit",
+      "window": "bull_2024~",
+      "total_return": 1.048757079346998,
+      "sharpe": 0.8493861683862336,
+      "max_drawdown": -0.22104900839086594
+    }
+  ],
+  "yearly_diff_vs_long_only_pp": {
+    "knife-0.5_naked": {
+      "2017": 0.0,
+      "2018": 0.0,
+      "2019": 0.0,
+      "2020": 0.0,
+      "2021": 0.0,
+      "2022": 21.1,
+      "2023": 0.0,
+      "2024": 0.0,
+      "2025": -2.0,
+      "2026": 4.9
+    },
+    "knife-0.5_ma20": {
+      "2017": 0.0,
+      "2018": 0.0,
+      "2019": 0.0,
+      "2020": 0.0,
+      "2021": 0.0,
+      "2022": 4.5,
+      "2023": 0.0,
+      "2024": 0.0,
+      "2025": -4.2,
+      "2026": 5.3
+    },
+    "knife-0.5_trail10": {
+      "2017": 0.0,
+      "2018": 0.0,
+      "2019": 0.0,
+      "2020": 0.0,
+      "2021": 0.0,
+      "2022": 4.8,
+      "2023": 0.0,
+      "2024": 0.0,
+      "2025": -4.7,
+      "2026": 1.3
+    },
+    "knife-0.5_trail15": {
+      "2017": 0.0,
+      "2018": 0.0,
+      "2019": 0.0,
+      "2020": 0.0,
+      "2021": 0.0,
+      "2022": 15.2,
+      "2023": 0.0,
+      "2024": 0.0,
+      "2025": -2.0,
+      "2026": 9.4
+    },
+    "knife-0.5_ma20_fastexit": {
+      "2017": 0.0,
+      "2018": 0.0,
+      "2019": 0.0,
+      "2020": 0.0,
+      "2021": 0.0,
+      "2022": 1.5,
+      "2023": 0.0,
+      "2024": 0.0,
+      "2025": -3.8,
+      "2026": 4.9
+    },
+    "knife-0.5_trail15_fastexit": {
+      "2017": 0.0,
+      "2018": 0.0,
+      "2019": 0.0,
+      "2020": 0.0,
+      "2021": 0.0,
+      "2022": 12.2,
+      "2023": 0.0,
+      "2024": 0.0,
+      "2025": -2.0,
+      "2026": 8.8
+    }
+  }
+}

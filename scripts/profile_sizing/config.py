@@ -41,6 +41,39 @@ class Profile:
     # 기본 off → 기존 전략(yoon1b 등) 동작·성능 불변.
     compute_va: bool = False
     va_pct: float = 0.70             # Value Area 비율(POC 좌우 누적 도달 목표)
+    # Pine "Range + Close Weight" 호환 파라미터. accumulation_mode="range_close"일 때만 사용.
+    close_weight_max_share: float = 0.70
+    close_weight_full_range_bins: float = 12.0
+
+
+@dataclass(frozen=True)
+class ProfileSmoothing:
+    method: str = "gaussian_kernel"
+    sigma_bins: float = 2.0
+
+
+@dataclass(frozen=True)
+class Expectancy:
+    horizons: tuple[int, ...] = (1, 3, 5, 10, 20)
+    primary_horizon: int = 5
+    score_bins: tuple[float, ...] = (
+        -1.0, -0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0
+    )
+    min_samples: int = 80
+    train_window: int = 756
+    refit_every: int = 21
+    cost_bps_roundtrip: float = 20.0
+
+
+@dataclass(frozen=True)
+class ExpectancySizing:
+    long_only: bool = True
+    max_weight: float = 1.0
+    neutral_weight: float = 0.0
+    expectancy_scale_bps: float = 50.0
+    min_positive_expectancy_bps: float = 5.0
+    rebalance_threshold: float = 0.05
+    max_trade_weight_per_bar: float = 0.25
 
 
 @dataclass(frozen=True)
@@ -102,6 +135,9 @@ class ProfileSizingConfig:
     rebalance: Rebalance = field(default_factory=Rebalance)
     costs: Costs = field(default_factory=Costs)
     trend_overlay: TrendOverlay = field(default_factory=TrendOverlay)
+    smoothing: ProfileSmoothing = field(default_factory=ProfileSmoothing)
+    expectancy: Expectancy = field(default_factory=Expectancy)
+    expectancy_sizing: ExpectancySizing = field(default_factory=ExpectancySizing)
 
     weight_model: str = "bucket"      # bucket | exponential
     # 사이징 입력 위치값: "percentile"(누적분포 하위비율, 기존) |
@@ -173,6 +209,14 @@ def config_from_dict(raw: dict[str, Any]) -> ProfileSizingConfig:
         ),
         compute_va=_as_bool(pf_raw.get("compute_va"), base.profile.compute_va),
         va_pct=float(pf_raw.get("va_pct", base.profile.va_pct)),
+        close_weight_max_share=float(
+            pf_raw.get("close_weight_max_share",
+                       base.profile.close_weight_max_share)
+        ),
+        close_weight_full_range_bins=float(
+            pf_raw.get("close_weight_full_range_bins",
+                       base.profile.close_weight_full_range_bins)
+        ),
     )
     regime_cap = replace(
         base.regime_cap,
@@ -220,6 +264,58 @@ def config_from_dict(raw: dict[str, Any]) -> ProfileSizingConfig:
         kalman_q=float(to_raw.get("kalman_q", base.trend_overlay.kalman_q)),
         kalman_r=float(to_raw.get("kalman_r", base.trend_overlay.kalman_r)),
     )
+    sm_raw = raw.get("smoothing") or {}
+    smoothing = replace(
+        base.smoothing,
+        method=str(sm_raw.get("method", base.smoothing.method)),
+        sigma_bins=float(sm_raw.get("sigma_bins", base.smoothing.sigma_bins)),
+    )
+    ex_raw = raw.get("expectancy") or {}
+    expectancy = replace(
+        base.expectancy,
+        horizons=tuple(int(v) for v in ex_raw.get(
+            "horizons", base.expectancy.horizons
+        )),
+        primary_horizon=int(
+            ex_raw.get("primary_horizon", base.expectancy.primary_horizon)
+        ),
+        score_bins=tuple(float(v) for v in ex_raw.get(
+            "score_bins", base.expectancy.score_bins
+        )),
+        min_samples=int(ex_raw.get("min_samples", base.expectancy.min_samples)),
+        train_window=int(ex_raw.get("train_window", base.expectancy.train_window)),
+        refit_every=int(ex_raw.get("refit_every", base.expectancy.refit_every)),
+        cost_bps_roundtrip=float(
+            ex_raw.get("cost_bps_roundtrip",
+                       base.expectancy.cost_bps_roundtrip)
+        ),
+    )
+    sz_raw = raw.get("expectancy_sizing") or raw.get("sizing") or {}
+    expectancy_sizing = replace(
+        base.expectancy_sizing,
+        long_only=_as_bool(sz_raw.get("long_only"),
+                           base.expectancy_sizing.long_only),
+        max_weight=float(sz_raw.get("max_weight",
+                                    base.expectancy_sizing.max_weight)),
+        neutral_weight=float(sz_raw.get("neutral_weight",
+                                        base.expectancy_sizing.neutral_weight)),
+        expectancy_scale_bps=float(
+            sz_raw.get("expectancy_scale_bps",
+                       base.expectancy_sizing.expectancy_scale_bps)
+        ),
+        min_positive_expectancy_bps=float(
+            sz_raw.get("min_positive_expectancy_bps",
+                       base.expectancy_sizing.min_positive_expectancy_bps)
+        ),
+        rebalance_threshold=float(
+            sz_raw.get("rebalance_threshold",
+                       base.expectancy_sizing.rebalance_threshold)
+        ),
+        max_trade_weight_per_bar=float(
+            sz_raw.get("max_trade_weight_per_bar",
+                       base.expectancy_sizing.max_trade_weight_per_bar)
+        ),
+    )
     return replace(
         base,
         interval=str(raw.get("interval", base.interval)),
@@ -230,6 +326,9 @@ def config_from_dict(raw: dict[str, Any]) -> ProfileSizingConfig:
         rebalance=rebalance,
         costs=costs,
         trend_overlay=trend_overlay,
+        smoothing=smoothing,
+        expectancy=expectancy,
+        expectancy_sizing=expectancy_sizing,
         weight_model=str(raw.get("weight_model", base.weight_model)),
         position_source=str(raw.get("position_source", base.position_source)),
         buckets=_buckets_from(raw.get("buckets"), base.buckets),
