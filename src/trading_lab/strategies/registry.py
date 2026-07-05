@@ -337,6 +337,16 @@ _STRATEGIES = {
         handler_factory="trading_lab.strategies.yoon1k:Yoon1kHandler",
         category=CATEGORY_HIERARCHICAL,
     ),
+    "yoon2_final": StrategyDefinition(
+        strategy_id="yoon2_final",
+        version="1",
+        description="yoon2 계열 최종 확정형(2026-07-05): yoon2m 검증 완료 상태의 동결 스냅샷 — US yoon1j_lp(VGT)+KR yoon1j_kr 50/50, top_k 3/3, 월간, 안전슬리브 유지, SSO 없음. CAGR 15.49%/MDD -17.89%/Sharpe 1.169, 부트스트랩 P(MDD<벤치)=95.6%. 안전슬리브 ablation·리밸런스 4축·시장 오버레이 2종 기각·GFC 대리검증 완료된 방어형. config 동결(실험은 파생으로만), 승격 게이트=페이퍼 전진검증+KIS 실수수료 확정",
+        config_path=ROOT / "configs" / "strategies" / "yoon2_final.json",
+        enabled=True,
+        live_eligible=False,
+        handler_factory="trading_lab.strategies.yoon1k:Yoon1kHandler",
+        category=CATEGORY_HIERARCHICAL,
+    ),
     "yoon2c": StrategyDefinition(
         strategy_id="yoon2c",
         version="1",

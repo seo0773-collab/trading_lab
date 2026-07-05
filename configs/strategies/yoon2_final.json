@@ -1,0 +1,42 @@
+{
+  "version": "yoon2_final",
+  "_comment": "yoon2 계열 최종 확정형(2026-07-05) — yoon2m의 검증 완료 상태를 동결한 운영 스냅샷. 구조: 미국 yoon1j_lp(universe IXN→VGT) + 한국 yoon1j_kr, 원/달러 50/50, top_k 3/3(보유 6종), 월간 리밸런스, 안전자산 슬리브(TLT/IAU·국고채/골드, 버퍼×1.0 cap 40% MA100 게이트) 유지, SSO 없음. 확정 근거(전부 실측): ① 백테스트 CAGR 15.49%/MDD -17.89%/Sharpe 1.169, 부트스트랩 P(MDD<벤치)=95.6%(yoon2m_vgt_validate) ② 안전슬리브 ablation=끄면 전면 열위(CAGR -1.51%p·MDD -3.9%p, 롤링3년 수익 151/159승) ③ 리밸런스 축 4중 기각: 주기단축(weekly/daily)·지연(+5/10영업일 중립)·이벤트 트리거(양방향/하향 전용) 모두 monthly 고정에 열위 ④ 시장레벨 오버레이 기각: 3×3 필드·SMA200 각도 틸트 P(ΔSharpe>0)=71%<95% ⑤ GFC 대리검증: 원본 SPDR 유니버스에서 닷컴 -47.5%→-15.4%·GFC -55.2%→-15.7%(yoon2m_gfc_proxy). yoon2m은 실험 계속용으로 보존, 본 config는 동결 — 변경하려면 새 파생을 만들 것. live_eligible=false(페이퍼 전진검증 + KIS 실수수료 확정 후 승격).",
+  "interval": "1d",
+  "period": "max",
+  "base_currency": "KRW",
+  "fx_symbol": "KRW=X",
+  "rebalance_freq": "monthly",
+  "sub_strategies": [
+    { "config": "yoon1j_lp", "currency": "USD", "weight": 0.5, "overrides": { "top_k": 3, "universe": ["VGT", "XLF", "IYH", "FENY", "FIDU", "FSTA", "IYC", "XLU", "XLB", "FREL", "FCOM"] } },
+    { "config": "yoon1j_kr", "currency": "KRW", "weight": 0.5, "overrides": { "top_k": 3 } }
+  ],
+  "benchmark_symbols": { "USD": "SPY", "KRW": "069500.KS" },
+  "benchmark_label": "50/50 SPY원화+KODEX200",
+  "train_frac": 0.6,
+  "validation_frac": 0.2,
+  "synthetic_symbols": 6,
+  "synthetic_bars": 2000,
+  "seed": 7,
+  "dashboard": {
+    "default_indicators": ["sleeve_yoon1j_lp", "sleeve_yoon1j_kr"],
+    "indicator_labels": {
+      "sleeve_yoon1j_lp": "미국 슬리브 저가(원화환산, top3)",
+      "sleeve_yoon1j_kr": "한국 슬리브(원화, top3)"
+    },
+    "panels": [
+      {
+        "kind": "sleeve_weights",
+        "type": "stacked_area",
+        "x": "time",
+        "label": "2단계 슬리브 평가금액 비중",
+        "default": true
+      },
+      {
+        "kind": "perf_vs_bnh",
+        "type": "table",
+        "label": "벤치(50/50 패시브) 대비 성과",
+        "default": true
+      }
+    ]
+  }
+}
