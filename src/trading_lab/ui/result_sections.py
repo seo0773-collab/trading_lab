@@ -5,8 +5,16 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
+import plotly.graph_objects as go
 import streamlit as st
 
+from trading_lab.execution.integer_dca import (
+    DEFAULT_KIS_KR_COST,
+    DEFAULT_KIS_US_COST,
+    IntegerDcaSettings,
+    simulate_integer_dca,
+    supports_integer_dca,
+)
 from trading_lab.ui import portfolio_report
 from trading_lab.ui.artifact_io import artifact_path, load_json, load_json_frame
 from trading_lab.ui.formatting import currency_spec, metric_text, money_text
@@ -30,6 +38,36 @@ from trading_lab.ui.presentation import (
     indicator_series,
     resolve_extra_panels,
 )
+
+
+@st.cache_data(ttl=900, show_spinner=False)
+def _cached_integer_dca_simulation(
+    strategy_id: str,
+    config: dict[str, Any],
+    symbol: str,
+    phase_index: tuple[str, ...],
+    initial_capital: float,
+    monthly_contribution: float,
+    cost_kr: float,
+    cost_us: float,
+    min_kr_order: float,
+    min_us_order_usd: float,
+) -> dict[str, Any]:
+    idx = pd.DatetimeIndex(pd.to_datetime(list(phase_index)))
+    return simulate_integer_dca(
+        strategy_id,
+        config,
+        symbol,
+        idx,
+        IntegerDcaSettings(
+            initial_capital=initial_capital,
+            monthly_contribution=monthly_contribution,
+            cost_kr=cost_kr,
+            cost_us=cost_us,
+            min_kr_order=min_kr_order,
+            min_us_order_usd=min_us_order_usd,
+        ),
+    )
 
 
 def render_backtest_detail(
@@ -166,6 +204,14 @@ def render_backtest_detail(
         width="stretch",
         config={"scrollZoom": True, "displaylogo": False},
     )
+    render_integer_dca_execution_option(
+        run,
+        config,
+        equity,
+        initial_capital=initial_capital,
+        monthly_contribution=monthly_contribution,
+        currency_symbol=currency_sym,
+    )
 
     # 포트폴리오형(NAV 기반) 전략은 가격·웨이브폼이 의미없으므로 표준 포트폴리오
     # 리포트로 대체 보강한다. config dashboard.portfolio_report 로 강제할 수도 있다.
@@ -229,6 +275,160 @@ def render_backtest_detail(
             )
 
     render_extra_panels(run, dashboard_config)
+
+
+def render_integer_dca_execution_option(
+    run: dict[str, Any],
+    config: dict[str, Any],
+    equity: pd.Series,
+    *,
+    initial_capital: float,
+    monthly_contribution: float,
+    currency_symbol: str,
+) -> None:
+    if run.get("chart_type") == "random" or not supports_integer_dca(config):
+        return
+    with st.expander("실거래 정수주 실행 시뮬레이션", expanded=False):
+        enabled = st.checkbox(
+            "정수주, 월 적립, 수수료를 반영한 실행 계좌를 계산",
+            value=False,
+            key=f"integer-dca-enabled-{run['run_id']}",
+            help=(
+                "하위 포트폴리오 목표비중을 종목 단위 주문으로 변환해 월말 리밸런스, "
+                "정수주, 최소 주문금액, 편도 비용을 적용합니다."
+            ),
+        )
+        col1, col2, col3 = st.columns(3)
+        monthly = col1.number_input(
+            f"월 적립액 ({currency_symbol})",
+            min_value=0.0,
+            value=float(monthly_contribution if monthly_contribution > 0 else 200_000.0),
+            step=100_000.0,
+            key=f"integer-dca-monthly-{run['run_id']}",
+        )
+        cost_kr_pct = col2.number_input(
+            "KR 편도 비용 (%)",
+            min_value=0.0,
+            value=DEFAULT_KIS_KR_COST * 100.0,
+            step=0.001,
+            format="%.4f",
+            key=f"integer-dca-cost-kr-{run['run_id']}",
+        )
+        cost_us_pct = col3.number_input(
+            "US 편도 비용 (%)",
+            min_value=0.0,
+            value=DEFAULT_KIS_US_COST * 100.0,
+            step=0.001,
+            format="%.4f",
+            key=f"integer-dca-cost-us-{run['run_id']}",
+        )
+        col4, col5 = st.columns(2)
+        min_kr = col4.number_input(
+            f"KR 최소 주문금액 ({currency_symbol})",
+            min_value=0.0,
+            value=50_000.0,
+            step=10_000.0,
+            key=f"integer-dca-min-kr-{run['run_id']}",
+        )
+        min_us = col5.number_input(
+            "US 최소 주문금액 ($)",
+            min_value=0.0,
+            value=50.0,
+            step=10.0,
+            key=f"integer-dca-min-us-{run['run_id']}",
+        )
+        if not enabled:
+            st.caption("체크하면 현재 백테스트 기간 기준으로 실거래 실행 계좌를 계산합니다.")
+            return
+        with st.spinner("정수주 실행 시뮬레이션 계산 중..."):
+            result = _cached_integer_dca_simulation(
+                str(run["strategy_id"]),
+                config,
+                str(run["symbol"]),
+                tuple(pd.DatetimeIndex(equity.index).astype(str)),
+                float(initial_capital),
+                float(monthly),
+                float(cost_kr_pct) / 100.0,
+                float(cost_us_pct) / 100.0,
+                float(min_kr),
+                float(min_us),
+            )
+        summary = result["summary"]
+        frame = result["frame"]
+        render_integer_dca_summary(summary, currency_symbol)
+        st.plotly_chart(
+            build_integer_dca_figure(frame, currency_symbol),
+            width="stretch",
+            config={"scrollZoom": True, "displaylogo": False},
+        )
+        skipped = summary.get("skipped_high_price") or []
+        if skipped:
+            st.caption(
+                "주당가격/현금 제약 빈도 상위: "
+                + ", ".join(f"{sym} {count}회" for sym, count in skipped[:8])
+            )
+        with st.expander("정수주 실행 원본 시계열", expanded=False):
+            display = frame.reset_index().rename(columns={"index": "date"})
+            st.dataframe(display.sort_values("date", ascending=False), width="stretch", hide_index=True)
+
+
+def render_integer_dca_summary(summary: dict[str, Any], currency_symbol: str) -> None:
+    ideal = summary["ideal"]
+    integer = summary["integer"]
+    tracking = summary["tracking"]
+    values = [
+        ("정수주 최종", money_text(integer["final_value"], currency_symbol)),
+        ("이론 대비", metric_text(tracking["final_integer_vs_ideal"], percent=True)),
+        ("TWR CAGR", metric_text(integer["cagr"], percent=True)),
+        ("TWR Sharpe", metric_text(integer["sharpe"])),
+        ("계좌 MDD", metric_text(integer["account_mdd"], percent=True)),
+        ("평균 재현율", metric_text(integer["avg_target_fit"], percent=True)),
+    ]
+    for column, (label, value) in zip(st.columns(6), values):
+        column.metric(label, value)
+    st.caption(
+        f"이론 최종 {money_text(ideal['final_value'], currency_symbol)} · "
+        f"누적원금 {money_text(summary['invested_principal'], currency_symbol)} · "
+        f"일간 수익률 상관 {tracking['daily_return_corr']:.4f} · "
+        f"최저 재현율 {integer['min_target_fit']:.2%} · "
+        f"평균/최대 현금 {integer['avg_cash_weight']:.2%}/{integer['max_cash_weight']:.2%} · "
+        f"총 비용 {money_text(integer['cost_paid'], currency_symbol)}"
+    )
+
+
+def build_integer_dca_figure(frame: pd.DataFrame, currency_symbol: str) -> go.Figure:
+    figure = go.Figure()
+    figure.add_trace(go.Scatter(
+        x=frame.index,
+        y=frame["ideal_account"],
+        mode="lines",
+        name="이론 계좌",
+        line={"color": "#66bb6a", "width": 1.6},
+    ))
+    figure.add_trace(go.Scatter(
+        x=frame.index,
+        y=frame["integer_account"],
+        mode="lines",
+        name="정수주 실행",
+        line={"color": "#ffa726", "width": 1.6},
+    ))
+    figure.add_trace(go.Scatter(
+        x=frame.index,
+        y=frame["invested_principal"],
+        mode="lines",
+        name="누적원금",
+        line={"color": "#90a4ae", "width": 1.0, "dash": "dot"},
+    ))
+    figure.update_layout(
+        title="이론 계좌 vs 정수주 실행 계좌",
+        height=430,
+        hovermode="x unified",
+        legend={"orientation": "h", "y": 1.12, "x": 0},
+        margin={"l": 45, "r": 45, "t": 85, "b": 40},
+        template="plotly_dark",
+    )
+    figure.update_yaxes(title_text="계좌 금액", tickprefix=currency_symbol)
+    return figure
 
 
 def _resolve_heatmap_panel(
