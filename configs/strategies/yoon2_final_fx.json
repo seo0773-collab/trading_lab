@@ -1,0 +1,61 @@
+{
+  "version": "yoon2_final_fx",
+  "_comment": "yoon2_final 파생 실험: 하위 슬리브(VGT 포함 yoon1j_lp top3 + yoon1j_kr top3)와 월간 리밸런스는 유지하고, 상위 원/달러 50/50만 상대모멘텀으로 40~60% 밴드 내 동적 조정한다. yoon2_final은 동결 기준선으로 보존한다. 신호는 전일 기준 63거래일 상대모멘텀(USD 벤치 SPY 원화환산 - KRW 벤치 KODEX200), tanh 스케일 10%, 최대 틸트 12.5%p. 별도 USD/KRW 추세 가산은 스윕에서 MDD를 키워 0으로 둔다(환율은 SPY 원화환산 안에 이미 반영). 하위 슬리브는 hold_buffer=2(양쪽) 적용: 컷오프 경계 순위 흔들림으로 인한 처닝(3개월 내 재편입 40%+)을 줄이려 이미 보유 중인 종목은 top_k+2위 안이면 유지, 신규 편입은 top_k 엄격 유지(scripts/profile_sizing/portfolio.py:_target_weights). 전체 포트폴리오 기준 회전율 -38~42%, MDD -18.46%→-17.13%로 개선, Sharpe 사실상 동일(1.187→1.189), CAGR 미미하게 하락(16.46%→16.27%). live_eligible=false(검증/실거래 레이어 미확정).",
+  "interval": "1d",
+  "period": "max",
+  "base_currency": "KRW",
+  "fx_symbol": "KRW=X",
+  "rebalance_freq": "monthly",
+  "currency_allocation": {
+    "kind": "relative_momentum_fx_tilt",
+    "lookback": 63,
+    "fx_lookback": 63,
+    "signal_lag": 1,
+    "neutral": 0.5,
+    "tilt": 0.125,
+    "scale": 0.10,
+    "fx_weight": 0.0,
+    "band": [0.40, 0.60],
+    "formula": "score = 63d_ret(SPY*USDKRW) - 63d_ret(KODEX200); w_USD = clip(0.5 + 0.125*tanh(score/0.10), 0.40, 0.60), shifted by 1 bar"
+  },
+  "sub_strategies": [
+    { "config": "yoon1j_lp", "currency": "USD", "weight": 0.5, "overrides": { "top_k": 3, "hold_buffer": 2, "universe": ["VGT", "XLF", "IYH", "FENY", "FIDU", "FSTA", "IYC", "XLU", "XLB", "FREL", "FCOM"] } },
+    { "config": "yoon1j_kr", "currency": "KRW", "weight": 0.5, "overrides": { "top_k": 3, "hold_buffer": 2 } }
+  ],
+  "benchmark_symbols": { "USD": "SPY", "KRW": "069500.KS" },
+  "benchmark_label": "50/50 SPY원화+KODEX200",
+  "train_frac": 0.6,
+  "validation_frac": 0.2,
+  "synthetic_symbols": 6,
+  "synthetic_bars": 2000,
+  "seed": 7,
+  "dashboard": {
+    "default_indicators": [
+      "sleeve_yoon1j_lp",
+      "sleeve_yoon1j_kr",
+      "target_w_yoon1j_lp",
+      "target_w_yoon1j_kr"
+    ],
+    "indicator_labels": {
+      "sleeve_yoon1j_lp": "미국 슬리브 저가(원화환산, top3)",
+      "sleeve_yoon1j_kr": "한국 슬리브(원화, top3)",
+      "target_w_yoon1j_lp": "목표 USD 슬리브 비중",
+      "target_w_yoon1j_kr": "목표 KRW 슬리브 비중"
+    },
+    "panels": [
+      {
+        "kind": "sleeve_weights",
+        "type": "stacked_area",
+        "x": "time",
+        "label": "2단계 슬리브 평가금액 비중",
+        "default": true
+      },
+      {
+        "kind": "perf_vs_bnh",
+        "type": "table",
+        "label": "벤치(50/50 패시브) 대비 성과",
+        "default": true
+      }
+    ]
+  }
+}

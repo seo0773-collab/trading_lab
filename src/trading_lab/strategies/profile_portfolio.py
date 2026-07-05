@@ -153,6 +153,7 @@ class ProfilePortfolioHandler:
             borrow_rate_annual=float(config.get("borrow_rate_annual", 0.0)),
             weight_scheme=str(config.get("weight_scheme", "score")),
             vol_lookback=int(config.get("vol_lookback", 63)),
+            hold_buffer=int(config.get("hold_buffer", 0)),
             volumes=volumes,
             sector_close=sec_close, symbol_sector=sym_sec, sector_off_scale=sec_off,
             rsi_close=rsi_close,
@@ -209,6 +210,7 @@ class ProfilePortfolioHandler:
         metadata = {
             "n_symbols": int(sim["n_symbols"]),
             "top_k": top_k,
+            "hold_buffer": int(config.get("hold_buffer", 0)),
             "rebalance_freq": rebal_freq,
             "exposure_gain": float(config.get("exposure_gain", 1.0)),
             "benchmark": bench_label,

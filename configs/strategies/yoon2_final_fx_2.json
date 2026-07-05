@@ -1,0 +1,101 @@
+{
+  "version": "yoon2_final_fx_2",
+  "_comment": "yoon2_final_fx 파생 실험: 기존 63일 상대모멘텀 USD/KRW 틸트(tilt 0.125, scale 0.10, 40~60%)에 1) 동시 위험 게이트(총 주식노출 축소, 현금 슬리브), 2) USD 과소배분 오판 방지용 20일 빠른 override, 3) 63일 변동성 기반 비중 블렌드를 추가한다. live_eligible=false이며 리포트 yoon2_final_fx_2_overlay_report를 기준으로 승격 여부 판단.",
+  "interval": "1d",
+  "period": "max",
+  "base_currency": "KRW",
+  "fx_symbol": "KRW=X",
+  "rebalance_freq": "monthly",
+  "currency_allocation": {
+    "kind": "relative_momentum_fx2_overlay",
+    "lookback": 63,
+    "signal_lag": 1,
+    "neutral": 0.5,
+    "tilt": 0.125,
+    "scale": 0.1,
+    "band": [0.4, 0.6],
+    "fast_override": {
+      "enabled": true,
+      "lookback": 20,
+      "usd_floor_trigger": 0.42,
+      "relative_threshold": 0.03,
+      "fx_threshold": 0.03,
+      "min_usd": 0.5
+    },
+    "vol_adjust": {
+      "enabled": true,
+      "lookback": 63,
+      "blend": 0.35
+    },
+    "risk_gate": {
+      "enabled": true,
+      "lookback": 63,
+      "sma_lookback": 200,
+      "dd_threshold": -0.1,
+      "vol_threshold": 0.24,
+      "off_scale": 0.65
+    }
+  },
+  "sub_strategies": [
+    {
+      "config": "yoon1j_lp",
+      "currency": "USD",
+      "weight": 0.5,
+      "overrides": {
+        "top_k": 3,
+        "hold_buffer": 2,
+        "universe": ["VGT", "XLF", "IYH", "FENY", "FIDU", "FSTA", "IYC", "XLU", "XLB", "FREL", "FCOM"]
+      }
+    },
+    {
+      "config": "yoon1j_kr",
+      "currency": "KRW",
+      "weight": 0.5,
+      "overrides": {
+        "top_k": 3,
+        "hold_buffer": 2
+      }
+    }
+  ],
+  "benchmark_symbols": {
+    "USD": "SPY",
+    "KRW": "069500.KS"
+  },
+  "benchmark_label": "50/50 SPY원화+KODEX200",
+  "train_frac": 0.6,
+  "validation_frac": 0.2,
+  "synthetic_symbols": 6,
+  "synthetic_bars": 2000,
+  "seed": 7,
+  "dashboard": {
+    "default_indicators": [
+      "sleeve_yoon1j_lp",
+      "sleeve_yoon1j_kr",
+      "target_w_yoon1j_lp",
+      "target_w_yoon1j_kr",
+      "target_w___CASH__"
+    ],
+    "indicator_labels": {
+      "sleeve_yoon1j_lp": "미국 슬리브 저가(원화환산, top3)",
+      "sleeve_yoon1j_kr": "한국 슬리브(원화, top3)",
+      "target_w_yoon1j_lp": "목표 USD 슬리브 비중",
+      "target_w_yoon1j_kr": "목표 KRW 슬리브 비중",
+      "target_w___CASH__": "목표 현금 비중"
+    },
+    "panels": [
+      {
+        "kind": "sleeve_weights",
+        "type": "stacked_area",
+        "x": "time",
+        "label": "2단계 슬리브 평가금액 비중",
+        "default": true
+      },
+      {
+        "kind": "perf_vs_bnh",
+        "type": "table",
+        "label": "벤치(50/50 패시브) 대비 성과",
+        "default": true
+      }
+    ]
+  }
+}

@@ -146,6 +146,7 @@ def simulate_portfolio(
     borrow_rate_annual: float = 0.0,
     weight_scheme: str = "score",
     vol_lookback: int = 63,
+    hold_buffer: int = 0,
     volumes: pd.DataFrame | None = None,
     sector_close: dict | None = None,
     symbol_sector: dict | None = None,
@@ -417,10 +418,15 @@ def simulate_portfolio(
                 hedge_trailing_locked = True
         if t in rebal:
             vol_row = vol_panel.loc[t] if vol_panel is not None else None
+            held_syms = (
+                {s for s, w in prev_w.items() if w > 1e-9}
+                if hold_buffer > 0 else None
+            )
             target_w = _target_weights(
                 sig.loc[t], px, top_k, exposure_gain,
                 scheme=weight_scheme, vol_row=vol_row,
                 max_exposure=max_exposure,
+                held_syms=held_syms, hold_buffer=hold_buffer,
             )
             if market_flag[i] < 1.0:  # 약세 시장: 전체 노출 축소
                 target_w = {s: w * market_flag[i] for s, w in target_w.items()}
@@ -621,22 +627,41 @@ def _market_kalman_scale(
 def _target_weights(score_row: pd.Series, px: pd.Series, top_k: int,
                     exposure_gain: float = 1.0, *, scheme: str = "score",
                     vol_row: pd.Series | None = None,
-                    max_exposure: float = 1.0) -> dict:
+                    max_exposure: float = 1.0,
+                    held_syms: set | None = None,
+                    hold_buffer: int = 0) -> dict:
     """top-K 선택 + 노출=mean(top-K 점수)*게인(클립 1.0) + top-K 내부 비중 배분.
 
     선택·노출 레벨은 스킴과 무관(점수 기준). 배분만 분기한다:
       - score(기본): 점수 비례(저가권↑ = 컨트래리언 틸트).
       - inv_vol: 1/변동성 비례(risk-parity). 변동성 결측은 평균치로 대체, 전부
         결측이면 점수 비례로 폴백.
+
+    hold_buffer>0이면 순위 컷오프 히스테리시스를 켠다: 신규 편입은 여전히 엄격한
+    top_k만 가능하지만, 이미 보유 중인 종목(held_syms)은 순위가 top_k+hold_buffer
+    안이면 유지한다. 컷오프 경계 점수의 노이즈성 흔들림으로 매 리밸런스마다
+    편출→(수개월 뒤) 재편입이 반복되는 처닝(churn)을 줄이기 위함이다. 노출 레벨은
+    항상 엄격 top_k 점수의 평균으로 계산해(버퍼 영향 없음) 레짐 사이징은 불변으로
+    유지하고, 버퍼는 그 노출을 나눠 갖는 종목 구성에만 영향을 준다. 기본값
+    0=버퍼 비활성(기존 동작과 동일).
     """
     syms = list(score_row.index)
     out = {s: 0.0 for s in syms}
     avail = score_row[(score_row > 0) & px.reindex(score_row.index).notna()]
     if avail.empty:
         return out
-    topk = avail.nlargest(min(top_k, len(avail)))
+    strict_topk = avail.nlargest(min(top_k, len(avail)))
     # 전체 주식 노출. max_exposure>1.0이면 레버리지(현금 차입) 허용.
-    exposure = min(float(topk.mean()) * exposure_gain, max_exposure)
+    exposure = min(float(strict_topk.mean()) * exposure_gain, max_exposure)
+
+    if held_syms and hold_buffer > 0:
+        extended_n = min(top_k + int(hold_buffer), len(avail))
+        extended = avail.nlargest(extended_n)
+        keep_held = [s for s in extended.index if s in held_syms]
+        selected = set(strict_topk.index) | set(keep_held)
+        topk = avail.loc[[s for s in avail.index if s in selected]]
+    else:
+        topk = strict_topk
 
     if scheme == "inv_vol" and vol_row is not None:
         sig_v = pd.Series(vol_row).reindex(topk.index)
