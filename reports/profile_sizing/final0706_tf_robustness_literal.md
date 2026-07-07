@@ -1,5 +1,7 @@
 # final0706 US 슬리브 percentile 버킷 — TF 무관 리터럴 파라미터 검증
 
+> **[정정 2026-07-07]** 이 리포트의 CAGR은 봉 수 기준 연환산 버그로 과대표기됨(.KS 데이터 갭 2007-02~2009-04, 예: 전체구간 16.84%→달력 기준 13.96%). Sharpe·MDD·순위는 유효. 정정판: `final0706_benchmark_compare_v2.md`, 진단: `final0706_data_gap_diagnosis.md`.
+
 - 유니버스: VGT, XLF, IYH, FENY, FIDU, FSTA, IYC, XLU, XLB, FREL, FCOM
 - **스케일 없음**: 모든 TF에 동일한 base_cycle.length=200봉, horizon=(5, 20, 60)봉을 그대로 사용 (wall-clock 기간을 맞추지 않음 — 60일치 5분봉만 해도 일봉 19년 스터디와 맞먹는 봉 개수라 스케일이 불필요하다는 관찰에 근거).
 

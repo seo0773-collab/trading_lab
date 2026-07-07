@@ -237,6 +237,45 @@ def _portfolio_target(raw: dict) -> dict:
     }
 
 
+def _dynamic_alloc_state(strategy: str, raw: dict) -> dict:
+    """동적 통화배분/위험게이트(final0706 등 relative_momentum_* 계열)의 현재 상태.
+
+    위의 슬리브 합산은 정적 weight만 반영하므로, 상위 통화틸트·신용게이트가 있는
+    전략은 실제 목표비중이 다르다. 공식 핸들러(Yoon1kHandler)의 target weight
+    경로를 그대로 계산해 최신 값을 기록한다 — 페이퍼 전진검증의 게이트 유/무
+    2트랙 분석(개선계획 C1)은 gate_active와 no_gate 비중으로 사후 재구성 가능.
+    """
+    alloc = raw.get("currency_allocation") or {}
+    if not str(alloc.get("kind", "")).lower().startswith("relative_momentum"):
+        return {}
+    try:
+        from trading_lab.strategies.yoon1k import Yoon1kHandler
+        h = Yoon1kHandler()
+        print(f"[{strategy}] 동적 통화배분/게이트 상태 계산 ...", flush=True)
+        raw_df = h.load_data("PORTFOLIO", raw, synthetic=False)
+        art = h.build_artifacts(raw_df, raw, symbol="PORTFOLIO", phase="all",
+                                bars_per_year=252)
+        f = art.forecast
+        wcols = [c for c in f.columns if str(c).startswith("target_w_")]
+        last = f[wcols].dropna(how="all").iloc[-1]
+        w = {str(c).replace("target_w_", ""): round(float(last[c]), 4) for c in wcols}
+        cash_w = w.get("__CASH__", 0.0)
+        risk_w = {k: v for k, v in w.items() if k != "__CASH__"}
+        denom = sum(risk_w.values()) or 1.0
+        no_gate = {k: round(v / denom, 4) for k, v in risk_w.items()}
+        gate = alloc.get("risk_gate") or {}
+        return {"dynamic_alloc": {
+            "as_of": str(f[wcols].dropna(how="all").index[-1].date()),
+            "target_w": w,
+            "gate_active": bool(cash_w > 1e-6),
+            "gate_safe_asset": gate.get("safe_asset"),
+            "no_gate_target_w": no_gate,
+        }}
+    except Exception as e:  # noqa: BLE001 — 저널 적립 자체를 막지 않는다
+        print(f"[{strategy}] 동적 배분 상태 계산 실패(저널은 계속): {type(e).__name__}: {e}")
+        return {"dynamic_alloc": {"error": str(e)}}
+
+
 def _hierarchical_journal(strategy: str, raw: dict) -> int:
     """계층 전략(sub_strategies) 페이퍼 저널: 슬리브별 목표 × 통화 가중 합산."""
     subs = raw["sub_strategies"]
@@ -281,6 +320,7 @@ def _hierarchical_journal(strategy: str, raw: dict) -> int:
                     sorted(combined.items(), key=lambda kv: -kv[1])},
         "sleeves": sleeves,
     }
+    snap.update(_dynamic_alloc_state(strategy, raw))
 
     jdir = ROOT / "var" / "paper_trading"
     jdir.mkdir(parents=True, exist_ok=True)

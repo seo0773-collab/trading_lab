@@ -1,5 +1,7 @@
 # final0706(일봉 원본) — cycle_len(SMA) × 리밸런스 주기 전면 스윕
 
+> **[정정 2026-07-07]** 이 리포트의 CAGR은 봉 수 기준 연환산 버그로 과대표기됨(.KS 데이터 갭 2007-02~2009-04, 예: 전체구간 16.84%→달력 기준 13.96%). Sharpe·MDD·순위는 유효. 정정판: `final0706_benchmark_compare_v2.md`, 진단: `final0706_data_gap_diagnosis.md`.
+
 - 베이스라인(현재 확정치 cycle=200, monthly): Sharpe=1.250, CAGR=16.96%, MDD=-16.40%
 - profile.rolling_window/market_filter.ma_len/safe_sleeve.ma_len/regime_cap.recovery_stage_bars/통화틸트 lookback/신용게이트 lookback·sma_lookback은 cycle_len에 비례해 같이 스케일.
 

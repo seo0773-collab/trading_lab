@@ -1,5 +1,7 @@
 # final0706 US 슬리브 — TF(1m~4h) × 기간요소 축소비율 크로스
 
+> **[정정 2026-07-07]** 이 리포트의 CAGR은 봉 수 기준 연환산 버그로 과대표기됨(.KS 데이터 갭 2007-02~2009-04, 예: 전체구간 16.84%→달력 기준 13.96%). Sharpe·MDD·순위는 유효. 정정판: `final0706_benchmark_compare_v2.md`, 진단: `final0706_data_gap_diagnosis.md`.
+
 - 유니버스: VGT, XLF, IYH, FENY, FIDU, FSTA, IYC, XLU, XLB, FREL, FCOM + market_filter/safe_sleeve용 SPY, TLT, IAU
 - 스케일 대상: base_cycle.length, profile.rolling_window, market_filter.ma_len, safe_sleeve.ma_len, regime_cap.recovery_stage_bars — 전부 같은 ratio를 곱함. rebalance_freq(monthly)·hold_buffer는 유지.
 - 기준 Sharpe = 그 TF가 덮는 달력 구간만 잘라낸 일봉·무스케일 성과(레짐 대조군).

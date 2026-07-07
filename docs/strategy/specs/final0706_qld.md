@@ -16,9 +16,15 @@
 | 핸들러 | `Yoon1kLeverageMixHandler`(`src/trading_lab/strategies/yoon1k_leverage_mix.py`) — 기존 `yoon1k_levmix`/`yoon1a`/`yoon2a`와 동일 core+overlay 블렌드 패턴 재사용, 신규 코드 없음 |
 | config | `configs/strategies/final0706_qld.json` |
 
+> **[정정 2026-07-07]** 이 문서의 CAGR류 절대 수치는 봉 수 기준 연환산 버그 +
+> .KS 데이터 갭(2008년 0봉)으로 과대표기됐다(진단: `final0706_data_gap_diagnosis.md`).
+> 달력 기준·권위 구간(2011-01~) 정정치: **final0706_qld CAGR 22.51%/MDD -30.06%/
+> Sharpe 1.132** (vs final0706 원본 14.39%/-16.40%/1.176). 스윕의 비중-MDD 관계와
+> 부트스트랩 상대 비교는 같은 인덱스 기반이라 유효하다.
+
 ## 2. 배경
 
-final0706은 CAGR 16.84%/MDD -16.40%/Sharpe 1.242로 위험조정 성과는 우수하지만
+final0706은 CAGR 16.84%/MDD -16.40%/Sharpe 1.242(원공표, 위 정정 참조)로 위험조정 성과는 우수하지만
 절대 CAGR은 SPY(16.91%)와 비슷하고 QQQ(23.85%)·QLD(34.88%) buy&hold에는 못 미친다
 ([[final0706-strategy]] 참조). "MDD를 좀 더 허용하면 CAGR을 얼마나 끌어올릴 수
 있는가"라는 질문에 답하기 위해, 기존에 검증된 core+QLD 오버레이 블렌드 패턴

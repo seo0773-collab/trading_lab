@@ -370,7 +370,7 @@ _STRATEGIES = {
     "yoon2_final_fx_credit_gate": StrategyDefinition(
         strategy_id="yoon2_final_fx_credit_gate",
         version="1",
-        description="yoon2_final_fx 파생 실험: yoon2_final_fx_2의 추세확인형 위험게이트(MDD 불변으로 기각)를 신용스프레드 대리(HYG/IEF 10일 모멘텀<-2%&20일선 아래, 2거래일 연속 발동 확인 후 노출 0.5배, 발동분은 현금 대신 IEF로 대피)로 교체. 리드타임 진단상 기존 게이트(중앙값 사후 +19일) 대비 훨씬 선행(중앙값 -48일). min_consecutive=2 노이즈필터+safe_asset=IEF 대피로 CAGR 16.84%/MDD -16.40%/Sharpe 1.242(vs current 16.27%/-17.13%/1.189, 부트스트랩 P(Sharpe>) 88%·P(CAGR>) 80%·P(MDD 더 얕음) 75%). VIX AND결합·연속형 노출축소는 실측 후 기각(Sharpe 악화). 단 개선의 대부분이 2020-02 코로나 크래시 1건에 집중(표본 한계 有). live_eligible=false, 페이퍼 검증 전 승격 보류",
+        description="yoon2_final_fx 파생 실험: yoon2_final_fx_2의 추세확인형 위험게이트(MDD 불변으로 기각)를 신용스프레드 대리(HYG/IEF 10일 모멘텀<-2%&20일선 아래, 2거래일 연속 발동 확인 후 노출 0.5배, 발동분은 현금 대신 IEF로 대피)로 교체. 리드타임 진단상 기존 게이트(중앙값 사후 +19일) 대비 훨씬 선행(중앙값 -48일). min_consecutive=2 노이즈필터+safe_asset=IEF 대피로 CAGR 16.84%/MDD -16.40%/Sharpe 1.242(vs current 16.27%/-17.13%/1.189, 부트스트랩 P(Sharpe>) 88%·P(CAGR>) 80%·P(MDD 더 얕음) 75%) — [정정 2026-07-07] 절대 CAGR류는 봉수 연환산 버그+.KS 갭으로 과대표기(달력 기준 정정치·진단은 final0706 항목 참조, 상대 비교는 유효). VIX AND결합·연속형 노출축소는 실측 후 기각(Sharpe 악화). 단 개선의 대부분이 2020-02 코로나 크래시 1건에 집중(표본 한계 有). live_eligible=false, 페이퍼 검증 전 승격 보류",
         config_path=ROOT / "configs" / "strategies" / "yoon2_final_fx_credit_gate.json",
         enabled=True,
         live_eligible=False,
@@ -380,7 +380,7 @@ _STRATEGIES = {
     "final0706": StrategyDefinition(
         strategy_id="final0706",
         version="1",
-        description="yoon2 계열 최종 확정형(2026-07-06): yoon2_final_fx_credit_gate 검증 완료 상태의 동결 스냅샷 — US yoon1j_lp(VGT, top3)+KR yoon1j_kr(top3) 50/50, 63일 상대모멘텀 동적 통화틸트(40~60%), 위험게이트=신용스프레드(HYG/IEF, min_consecutive=2, 발동 시 노출 0.5배·safe_asset=IEF 대피). CAGR 16.84%/MDD -16.40%/Sharpe 1.242, 부트스트랩 P(Sharpe>) 88%·P(MDD 더 얕음) 75%. VIX AND결합·연속형 노출축소·off_scale 재그리드·상관계수 페널티 선택·top_k 스윕까지 검증했으나 현재 구성을 능가하는 강건한 대안은 못 찾아 이 상태로 동결. 개선분이 2020-02 코로나 크래시 1건에 집중된다는 표본 한계는 유효. config 동결(실험은 파생으로만), 승격 게이트=페이퍼 전진검증+KIS 실수수료 확정",
+        description="yoon2 계열 최종 확정형(2026-07-06): yoon2_final_fx_credit_gate 검증 완료 상태의 동결 스냅샷 — US yoon1j_lp(VGT, top3)+KR yoon1j_kr(top3) 50/50, 63일 상대모멘텀 동적 통화틸트(40~60%), 위험게이트=신용스프레드(HYG/IEF, min_consecutive=2, 발동 시 노출 0.5배·safe_asset=IEF 대피). [정정 2026-07-07] 권위 성과=CAGR 14.39%/MDD -16.40%/Sharpe 1.176(달력 연환산·2011-01~, final0706_benchmark_compare_v2.md — 원공표 16.84%/1.242는 봉수 연환산 버그+.KS 데이터 갭(2008년 0봉) 과대표기, 진단=final0706_data_gap_diagnosis.md). 2011~2024(2025~26 랠리 제외) CAGR 9.84%/Sharpe 0.919. 부트스트랩 P(Sharpe>) 88%·P(MDD 더 얕음) 75%(상대 비교는 유효). VIX AND결합·연속형 노출축소·off_scale 재그리드·상관계수 페널티 선택·top_k 스윕까지 검증했으나 현재 구성을 능가하는 강건한 대안은 못 찾아 이 상태로 동결. 개선분이 2020-02 코로나 크래시 1건에 집중된다는 표본 한계는 유효. config 동결(실험은 파생으로만), 승격 게이트=페이퍼 전진검증+KIS 실수수료 확정. 개선계획=docs/strategy/plans/final0706_improvement.md",
         config_path=ROOT / "configs" / "strategies" / "final0706.json",
         enabled=True,
         live_eligible=False,
@@ -390,7 +390,7 @@ _STRATEGIES = {
     "final0706_qld": StrategyDefinition(
         strategy_id="final0706_qld",
         version="1",
-        description="final0706 파생 공격형(2026-07-06): 방어형 코어 final0706 63.5% + QLD(2x Nasdaq100) 36.5%를 월간 리밸런싱 블렌드. MDD 상한 -30%(SPY/QQQ 원화환산 buy&hold와 비슷한 낙폭)까지 QLD 비중을 스윕해 선형보간 후 실측 재검증한 지점. CAGR 24.72%/MDD -30.04%/Sharpe 1.160(vs final0706 16.84%/-16.40%/1.242). 부트스트랩: SPY·QQQ원화 대비 CAGR·Sharpe 모두 개선(P 75.6~99.8%), QLD 단독 대비 Sharpe는 개선(P 99.7%)하나 절대 CAGR은 못 넘음(P 4.3%, QLD 단독 34.88%) — 가치는 '동일 MDD에서 위험조정 우위'. Yoon1kLeverageMixHandler 재사용(신규 핸들러 없음). live_eligible=false(final0706 상속 게이트)",
+        description="final0706 파생 공격형(2026-07-06): 방어형 코어 final0706 63.5% + QLD(2x Nasdaq100) 36.5%를 월간 리밸런싱 블렌드. MDD 상한 -30%(SPY/QQQ 원화환산 buy&hold와 비슷한 낙폭)까지 QLD 비중을 스윕해 선형보간 후 실측 재검증한 지점. [정정 2026-07-07] 권위 성과=CAGR 22.51%/MDD -30.06%/Sharpe 1.132(달력 연환산·2011-01~, 원공표 24.72%/1.160은 봉수 연환산 버그 과대표기 — final0706_data_gap_diagnosis.md). 부트스트랩(상대 비교는 유효): SPY·QQQ원화 대비 CAGR·Sharpe 모두 개선(P 75.6~99.8%), QLD 단독 대비 Sharpe는 개선(P 99.7%)하나 절대 CAGR은 못 넘음(P 4.3%) — 가치는 '동일 MDD에서 위험조정 우위'. Yoon1kLeverageMixHandler 재사용(신규 핸들러 없음). live_eligible=false(final0706 상속 게이트)",
         config_path=ROOT / "configs" / "strategies" / "final0706_qld.json",
         enabled=True,
         live_eligible=False,

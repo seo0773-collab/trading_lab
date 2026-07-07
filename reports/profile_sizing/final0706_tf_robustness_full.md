@@ -1,5 +1,7 @@
 # final0706 US 슬리브 percentile 버킷 컨트래리언 경향성 — 5분~4시간봉 전체 스캔
 
+> **[정정 2026-07-07]** 이 리포트의 CAGR은 봉 수 기준 연환산 버그로 과대표기됨(.KS 데이터 갭 2007-02~2009-04, 예: 전체구간 16.84%→달력 기준 13.96%). Sharpe·MDD·순위는 유효. 정정판: `final0706_benchmark_compare_v2.md`, 진단: `final0706_data_gap_diagnosis.md`.
+
 - 유니버스: VGT, XLF, IYH, FENY, FIDU, FSTA, IYC, XLU, XLB, FREL, FCOM
 - `wall_clock_scaled` = 일봉과 같은 wall-clock 기간을 봉-수 비율로 재현(유효 비교).
 - `compressed_fallback` = 가용 데이터가 부족해(yfinance TF별 한도) base_cycle을 데이터에 맞게 줄이되 horizon:cycle 비율(5/20/60 : 200)은 유지 — **다른 시간축을 압축 테스트한 것**이라 일봉과 직접 비교 불가.

@@ -1,5 +1,7 @@
 # final0706 vs SPY/QQQ/QLD buy&hold 비교
 
+> **[정정 2026-07-07]** 이 리포트의 CAGR은 봉 수 기준 연환산 버그로 과대표기됨(.KS 데이터 갭 2007-02~2009-04, 예: 전체구간 16.84%→달력 기준 13.96%). Sharpe·MDD·순위는 유효. 정정판: `final0706_benchmark_compare_v2.md`, 진단: `final0706_data_gap_diagnosis.md`.
+
 - Period: `2007-01-29~2026-07-02` (4084 bars, 원/달러 KRW 기준)
 - final0706 equity는 공식 파이프라인(`Yoon1kHandler.build_artifacts`)이 만든 값을 그대로 사용(재구현 없음).
 - `_KRW_bnh` = 원화환산 buy&hold(원화 투자자 기준, final0706과 동일 통화 조건), `_USD_bnh` = 참고용 달러 그대로.

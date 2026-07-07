@@ -1,5 +1,7 @@
 # final0706 US 슬리브 — TF(1m~4h) × 기간요소+리밸런싱주기 축소비율 크로스 (v2)
 
+> **[정정 2026-07-07]** 이 리포트의 CAGR은 봉 수 기준 연환산 버그로 과대표기됨(.KS 데이터 갭 2007-02~2009-04, 예: 전체구간 16.84%→달력 기준 13.96%). Sharpe·MDD·순위는 유효. 정정판: `final0706_benchmark_compare_v2.md`, 진단: `final0706_data_gap_diagnosis.md`.
+
 - 유니버스: VGT, XLF, IYH, FENY, FIDU, FSTA, IYC, XLU, XLB, FREL, FCOM + market_filter/safe_sleeve용 SPY, TLT, IAU
 - v1과 차이: rebalance_freq도 같은 ratio로 스케일(monthly≈21거래일 → round(21×ratio)봉마다 리밸런싱).
 - 기준은 v1과 동일하게 일봉·무스케일·monthly 리밸런싱(그 TF가 덮는 달력 구간).

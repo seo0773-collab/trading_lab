@@ -1,5 +1,7 @@
 # final0706 US 슬리브 percentile 버킷 컨트래리언 경향성 — 1시간봉 강건성 검증
 
+> **[정정 2026-07-07]** 이 리포트의 CAGR은 봉 수 기준 연환산 버그로 과대표기됨(.KS 데이터 갭 2007-02~2009-04, 예: 전체구간 16.84%→달력 기준 13.96%). Sharpe·MDD·순위는 유효. 정정판: `final0706_benchmark_compare_v2.md`, 진단: `final0706_data_gap_diagnosis.md`.
+
 - 유니버스: VGT, XLF, IYH, FENY, FIDU, FSTA, IYC, XLU, XLB, FREL, FCOM (final0706 US 슬리브 top_k=3 후보 11종, 풀링)
 - 1시간봉 커버 구간: `2024-04-24 14:30:00~2026-07-06 13:30:00` (심볼별 최소 유효봉수 2165)
 - 5분봉은 yfinance 한도가 60일(단일 레짐, SMA200 미충족)이라 검증 불가 — 1시간봉으로 대체(사용자 승인).

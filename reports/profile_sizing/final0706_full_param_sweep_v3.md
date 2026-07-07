@@ -1,5 +1,7 @@
 # final0706(일봉 원본) — cycle_len × 리밸런스 전면 스윕 v3 (2%/일 복리 벤치마크 + 과최적화 판단)
 
+> **[정정 2026-07-07]** 이 리포트의 CAGR은 봉 수 기준 연환산 버그로 과대표기됨(.KS 데이터 갭 2007-02~2009-04, 예: 전체구간 16.84%→달력 기준 13.96%). Sharpe·MDD·순위는 유효. 정정판: `final0706_benchmark_compare_v2.md`, 진단: `final0706_data_gap_diagnosis.md`.
+
 - 베이스라인(cycle=200, monthly): Sharpe(all)=1.250, Sharpe(test/holdout)=2.052, CAGR(all)=16.96%
 - **2%/일 복리 벤치마크**: 연환산 CAGR 14,597% — 완전히 비현실적인 참고선. 어떤 조합도 이 근처에도 못 감(전략 CAGR/이 벤치마크 CAGR 비율은 사실상 0%) — 이건 '이길 대상'이 아니라 복리 상한선 대비 실제 전략 수익의 스케일을 보여주는 잣대일 뿐이다.
 - **과최적화 체크**: 전체구간(all) 1등과 holdout(test) 1등이 다른가? all 1등=cycle=200/monthly(Sharpe 1.250), test 1등=cycle=200/monthly(Sharpe 2.052)
