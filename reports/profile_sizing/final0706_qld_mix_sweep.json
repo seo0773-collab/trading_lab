@@ -1,0 +1,138 @@
+{
+  "grid": [
+    {
+      "qld_weight": 0.0,
+      "cagr": 0.16843883267447302,
+      "max_drawdown": -0.16397810891545317,
+      "sharpe": 1.2424941148980055,
+      "total_return": 11.463676137356451
+    },
+    {
+      "qld_weight": 0.1,
+      "cagr": 0.19117735631941057,
+      "max_drawdown": -0.1753581405828526,
+      "sharpe": 1.2950541189338707,
+      "total_return": 16.033368478613134
+    },
+    {
+      "qld_weight": 0.2,
+      "cagr": 0.21310722614949063,
+      "max_drawdown": -0.20302094763748935,
+      "sharpe": 1.2662511313951212,
+      "total_return": 21.892834391590668
+    },
+    {
+      "qld_weight": 0.3,
+      "cagr": 0.23415101976145558,
+      "max_drawdown": -0.2620277738525486,
+      "sharpe": 1.2037795799042277,
+      "total_return": 29.251483718191388
+    },
+    {
+      "qld_weight": 0.4,
+      "cagr": 0.25422674680825286,
+      "max_drawdown": -0.3207695612296836,
+      "sharpe": 1.1368230803899375,
+      "total_return": 38.29314127682354
+    },
+    {
+      "qld_weight": 0.5,
+      "cagr": 0.27324678349560316,
+      "max_drawdown": -0.3764145212592146,
+      "sharpe": 1.0766192326691948,
+      "total_return": 49.14758611381019
+    },
+    {
+      "qld_weight": 0.6,
+      "cagr": 0.2911166700567003,
+      "max_drawdown": -0.4289838019983332,
+      "sharpe": 1.025808926651565,
+      "total_return": 61.85581418809612
+    },
+    {
+      "qld_weight": 0.7,
+      "cagr": 0.3077332715518353,
+      "max_drawdown": -0.4785130334011125,
+      "sharpe": 0.9839483234304879,
+      "total_return": 76.33042751929355
+    },
+    {
+      "qld_weight": 0.8,
+      "cagr": 0.32298250913420556,
+      "max_drawdown": -0.525050954151858,
+      "sharpe": 0.9497673451781595,
+      "total_return": 92.31430649662414
+    },
+    {
+      "qld_weight": 0.9,
+      "cagr": 0.3367358043900974,
+      "max_drawdown": -0.5686579698966334,
+      "sharpe": 0.9219545835077975,
+      "total_return": 109.34145278866501
+    },
+    {
+      "qld_weight": 1.0,
+      "cagr": 0.2856086778783242,
+      "max_drawdown": -0.7094498513214073,
+      "sharpe": 0.7817431178731314,
+      "total_return": 150.96477583638315
+    }
+  ],
+  "mdd_cap": -0.3,
+  "best_within_cap_grid": {
+    "qld_weight": 0.3,
+    "cagr": 0.23415101976145558,
+    "max_drawdown": -0.2620277738525486,
+    "sharpe": 1.2037795799042277,
+    "total_return": 29.251483718191388
+  },
+  "interpolated_at_cap": {
+    "qld_weight": 0.36464261276842236,
+    "cagr": 0.24712849425676217,
+    "max_drawdown": -0.3,
+    "sharpe": 1.1604971491999145,
+    "measured": {
+      "cagr": 0.2472445502257714,
+      "max_drawdown": -0.3003545922493761,
+      "sharpe": 1.1600415929381194
+    }
+  },
+  "bootstrap": {
+    "final0706_qld_mix_vs_SPY_KRW": {
+      "label_a": "final0706_qld_mix",
+      "label_b": "SPY_KRW_bnh",
+      "prob": {
+        "sharpe_a_gt_b": 0.997375,
+        "cagr_a_gt_b": 0.998,
+        "mdd_a_shallower": 0.416125
+      }
+    },
+    "final0706_qld_mix_vs_QQQ_KRW": {
+      "label_a": "final0706_qld_mix",
+      "label_b": "QQQ_KRW_bnh",
+      "prob": {
+        "sharpe_a_gt_b": 0.96925,
+        "cagr_a_gt_b": 0.756125,
+        "mdd_a_shallower": 0.505375
+      }
+    },
+    "final0706_qld_mix_vs_QLD_KRW": {
+      "label_a": "final0706_qld_mix",
+      "label_b": "QLD_KRW_bnh",
+      "prob": {
+        "sharpe_a_gt_b": 0.997,
+        "cagr_a_gt_b": 0.042625,
+        "mdd_a_shallower": 1.0
+      }
+    },
+    "final0706_qld_mix_vs_final0706": {
+      "label_a": "final0706_qld_mix",
+      "label_b": "final0706",
+      "prob": {
+        "sharpe_a_gt_b": 0.31975,
+        "cagr_a_gt_b": 0.993125,
+        "mdd_a_shallower": 0.00475
+      }
+    }
+  }
+}

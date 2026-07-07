@@ -1,0 +1,104 @@
+{
+  "period": "2007-01-29~2026-07-06",
+  "bars": 4085,
+  "rows": [
+    {
+      "phase": "all",
+      "candidate": "final0706 (원본)",
+      "cagr": 0.16967245085902793,
+      "max_drawdown": -0.1639781183815805,
+      "sharpe": 1.2500284307705873,
+      "total_return": 11.68654256453048,
+      "volatility": 0.13238465204533043
+    },
+    {
+      "phase": "all",
+      "candidate": "final0706_qld_topk (US유니버스+QLD, top_k=3 경쟁)",
+      "cagr": 0.17240072793991956,
+      "max_drawdown": -0.16397801975891302,
+      "sharpe": 1.2551767351389207,
+      "total_return": 12.174834739731406,
+      "volatility": 0.1338603791996557
+    },
+    {
+      "phase": "all",
+      "candidate": "final0706_qld (core63.5%+QLD36.5% 오버레이)",
+      "cagr": 0.24854176805344563,
+      "max_drawdown": -0.30056285585326026,
+      "sharpe": 1.1644409690897142,
+      "total_return": 35.53629115076569,
+      "volatility": 0.2096052893319907
+    },
+    {
+      "phase": "test",
+      "candidate": "final0706 (원본)",
+      "cagr": 0.39369516078277766,
+      "max_drawdown": -0.11998635334927987,
+      "sharpe": 2.052988402252801,
+      "total_return": 1.933601610865761,
+      "volatility": 0.16875520890972256
+    },
+    {
+      "phase": "test",
+      "candidate": "final0706_qld_topk (US유니버스+QLD, top_k=3 경쟁)",
+      "cagr": 0.40019275681962685,
+      "max_drawdown": -0.11998637645294852,
+      "sharpe": 2.078621590693785,
+      "total_return": 1.9781750159988705,
+      "volatility": 0.1689289265105671
+    },
+    {
+      "phase": "test",
+      "candidate": "final0706_qld (core63.5%+QLD36.5% 오버레이)",
+      "cagr": 0.5237678651972411,
+      "max_drawdown": -0.22324930623749828,
+      "sharpe": 2.01654934912019,
+      "total_return": 2.9177290550577974,
+      "volatility": 0.22115823354859843
+    },
+    {
+      "phase": "recent_3y",
+      "candidate": "final0706 (원본)",
+      "cagr": 0.4334927023790973,
+      "max_drawdown": -0.11998635334927987,
+      "sharpe": 2.1263545005272104,
+      "total_return": 1.6882333867158845,
+      "volatility": 0.17685429255895943
+    },
+    {
+      "phase": "recent_3y",
+      "candidate": "final0706_qld_topk (US유니버스+QLD, top_k=3 경쟁)",
+      "cagr": 0.44138639191462725,
+      "max_drawdown": -0.11998637645294852,
+      "sharpe": 2.15530305352393,
+      "total_return": 1.729078746998836,
+      "volatility": 0.1770462725890698
+    },
+    {
+      "phase": "recent_3y",
+      "candidate": "final0706_qld (core63.5%+QLD36.5% 오버레이)",
+      "cagr": 0.4971244397088761,
+      "max_drawdown": -0.22324930623749828,
+      "sharpe": 1.9057239904749168,
+      "total_return": 2.0287523019800657,
+      "volatility": 0.22522878473990304
+    }
+  ],
+  "bootstrap": {
+    "qld_topk_vs_원본": {
+      "sharpe_a_gt_b": 0.592375,
+      "cagr_a_gt_b": 0.8175,
+      "mdd_a_shallower": 0.384
+    },
+    "qld_overlay_vs_원본": {
+      "sharpe_a_gt_b": 0.330625,
+      "cagr_a_gt_b": 0.993,
+      "mdd_a_shallower": 0.005625
+    },
+    "qld_topk_vs_qld_overlay": {
+      "sharpe_a_gt_b": 0.687125,
+      "cagr_a_gt_b": 0.007625,
+      "mdd_a_shallower": 0.9935
+    }
+  }
+}

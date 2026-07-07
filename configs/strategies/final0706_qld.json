@@ -1,0 +1,53 @@
+{
+  "version": "final0706_qld",
+  "_comment": "final0706 파생 공격형(2026-07-06 등록): 방어형 코어 final0706(CAGR 16.84%/MDD -16.40%/Sharpe 1.242)에 QLD(2x Nasdaq100) 오버레이를 월간 리밸런싱으로 얹어 MDD 상한 -30%(SPY/QQQ 원화환산 buy&hold와 비슷한 수준)까지 허용한 지점을 스윕으로 실측. QLD 비중 0~100% 그리드(scripts/profile_sizing/final0706_qld_mix_sweep.py)에서 MDD -30% 교차점을 선형보간(QLD 36.5%) 후 실측 재검증한 값을 채택: core_weight=0.635/QLD=0.365. 실측(2007-01-29~2026-07-02, 원화기준) CAGR 24.72%/MDD -30.04%/Sharpe 1.160. 부트스트랩(8000회, block=20): SPY원화 대비 P(CAGR개선) 99.8%·P(Sharpe개선) 99.7%, QQQ원화 대비 P(CAGR개선) 75.6%·P(Sharpe개선) 96.9%, QLD단독 대비 P(Sharpe개선) 99.7%이나 P(CAGR개선) 4.3%(QLD 단독 buy&hold의 절대 CAGR 34.88%는 넘지 못함 — 이 전략의 가치는 '동일 MDD에서 위험조정 우위'이지 QLD 단독의 절대수익 우위가 아님). 핸들러는 기존 Yoon1kLeverageMixHandler(core+overlay 블렌드, yoon1k_levmix/yoon1a/yoon2a와 동일 패턴) 재사용, 신규 코드 없음. live_eligible=false(final0706 자체가 페이퍼 검증 전이라 그 파생도 동일 게이트 상속).",
+  "interval": "1d",
+  "period": "max",
+  "base_currency": "KRW",
+  "fx_symbol": "KRW=X",
+  "core_strategy": "final0706",
+  "rebalance_freq": "monthly",
+  "benchmark_label": "50/50 SPY원화+KODEX200",
+  "train_frac": 0.6,
+  "validation_frac": 0.2,
+  "synthetic_symbols": 6,
+  "synthetic_bars": 2000,
+  "seed": 7,
+  "leverage_mix": {
+    "core_weight": 0.635,
+    "rebalance_freq": "monthly",
+    "overlays": [
+      {
+        "symbol": "QLD",
+        "label": "QLD 2x Nasdaq100",
+        "currency": "USD",
+        "weight": 0.365
+      }
+    ]
+  },
+  "dashboard": {
+    "default_indicators": [
+      "leg_final0706",
+      "leg_QLD 2x Nasdaq100"
+    ],
+    "indicator_labels": {
+      "leg_final0706": "final0706 코어",
+      "leg_QLD 2x Nasdaq100": "QLD 2x Nasdaq100"
+    },
+    "panels": [
+      {
+        "kind": "sleeve_weights",
+        "type": "stacked_area",
+        "x": "time",
+        "label": "코어/레버리지 평가금액 비중",
+        "default": true
+      },
+      {
+        "kind": "perf_vs_bnh",
+        "type": "table",
+        "label": "벤치(50/50 패시브) 대비 성과",
+        "default": true
+      }
+    ]
+  }
+}

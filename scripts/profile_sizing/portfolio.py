@@ -107,8 +107,16 @@ def compute_universe(
 
 
 def rebalance_dates(index: pd.DatetimeIndex, freq: str) -> set:
-    """리밸런스 날짜 집합. 각 기간의 마지막 거래일."""
+    """리밸런스 날짜 집합. 각 기간의 마지막 거래일.
+
+    `every_N`(N=정수)이면 달력 주기 대신 **봉 수** 기준으로 N봉마다 리밸런싱한다.
+    일봉 기준으로 설계된 base_cycle/rolling_window 등을 인트라데이 봉(예: 4h)에
+    같은 비율로 스케일할 때, 리밸런싱 주기도 봉 수로 스케일하기 위한 용도다.
+    """
     f = freq.lower()
+    if f.startswith("every_"):
+        n = max(1, int(f.split("_", 1)[1]))
+        return set(index[::n])
     if f in ("d", "daily", "1d"):
         return set(index)
     rule = {"w": "W", "weekly": "W", "m": "ME", "monthly": "ME",

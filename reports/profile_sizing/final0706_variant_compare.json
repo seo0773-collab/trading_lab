@@ -1,0 +1,127 @@
+{
+  "period": "2007-01-29~2026-07-06",
+  "bars": 4085,
+  "phases": {
+    "all": "2007-01-29~2026-07-06",
+    "test": "2022-12-16~2026-07-06",
+    "recent_3y": "2023-07-07~2026-07-06"
+  },
+  "rows": [
+    {
+      "phase": "all",
+      "candidate": "final0706 (원본 50/50)",
+      "cagr": 0.16972481852820542,
+      "max_drawdown": -0.16397818862158275,
+      "sharpe": 1.2503155440027907,
+      "total_return": 11.69575303181633,
+      "volatility": 0.13239071342380926
+    },
+    {
+      "phase": "all",
+      "candidate": "final0706 미국장 단일",
+      "cagr": 0.16545179276446365,
+      "max_drawdown": -0.17817485518817477,
+      "sharpe": 0.9129339672843239,
+      "total_return": 10.964483180111502,
+      "volatility": 0.18630308963868603
+    },
+    {
+      "phase": "all",
+      "candidate": "final0706_qld (core63.5%+QLD36.5%)",
+      "cagr": 0.24838738014862005,
+      "max_drawdown": -0.3005628334863657,
+      "sharpe": 1.1638913938489226,
+      "total_return": 35.46312371944689,
+      "volatility": 0.209596320654916
+    },
+    {
+      "phase": "test",
+      "candidate": "final0706 (원본 50/50)",
+      "cagr": 0.39400764954627787,
+      "max_drawdown": -0.11998633005658066,
+      "sharpe": 2.0540634258357633,
+      "total_return": 1.935734648030556,
+      "volatility": 0.1687780246629419
+    },
+    {
+      "phase": "test",
+      "candidate": "final0706 미국장 단일",
+      "cagr": 0.2004617663301369,
+      "max_drawdown": -0.09934793635228156,
+      "sharpe": 1.184455762341998,
+      "total_return": 0.8082244306428696,
+      "volatility": 0.1659347471274734
+    },
+    {
+      "phase": "test",
+      "candidate": "final0706_qld (core63.5%+QLD36.5%)",
+      "cagr": 0.5228260579927972,
+      "max_drawdown": -0.22324925360605952,
+      "sharpe": 2.0140753503583912,
+      "total_return": 2.9098839607684397,
+      "volatility": 0.22111803260562132
+    },
+    {
+      "phase": "recent_3y",
+      "candidate": "final0706 (원본 50/50)",
+      "cagr": 0.43387217129214606,
+      "max_drawdown": -0.11998633005658088,
+      "sharpe": 2.1275714124439653,
+      "total_return": 1.6901879673985531,
+      "volatility": 0.17687981131287053
+    },
+    {
+      "phase": "recent_3y",
+      "candidate": "final0706 미국장 단일",
+      "cagr": 0.22105667426231523,
+      "max_drawdown": -0.09934793635228145,
+      "sharpe": 1.3187953964939494,
+      "total_return": 0.7305307478863121,
+      "volatility": 0.16137288774445332
+    },
+    {
+      "phase": "recent_3y",
+      "candidate": "final0706_qld (core63.5%+QLD36.5%)",
+      "cagr": 0.4960319915658158,
+      "max_drawdown": -0.22324925360605952,
+      "sharpe": 1.9028268098595802,
+      "total_return": 2.0226872358318446,
+      "volatility": 0.22518198490346825
+    }
+  ],
+  "bootstrap": {
+    "미국장단일_vs_원본": {
+      "label_a": "us_only",
+      "label_b": "orig",
+      "period": "2007-01-29~2026-07-06",
+      "bars": 4085,
+      "prob": {
+        "sharpe_a_gt_b": 0.03625,
+        "cagr_a_gt_b": 0.378,
+        "mdd_a_shallower": 0.24875
+      }
+    },
+    "qld_vs_원본": {
+      "label_a": "qld",
+      "label_b": "orig",
+      "period": "2007-01-29~2026-07-06",
+      "bars": 4085,
+      "prob": {
+        "sharpe_a_gt_b": 0.330125,
+        "cagr_a_gt_b": 0.993,
+        "mdd_a_shallower": 0.005625
+      }
+    },
+    "qld_vs_미국장단일": {
+      "label_a": "qld",
+      "label_b": "us_only",
+      "period": "2007-01-29~2026-07-06",
+      "bars": 4085,
+      "prob": {
+        "sharpe_a_gt_b": 0.944,
+        "cagr_a_gt_b": 0.979625,
+        "mdd_a_shallower": 0.062
+      }
+    }
+  }
+}

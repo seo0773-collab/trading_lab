@@ -1,0 +1,119 @@
+{
+  "version": "final0706_4h",
+  "_comment": "final0706 4시간봉 실험 파생(2026-07-06 등록, live_eligible=false). final0706(일봉 200봉 SMA·월간 리밸런싱)의 '기간요소'를 전부 같은 비율(ratio=0.5)로 4시간봉에 맞춰 스케일: base_cycle.length 200→100봉(≈61.5거래일≈3개월), profile.rolling_window 126→63, market_filter/safe_sleeve.ma_len 100→50, regime_cap.recovery_stage_bars 21→11, 통화틸트 lookback 63→32, 신용스프레드 게이트 lookback 10→5/sma_lookback 20→10. 리밸런싱은 봉수 기준(every_N) — TF를 낮출 때 리밸런싱까지 SMA와 같은 비율로 줄이면(예:every_10) 수수료(왕복 ~25bp)가 고빈도 거래에 복리로 작용해 Sharpe가 -700까지 붕괴함을 실측(reports/profile_sizing/final0706_period_scale_cross_tf_v2.md) — 그래서 리밸런싱만 원본과 비슷한 실빈도(월 1회 안팎) 근방에서 독립적으로 재탐색했다. US 슬리브 단독 그리드서치(cycle=100,rebal=42)는 Sharpe=1.450(동일 3년 구간 일봉 기준 1.380 대비 105%, reports/profile_sizing/final0706_4h_optimize.md)까지 나왔지만, 이를 US+KR 2조 구조 전체(통화틸트+신용게이트 포함)로 확장하면 Sharpe=0.713으로 크게 떨어졌다(KR 슬리브 결합이 성과를 깎음, reports/profile_sizing/final0706_4h_backtest.md). 2조 구조 전체 레벨에서 cycle_len×rebalance 재그리드서치(1h/4h, reports/profile_sizing/final0706_4h_full_cross_sweep.md) 결과 4h 최선은 cycle=100/rebal=31(every_31)로 Sharpe=1.129(동일구간 일봉기준 2.170 대비 52%) — 이 값을 채택. 참고로 1h는 cycle=125/rebal=26에서 Sharpe=1.303(60%)로 4h보다 근소하게 나았으나 이 config는 4h로 커밋되어 있어 별도 final0706_1h 파생 후보로 남긴다. 어느 조합도 기준(동일 구간 일봉 원본)의 100%에는 못 미쳐 — 2조 구조를 인트라데이로 압축하면 아직 완전한 신호 재현에는 못 미친다는 것이 현재까지의 결론. **버그 수정 동반**: 서로 다른 거래소(미국/한국)의 인트라데이 봉은 실제 봉 시각이 겹치지 않아(미국 4h는 UTC 13:30/17:30대, 한국은 00:00/04:00대) 기존 Yoon1kHandler의 교집합(intersection) 기반 슬리브 결합이 완전히 비어 크래시했다 — union+ffill로 일반 수정(src/trading_lab/strategies/yoon1k.py, 일봉 동작은 불변, 전체 176개 테스트 통과 확인). yfinance 4h 데이터는 최근 730일 한도(캐시 누적으로 이후 조회 시 확장, 현재 KR측이 병목이라 실사용 구간은 약 2년). 승격 게이트=페이퍼 전진검증+KIS 실수수료(final0706 공통 게이트) + 이 파생 자체의 out-of-sample 재검증.",
+  "interval": "4h",
+  "period": "729d",
+  "base_currency": "KRW",
+  "fx_symbol": "KRW=X",
+  "rebalance_freq": "every_31",
+  "currency_allocation": {
+    "kind": "relative_momentum_fx2_overlay",
+    "lookback": 32,
+    "signal_lag": 1,
+    "neutral": 0.5,
+    "tilt": 0.125,
+    "scale": 0.1,
+    "band": [0.4, 0.6],
+    "risk_gate": {
+      "enabled": true,
+      "source": "credit_spread",
+      "symbols": ["HYG", "IEF"],
+      "lookback": 5,
+      "sma_lookback": 10,
+      "threshold": -0.02,
+      "off_scale": 0.5,
+      "min_consecutive": 2,
+      "safe_asset": "IEF"
+    }
+  },
+  "sub_strategies": [
+    {
+      "config": "yoon1j_lp",
+      "currency": "USD",
+      "weight": 0.5,
+      "overrides": {
+        "top_k": 3,
+        "hold_buffer": 2,
+        "universe": ["VGT", "XLF", "IYH", "FENY", "FIDU", "FSTA", "IYC", "XLU", "XLB", "FREL", "FCOM"],
+        "interval": "4h",
+        "period": "729d",
+        "rebalance_freq": "every_31",
+        "base_cycle": {"type": "SMA", "length": 100, "scale": 1.0},
+        "profile": {
+          "min_mult": 0.0, "max_mult": 3.0, "bin_count": 120, "rolling_window": 63,
+          "weight_mode": "volume_fallback", "accumulation_mode": "range_uniform", "percentile_value": 20.0
+        },
+        "market_filter": {"enabled": true, "symbol": "SPY", "ma_len": 50, "off_scale": 0.5},
+        "safe_sleeve": {"enabled": true, "symbols": ["TLT", "IAU"], "ratio": 1.0, "max": 0.4, "ma_len": 50},
+        "regime_cap": {
+          "NORMAL": 1.0, "CAUTION": 0.6, "DEFENSE": 0.3, "RECOVERY": 0.6,
+          "recovery_stage_bars": 11, "recovery_stage_caps": [0.6, 0.8, 1.0]
+        }
+      }
+    },
+    {
+      "config": "yoon1j_kr",
+      "currency": "KRW",
+      "weight": 0.5,
+      "overrides": {
+        "top_k": 3,
+        "hold_buffer": 2,
+        "interval": "4h",
+        "period": "729d",
+        "rebalance_freq": "every_31",
+        "base_cycle": {"type": "SMA", "length": 100, "scale": 1.0},
+        "profile": {
+          "min_mult": 0.0, "max_mult": 3.0, "bin_count": 120, "rolling_window": 63,
+          "weight_mode": "volume_fallback", "accumulation_mode": "range_uniform", "percentile_value": 20.0
+        },
+        "market_filter": {"enabled": true, "symbol": "069500.KS", "ma_len": 50, "off_scale": 0.5},
+        "safe_sleeve": {"enabled": true, "symbols": ["148070.KS", "132030.KS"], "ratio": 1.0, "max": 0.4, "ma_len": 50},
+        "regime_cap": {
+          "NORMAL": 1.0, "CAUTION": 0.6, "DEFENSE": 0.3, "RECOVERY": 0.6,
+          "recovery_stage_bars": 11, "recovery_stage_caps": [0.6, 0.8, 1.0]
+        }
+      }
+    }
+  ],
+  "benchmark_symbols": {
+    "USD": "SPY",
+    "KRW": "069500.KS"
+  },
+  "benchmark_label": "50/50 SPY원화+KODEX200",
+  "train_frac": 0.6,
+  "validation_frac": 0.2,
+  "synthetic_symbols": 6,
+  "synthetic_bars": 2000,
+  "seed": 7,
+  "dashboard": {
+    "default_indicators": [
+      "sleeve_yoon1j_lp",
+      "sleeve_yoon1j_kr",
+      "target_w_yoon1j_lp",
+      "target_w_yoon1j_kr",
+      "target_w___CASH__"
+    ],
+    "indicator_labels": {
+      "sleeve_yoon1j_lp": "미국 슬리브 저가(원화환산, top3)",
+      "sleeve_yoon1j_kr": "한국 슬리브(원화, top3)",
+      "target_w_yoon1j_lp": "목표 USD 슬리브 비중",
+      "target_w_yoon1j_kr": "목표 KRW 슬리브 비중",
+      "target_w___CASH__": "목표 현금 비중(신용스프레드 게이트)"
+    },
+    "panels": [
+      {
+        "kind": "sleeve_weights",
+        "type": "stacked_area",
+        "x": "time",
+        "label": "2단계 슬리브 평가금액 비중",
+        "default": true
+      },
+      {
+        "kind": "perf_vs_bnh",
+        "type": "table",
+        "label": "벤치(50/50 패시브) 대비 성과",
+        "default": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,286 @@
+{
+  "period": "2007-01-29~2026-07-02",
+  "bars": 4084,
+  "phases": {
+    "all": "2007-01-29~2026-07-02",
+    "test": "2022-12-15~2026-07-02",
+    "recent_3y": "2023-07-07~2026-07-02"
+  },
+  "rows": [
+    {
+      "phase": "all",
+      "candidate": "final0706",
+      "cagr": 0.16843883269198767,
+      "max_drawdown": -0.16397811867518253,
+      "sharpe": 1.2424943780536408,
+      "total_return": 11.463676140384237,
+      "volatility": 0.13233202218986465
+    },
+    {
+      "phase": "all",
+      "candidate": "SPY_KRW_bnh",
+      "cagr": 0.16910039375972463,
+      "max_drawdown": -0.3015112951381864,
+      "sharpe": 0.8468357428174673,
+      "total_return": 11.578535362289813,
+      "volatility": 0.21080596539755292
+    },
+    {
+      "phase": "all",
+      "candidate": "SPY_USD_bnh",
+      "cagr": 0.13235833072714098,
+      "max_drawdown": -0.3964771087910798,
+      "sharpe": 0.7324381336611315,
+      "total_return": 6.496898019868892,
+      "volatility": 0.19875629741342032
+    },
+    {
+      "phase": "all",
+      "candidate": "QQQ_KRW_bnh",
+      "cagr": 0.23845264873564975,
+      "max_drawdown": -0.3033180387575827,
+      "sharpe": 1.0099472586654024,
+      "total_return": 31.006345798866384,
+      "volatility": 0.24044853464470808
+    },
+    {
+      "phase": "all",
+      "candidate": "QQQ_USD_bnh",
+      "cagr": 0.19953100819425806,
+      "max_drawdown": -0.35118709451793173,
+      "sharpe": 0.9432728387152713,
+      "total_return": 18.07601350488869,
+      "volatility": 0.21872384863972008
+    },
+    {
+      "phase": "all",
+      "candidate": "QLD_KRW_bnh",
+      "cagr": 0.34884515465181276,
+      "max_drawdown": -0.6094047681633862,
+      "sharpe": 0.8993859694246226,
+      "total_return": 126.7059448251703,
+      "volatility": 0.44686194266607104
+    },
+    {
+      "phase": "all",
+      "candidate": "QLD_USD_bnh",
+      "cagr": 0.3064541384842161,
+      "max_drawdown": -0.6368447993867432,
+      "sharpe": 0.8436814062458089,
+      "total_return": 75.1136664412906,
+      "volatility": 0.445012551221296
+    },
+    {
+      "phase": "test",
+      "candidate": "final0706",
+      "cagr": 0.38563991085917926,
+      "max_drawdown": -0.11998647029882936,
+      "sharpe": 2.0212607290155136,
+      "total_return": 1.8789859029981217,
+      "volatility": 0.16851245899740128
+    },
+    {
+      "phase": "test",
+      "candidate": "SPY_KRW_bnh",
+      "cagr": 0.3108969341438257,
+      "max_drawdown": -0.176722625103516,
+      "sharpe": 1.5029199145205654,
+      "total_return": 1.405274773951918,
+      "volatility": 0.19251152933370172
+    },
+    {
+      "phase": "test",
+      "candidate": "SPY_USD_bnh",
+      "cagr": 0.23995145125117356,
+      "max_drawdown": -0.18755226260622682,
+      "sharpe": 1.4317841405302343,
+      "total_return": 1.0082783527822503,
+      "volatility": 0.15906707990395633
+    },
+    {
+      "phase": "test",
+      "candidate": "QQQ_KRW_bnh",
+      "cagr": 0.42502532275512017,
+      "max_drawdown": -0.21291912556370063,
+      "sharpe": 1.6099126539317121,
+      "total_return": 2.152844683022886,
+      "volatility": 0.23762412648449321
+    },
+    {
+      "phase": "test",
+      "candidate": "QQQ_USD_bnh",
+      "cagr": 0.3479032340356514,
+      "max_drawdown": -0.22768314145582247,
+      "sharpe": 1.524596946416938,
+      "total_return": 1.6324600395638837,
+      "volatility": 0.2103861674935507
+    },
+    {
+      "phase": "test",
+      "candidate": "QLD_KRW_bnh",
+      "cagr": 0.7180667232088276,
+      "max_drawdown": -0.40861803142369724,
+      "sharpe": 1.4610546013781085,
+      "total_return": 4.781155992130555,
+      "volatility": 0.43512524700992744
+    },
+    {
+      "phase": "test",
+      "candidate": "QLD_USD_bnh",
+      "cagr": 0.6250852918353116,
+      "max_drawdown": -0.4229001910766309,
+      "sharpe": 1.367767196495002,
+      "total_return": 3.826962207722085,
+      "volatility": 0.41910391644286116
+    },
+    {
+      "phase": "recent_3y",
+      "candidate": "final0706",
+      "cagr": 0.4250004099760438,
+      "max_drawdown": -0.11998647029882925,
+      "sharpe": 2.0943147735931786,
+      "total_return": 1.6410125603738748,
+      "volatility": 0.17670640368438753
+    },
+    {
+      "phase": "recent_3y",
+      "candidate": "SPY_KRW_bnh",
+      "cagr": 0.3083109223677085,
+      "max_drawdown": -0.17672262510351588,
+      "sharpe": 1.4778008326499685,
+      "total_return": 1.0894350804417865,
+      "volatility": 0.19473153533717083
+    },
+    {
+      "phase": "recent_3y",
+      "candidate": "SPY_USD_bnh",
+      "cagr": 0.22966686059730312,
+      "max_drawdown": -0.18755226260622682,
+      "sharpe": 1.3685112848517382,
+      "total_return": 0.7627995898422095,
+      "volatility": 0.1604893435823197
+    },
+    {
+      "phase": "recent_3y",
+      "candidate": "QQQ_KRW_bnh",
+      "cagr": 0.3648639652632948,
+      "max_drawdown": -0.21291912556370063,
+      "sharpe": 1.4157650888003732,
+      "total_return": 1.346516560665639,
+      "volatility": 0.24011688010761006
+    },
+    {
+      "phase": "recent_3y",
+      "candidate": "QQQ_USD_bnh",
+      "cagr": 0.2828204355814421,
+      "max_drawdown": -0.22768314145582247,
+      "sharpe": 1.2841804845708946,
+      "total_return": 0.9796922476408017,
+      "volatility": 0.21134729691451312
+    },
+    {
+      "phase": "recent_3y",
+      "candidate": "QLD_KRW_bnh",
+      "cagr": 0.5678588085505898,
+      "max_drawdown": -0.4086180314236971,
+      "sharpe": 1.244109299384977,
+      "total_return": 2.431974546015553,
+      "volatility": 0.43845123465070557
+    },
+    {
+      "phase": "recent_3y",
+      "candidate": "QLD_USD_bnh",
+      "cagr": 0.4736130273078709,
+      "max_drawdown": -0.4229001910766309,
+      "sharpe": 1.1315707351086846,
+      "total_return": 1.8954636488566767,
+      "volatility": 0.42045371041258
+    }
+  ],
+  "bootstrap": {
+    "final0706_vs_SPY_KRW": {
+      "label_a": "final0706",
+      "label_b": "SPY_KRW_bnh",
+      "period": "2007-01-29~2026-07-02",
+      "bars": 4084,
+      "prob": {
+        "sharpe_a_gt_b": 0.972125,
+        "cagr_a_gt_b": 0.42225,
+        "mdd_a_shallower": 0.946625
+      },
+      "ci95": {
+        "excess_sharpe": [
+          -0.007327882448744531,
+          0.38540689714745346,
+          0.7830079475970464
+        ],
+        "excess_cagr": [
+          -0.08034651734215219,
+          -0.007145989429022892,
+          0.06847654137197587
+        ],
+        "excess_mdd": [
+          -0.022904103055133844,
+          0.10133055012475639,
+          0.26565846554346145
+        ]
+      }
+    },
+    "final0706_vs_QQQ_KRW": {
+      "label_a": "final0706",
+      "label_b": "QQQ_KRW_bnh",
+      "period": "2007-01-29~2026-07-02",
+      "bars": 4084,
+      "prob": {
+        "sharpe_a_gt_b": 0.886375,
+        "cagr_a_gt_b": 0.055,
+        "mdd_a_shallower": 0.979125
+      },
+      "ci95": {
+        "excess_sharpe": [
+          -0.15449830257526811,
+          0.24507151017988205,
+          0.6578930954379939
+        ],
+        "excess_cagr": [
+          -0.1606444112216158,
+          -0.06959831965945129,
+          0.018147324401257617
+        ],
+        "excess_mdd": [
+          0.0029700913617416286,
+          0.1156036068625998,
+          0.27104345990042333
+        ]
+      }
+    },
+    "final0706_vs_QLD_KRW": {
+      "label_a": "final0706",
+      "label_b": "QLD_KRW_bnh",
+      "period": "2007-01-29~2026-07-02",
+      "bars": 4084,
+      "prob": {
+        "sharpe_a_gt_b": 0.9115,
+        "cagr_a_gt_b": 0.023125,
+        "mdd_a_shallower": 1.0
+      },
+      "ci95": {
+        "excess_sharpe": [
+          -0.13577941130736532,
+          0.29356876365777385,
+          0.7283210836554008
+        ],
+        "excess_cagr": [
+          -0.4485380781659329,
+          -0.2103012879067354,
+          -0.0017813365499966868
+        ],
+        "excess_mdd": [
+          0.2221025079473839,
+          0.3990470419126983,
+          0.6214281182349168
+        ]
+      }
+    }
+  }
+}
