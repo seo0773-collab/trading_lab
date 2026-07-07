@@ -1,0 +1,633 @@
+
+//@version=6
+indicator(
+     "Plane Chart Light - Cumulative Profile",
+     shorttitle = "CycleMult Cumulative",
+     overlay = false,
+     max_lines_count = 300,
+     max_labels_count = 50,
+     max_boxes_count = 500,
+     max_polylines_count = 80,
+     max_bars_back = 5000
+)
+
+//==================================================
+// Inputs
+//==================================================
+groupCore = "Core"
+
+baseCalcTf = input.timeframe(
+     "D",
+     "Base Calculation Timeframe",
+     group = groupCore,
+     tooltip = "cycle / rolling profile / percentile을 계산할 고정 TF입니다. 기본값 D."
+)
+
+baseLen = input.int(
+     200,
+     "Base Cycle Length",
+     minval = 10,
+     maxval = 1000,
+     group = groupCore
+)
+
+baseType = input.string(
+     "SMA",
+     "Base Cycle Type",
+     options = ["SMA", "EMA", "RMA", "WMA", "VWMA"],
+     group = groupCore
+)
+
+baseScale = input.float(
+     1.0,
+     "Base Cycle Scale",
+     minval = 0.1,
+     maxval = 10.0,
+     step = 0.05,
+     group = groupCore
+)
+
+// ---- Rolling Profile ----
+groupProfile = "Rolling Profile"
+
+rollingProfileBars = input.int(
+     126,
+     "Rolling Window Bars",
+     minval = 20,
+     maxval = 1000,
+     group = groupProfile,
+     tooltip = "baseCalcTf 기준 rolling profile 길이입니다. D 기준 126은 대략 6개월 거래일, 코인은 180 전후를 사용할 수 있습니다."
+)
+
+profilePercentileValue = input.float(
+     20.0,
+     "Upper / Lower Profile Percent",
+     minval = 1.0,
+     maxval = 49.0,
+     step = 1.0,
+     group = groupProfile
+)
+
+profilePercentileSmoothLen = input.int(
+     5,
+     "Percentile EMA Smoothing",
+     minval = 1,
+     maxval = 100,
+     group = groupProfile
+)
+
+profileMinMult = input.float(
+     0.0,
+     "Profile Min Multiple",
+     minval = 0.0,
+     maxval = 5.0,
+     step = 1.0,
+     group = groupProfile
+)
+
+profileMaxMult = input.float(
+     5.0,
+     "Profile Max Multiple",
+     minval = 0.5,
+     maxval = 10.0,
+     step = 1.0,
+     group = groupProfile
+)
+
+profileBinsPerCycleArea = input.int(
+     100,
+     "Profile Bins Per 1x Cycle Area",
+     minval = 20,
+     maxval = 250,
+     group = groupProfile,
+     tooltip = "Each 1.0x cycle range is split into this many bins. Example: 100 means 0~1 has 100 bins, 1~2 has 100 bins, and so on."
+)
+
+profileBinWidthMult = 1.0 / profileBinsPerCycleArea
+profileBinCount = int(math.max(math.ceil((profileMaxMult - profileMinMult) / profileBinWidthMult), 1))
+
+profileWeightMode = input.string(
+     "Volume With 1 Fallback",
+     "Profile Weight Mode",
+     options = ["Volume With 1 Fallback", "Volume", "Time"],
+     group = groupProfile
+)
+
+profileAccumulationMode = input.string(
+     "Range Uniform",
+     "Profile Accumulation Mode",
+     options = ["Range Uniform", "OHLC", "Range + Close Weight"],
+     group = groupProfile,
+     tooltip = "Range Uniform: 기존 방식. 캔들의 low~high 구간을 겹친 bin에 균등 분배합니다. OHLC: 시가/고가/저가/종가에 25%씩 분배합니다. Range + Close Weight: 기본 range 분배에 더해, 캔들이 길어질수록 종가 bin 비중을 높입니다."
+)
+
+closeWeightMaxShare = input.float(
+     70.0,
+     "Close Weight Max Share (%)",
+     minval = 10.0,
+     maxval = 95.0,
+     step = 5.0,
+     group = groupProfile,
+     tooltip = "Range + Close Weight 모드에서 장대캔들이 될수록 종가 bin에 배정할 최대 비중입니다."
+)
+
+closeWeightFullRangeBins = input.float(
+     12.0,
+     "Close Weight Full Range (bins)",
+     minval = 1.0,
+     maxval = 100.0,
+     step = 1.0,
+     group = groupProfile,
+     tooltip = "캔들 길이가 bin 몇 개를 넘으면 Close Weight Max Share에 도달할지 정합니다."
+)
+
+// ---- Cumulative Profile ----
+groupCumulativeProfile = "Cumulative Profile"
+
+showCumulativeProfile = input.bool(
+     true,
+     "Show Cumulative Profile",
+     group = groupCumulativeProfile,
+     tooltip = "Draw one full-history cumulative profile at the far right. Bin widths are normalized from 0 to 100 while keeping ratios between bins."
+)
+
+cumulativeProfileRightOffsetBars = input.int(
+     6,
+     "Right Offset Bars",
+     minval = 1,
+     maxval = 100,
+     group = groupCumulativeProfile
+)
+
+cumulativeProfileColor = input.color(
+     color.gray,
+     "Profile Color",
+     group = groupCumulativeProfile
+)
+
+cumulativeProfileTransparency = input.int(
+     72,
+     "Profile Transparency",
+     minval = 0,
+     maxval = 100,
+     group = groupCumulativeProfile
+)
+
+cumulativeProfileOutlineWidth = input.int(
+     1,
+     "Profile Outline Width",
+     minval = 1,
+     maxval = 4,
+     group = groupCumulativeProfile
+)
+
+profileDisplayScaleMode = input.string(
+     "Pane Scale",
+     "Profile Display Scale",
+     options = ["Pane Scale", "Full Profile Range"],
+     group = groupCumulativeProfile,
+     tooltip = "Pane Scale: use the visible cycle-multiple guide range. Full Profile Range: use the full Profile Min/Max Multiple range."
+)
+
+// ---- Display ----
+groupDisplay = "Display"
+
+showPlaneCandles = input.bool(true, "Cycle Multiple Candles", group = groupDisplay)
+showOverlayCycleLines = input.bool(true, "Cycle Multiple Lines (price)", group = groupDisplay)
+showPaneCycleLines = input.bool(true, "Cycle Multiple Guide Lines (pane)", group = groupDisplay)
+showPercentilePriceLines = input.bool(true, "Upper / Lower Percentile Price Lines", group = groupDisplay)
+limitLinesToTouched = input.bool(true, "Limit Cycle Lines To Highest Touched", group = groupDisplay)
+
+// ---- Style ----
+groupStyle = "Style"
+
+upColor = input.color(color.lime, "Up Candle", group = groupStyle)
+downColor = input.color(color.red, "Down Candle", group = groupStyle)
+wickColor = input.color(color.gray, "Wick", group = groupStyle)
+cycleLineColor = input.color(color.gray, "Cycle Line Color", group = groupStyle)
+cycleLineTransparency = input.int(72, "Cycle Line Transparency", minval = 0, maxval = 100, group = groupStyle)
+lowerLineColor = input.color(color.red, "Lower Percentile Price", group = groupStyle)
+upperLineColor = input.color(color.lime, "Upper Percentile Price", group = groupStyle)
+percentileLineWidth = input.int(2, "Percentile Price Line Width", minval = 1, maxval = 4, group = groupStyle)
+
+// Fixed performance settings
+cumulativeProfileMaxWidthBars = 100
+maxDrawableProfileBoxes = 500
+paneGuideMinMult = 0.5
+paneGuideMaxMult = 5.0
+paneGuideStepMult = 0.5
+paneGuideBackBars = 5000
+paneGuideForwardBars = cumulativeProfileRightOffsetBars + cumulativeProfileMaxWidthBars + 20
+
+//==================================================
+// Functions
+//==================================================
+f_smooth(src, len, mode) =>
+    mode == "SMA" ? ta.sma(src, len) :
+     mode == "EMA" ? ta.ema(src, len) :
+     mode == "RMA" ? ta.rma(src, len) :
+     mode == "WMA" ? ta.wma(src, len) :
+     mode == "VWMA" ? ta.vwma(src, len) :
+     ta.sma(src, len)
+
+f_add_point_to_profile(float[] _vp, float _mult, float _weight, float _sign, float _binWidth) =>
+    if not na(_mult) and not na(_weight) and _weight > 0 and not na(_binWidth) and _binWidth > 0 and array.size(_vp) == profileBinCount
+        if _mult >= profileMinMult and _mult <= profileMaxMult
+            idx = int(math.floor((_mult - profileMinMult) / _binWidth))
+            idx := math.max(0, math.min(idx, profileBinCount - 1))
+            oldValue = array.get(_vp, idx)
+            array.set(_vp, idx, math.max(oldValue + _sign * _weight, 0.0))
+
+f_add_range_to_profile(float[] _vp, float _lowMult, float _highMult, float _weight, float _sign, float _binWidth) =>
+    if not na(_lowMult) and not na(_highMult) and not na(_weight) and _weight > 0 and not na(_binWidth) and _binWidth > 0 and array.size(_vp) == profileBinCount
+        barLowMult = math.min(_lowMult, _highMult)
+        barHighMult = math.max(_lowMult, _highMult)
+
+        clippedLow = math.max(barLowMult, profileMinMult)
+        clippedHigh = math.min(barHighMult, profileMaxMult)
+
+        if not na(clippedLow) and not na(clippedHigh) and clippedHigh >= clippedLow
+            if clippedHigh == clippedLow
+                singleIdx = int(math.floor((clippedLow - profileMinMult) / _binWidth))
+                singleIdx := math.max(0, math.min(singleIdx, profileBinCount - 1))
+                oldValue = array.get(_vp, singleIdx)
+                array.set(_vp, singleIdx, math.max(oldValue + _sign * _weight, 0.0))
+            else
+                lowIdx = int(math.floor((clippedLow - profileMinMult) / _binWidth))
+                highIdx = int(math.floor((clippedHigh - profileMinMult) / _binWidth))
+                lowIdx := math.max(0, math.min(lowIdx, profileBinCount - 1))
+                highIdx := math.max(0, math.min(highIdx, profileBinCount - 1))
+
+                barRange = clippedHigh - clippedLow
+
+                if barRange > 0
+                    for b = lowIdx to highIdx
+                        binLow = profileMinMult + b * _binWidth
+                        binHigh = binLow + _binWidth
+                        overlapLow = math.max(clippedLow, binLow)
+                        overlapHigh = math.min(clippedHigh, binHigh)
+                        overlap = math.max(overlapHigh - overlapLow, 0.0)
+                        addValue = _weight * overlap / barRange
+
+                        if addValue > 0
+                            oldBinValue = array.get(_vp, b)
+                            array.set(_vp, b, math.max(oldBinValue + _sign * addValue, 0.0))
+
+f_add_bar_to_profile(float[] _vp, float _cycleSeries, int _barsAgo, float _sign, float _binWidth) =>
+    rawVol = nz(volume[_barsAgo])
+    barWeight =
+         profileWeightMode == "Time" ? 1.0 :
+         profileWeightMode == "Volume" ? rawVol :
+         rawVol > 0 ? rawVol : 1.0
+
+    cyc = _cycleSeries[_barsAgo]
+    validCycle = not na(cyc) and cyc > 0
+
+    if validCycle and barWeight > 0 and not na(_binWidth) and _binWidth > 0 and array.size(_vp) == profileBinCount
+        openMult = open[_barsAgo] / cyc
+        highMult = high[_barsAgo] / cyc
+        lowMult = low[_barsAgo] / cyc
+        closeMult = close[_barsAgo] / cyc
+
+        if profileAccumulationMode == "OHLC"
+            pointWeight = barWeight / 4.0
+            f_add_point_to_profile(_vp, openMult, pointWeight, _sign, _binWidth)
+            f_add_point_to_profile(_vp, highMult, pointWeight, _sign, _binWidth)
+            f_add_point_to_profile(_vp, lowMult, pointWeight, _sign, _binWidth)
+            f_add_point_to_profile(_vp, closeMult, pointWeight, _sign, _binWidth)
+        else if profileAccumulationMode == "Range + Close Weight"
+            rawLowMult = math.min(lowMult, highMult)
+            rawHighMult = math.max(lowMult, highMult)
+            candleRange = rawHighMult - rawLowMult
+            rangeInBins = _binWidth > 0 ? candleRange / _binWidth : 0.0
+            rangeRatio = closeWeightFullRangeBins > 0 ? math.min(rangeInBins / closeWeightFullRangeBins, 1.0) : 1.0
+            maxCloseShare = math.max(0.0, math.min(closeWeightMaxShare / 100.0, 0.95))
+            closeShare = maxCloseShare * rangeRatio
+            closeShare := math.max(0.0, math.min(closeShare, 0.95))
+            rangeShare = 1.0 - closeShare
+
+            if rangeShare > 0
+                f_add_range_to_profile(_vp, lowMult, highMult, barWeight * rangeShare, _sign, _binWidth)
+
+            if closeShare > 0
+                f_add_point_to_profile(_vp, closeMult, barWeight * closeShare, _sign, _binWidth)
+        else
+            f_add_range_to_profile(_vp, lowMult, highMult, barWeight, _sign, _binWidth)
+
+f_calc_profile_stats(float[] _vp, float _binWidth) =>
+    totalValue = 0.0
+    maxValue = 0.0
+
+    for b = 0 to profileBinCount - 1
+        v = array.get(_vp, b)
+        totalValue += v
+        maxValue := math.max(maxValue, v)
+
+    float lowerRaw = na
+    float upperRaw = na
+
+    if totalValue > 0 and not na(_binWidth) and _binWidth > 0
+        targetValue = totalValue * profilePercentileValue / 100.0
+
+        lowerCum = 0.0
+        for b = 0 to profileBinCount - 1
+            v = array.get(_vp, b)
+            before = lowerCum
+            after = before + v
+
+            if na(lowerRaw) and after >= targetValue
+                hitRatio = v > 0 ? (targetValue - before) / v : 1.0
+                hitRatio := math.max(0.0, math.min(hitRatio, 1.0))
+                lowerRaw := profileMinMult + b * _binWidth + hitRatio * _binWidth
+
+            lowerCum := after
+
+        upperCum = 0.0
+        for j = 0 to profileBinCount - 1
+            b = profileBinCount - 1 - j
+            v = array.get(_vp, b)
+            before = upperCum
+            after = before + v
+
+            if na(upperRaw) and after >= targetValue
+                hitRatio = v > 0 ? (targetValue - before) / v : 1.0
+                hitRatio := math.max(0.0, math.min(hitRatio, 1.0))
+                binHigh = profileMinMult + (b + 1) * _binWidth
+                upperRaw := binHigh - hitRatio * _binWidth
+
+            upperCum := after
+
+    [lowerRaw, upperRaw, totalValue, maxValue]
+
+f_profile_max(float[] _bins) =>
+    maxValue = 0.0
+
+    if array.size(_bins) == profileBinCount
+        for b = 0 to profileBinCount - 1
+            maxValue := math.max(maxValue, array.get(_bins, b))
+
+    maxValue
+
+f_engine() =>
+    var float[] rollingVp = array.new_float()
+    var float[] cumulativeVp = array.new_float()
+    var float[] emptyFloatArr = array.new_float()
+
+    cycle = f_smooth(close, baseLen, baseType) * baseScale
+
+    validRange = profileMaxMult > profileMinMult
+    binWidth = validRange ? profileBinWidthMult : na
+
+    if barstate.isfirst
+        array.clear(rollingVp)
+        array.clear(cumulativeVp)
+        for i = 0 to profileBinCount - 1
+            array.push(rollingVp, 0.0)
+            array.push(cumulativeVp, 0.0)
+
+    if validRange and not na(binWidth) and binWidth > 0 and array.size(rollingVp) == profileBinCount and array.size(cumulativeVp) == profileBinCount
+        f_add_bar_to_profile(rollingVp, cycle, 0, 1.0, binWidth)
+        f_add_bar_to_profile(cumulativeVp, cycle, 0, 1.0, binWidth)
+
+        if bar_index >= rollingProfileBars
+            f_add_bar_to_profile(rollingVp, cycle, rollingProfileBars, -1.0, binWidth)
+
+    [lowerRaw, upperRaw, _, _] = f_calc_profile_stats(rollingVp, binWidth)
+
+    lowerSmooth = profilePercentileSmoothLen > 1 ? ta.ema(lowerRaw, profilePercentileSmoothLen) : lowerRaw
+    upperSmooth = profilePercentileSmoothLen > 1 ? ta.ema(upperRaw, profilePercentileSmoothLen) : upperRaw
+
+    cumulativeMaxValue = f_profile_max(cumulativeVp)
+    float[] outCumulativeBins = emptyFloatArr
+
+    if barstate.islast
+        outCumulativeBins := array.copy(cumulativeVp)
+
+    [cycle, lowerSmooth, upperSmooth, binWidth, outCumulativeBins, cumulativeMaxValue]
+
+//==================================================
+// Base TF engine
+//==================================================
+[baseCycle, lowerProfileCutMult, upperProfileCutMult, fixedProfileBinWidth, cumulativeProfileBins, cumulativeProfileMaxValue] =
+     request.security(
+         syminfo.tickerid,
+         baseCalcTf,
+         f_engine(),
+         barmerge.gaps_off,
+         barmerge.lookahead_off
+     )
+
+validBaseCycle = not na(baseCycle) and baseCycle > 0
+
+lowerProfileCutPrice = validBaseCycle and not na(lowerProfileCutMult) ? lowerProfileCutMult * baseCycle : na
+upperProfileCutPrice = validBaseCycle and not na(upperProfileCutMult) ? upperProfileCutMult * baseCycle : na
+
+//==================================================
+// Cycle multiple candles
+//==================================================
+cmOpen = validBaseCycle ? open / baseCycle : na
+cmHigh = validBaseCycle ? high / baseCycle : na
+cmLow = validBaseCycle ? low / baseCycle : na
+cmClose = validBaseCycle ? close / baseCycle : na
+
+baseCandleColor = cmClose >= cmOpen ? upColor : downColor
+
+plotcandle(
+     showPlaneCandles ? cmOpen : na,
+     showPlaneCandles ? cmHigh : na,
+     showPlaneCandles ? cmLow : na,
+     showPlaneCandles ? cmClose : na,
+     title = "Cycle Multiple Candles",
+     color = baseCandleColor,
+     wickcolor = wickColor,
+     bordercolor = baseCandleColor
+)
+
+// No cycle close line, no POC line.
+
+//==================================================
+// Upper / Lower percentile price lines
+//==================================================
+plot(
+     showPercentilePriceLines ? lowerProfileCutPrice : na,
+     title = "Lower Rolling Profile Percentile Price",
+     color = color.new(lowerLineColor, 0),
+     linewidth = percentileLineWidth,
+     force_overlay = true
+)
+
+plot(
+     showPercentilePriceLines ? upperProfileCutPrice : na,
+     title = "Upper Rolling Profile Percentile Price",
+     color = color.new(upperLineColor, 0),
+     linewidth = percentileLineWidth,
+     force_overlay = true
+)
+
+//==================================================
+// Cycle multiple price lines
+//==================================================
+var float maxTouchedMult = na
+if not na(cmHigh)
+    maxTouchedMult := na(maxTouchedMult) ? cmHigh : math.max(maxTouchedMult, cmHigh)
+
+f_show_mult(_mult) =>
+    not limitLinesToTouched or na(maxTouchedMult) or _mult <= maxTouchedMult + 0.05
+
+paneScaleTop = limitLinesToTouched and not na(maxTouchedMult) ? math.min(paneGuideMaxMult, math.max(paneGuideMinMult, maxTouchedMult + 0.05)) : paneGuideMaxMult
+profileDisplayMinMult = profileDisplayScaleMode == "Pane Scale" ? paneGuideMinMult : profileMinMult
+rawProfileDisplayMaxMult = profileDisplayScaleMode == "Pane Scale" ? paneScaleTop : profileMaxMult
+profileDisplayStep = not na(fixedProfileBinWidth) and fixedProfileBinWidth > 0 ? fixedProfileBinWidth : 0.01
+profileDisplayMaxMult = math.max(rawProfileDisplayMaxMult, profileDisplayMinMult + profileDisplayStep)
+
+cycleLineCol = color.new(cycleLineColor, cycleLineTransparency)
+
+plot(showOverlayCycleLines and f_show_mult(0.5) ? baseCycle * 0.5 : na, title = "Cycle 0.5x Price", color = cycleLineCol, linewidth = 1, force_overlay = true)
+plot(showOverlayCycleLines and f_show_mult(1.0) ? baseCycle * 1.0 : na, title = "Cycle 1.0x Price", color = color.new(cycleLineColor, 55), linewidth = 1, force_overlay = true)
+plot(showOverlayCycleLines and f_show_mult(1.5) ? baseCycle * 1.5 : na, title = "Cycle 1.5x Price", color = cycleLineCol, linewidth = 1, force_overlay = true)
+plot(showOverlayCycleLines and f_show_mult(2.0) ? baseCycle * 2.0 : na, title = "Cycle 2.0x Price", color = cycleLineCol, linewidth = 1, force_overlay = true)
+plot(showOverlayCycleLines and f_show_mult(2.5) ? baseCycle * 2.5 : na, title = "Cycle 2.5x Price", color = cycleLineCol, linewidth = 1, force_overlay = true)
+plot(showOverlayCycleLines and f_show_mult(3.0) ? baseCycle * 3.0 : na, title = "Cycle 3.0x Price", color = cycleLineCol, linewidth = 1, force_overlay = true)
+plot(showOverlayCycleLines and f_show_mult(3.5) ? baseCycle * 3.5 : na, title = "Cycle 3.5x Price", color = cycleLineCol, linewidth = 1, force_overlay = true)
+plot(showOverlayCycleLines and f_show_mult(4.0) ? baseCycle * 4.0 : na, title = "Cycle 4.0x Price", color = cycleLineCol, linewidth = 1, force_overlay = true)
+plot(showOverlayCycleLines and f_show_mult(4.5) ? baseCycle * 4.5 : na, title = "Cycle 4.5x Price", color = cycleLineCol, linewidth = 1, force_overlay = true)
+plot(showOverlayCycleLines and f_show_mult(5.0) ? baseCycle * 5.0 : na, title = "Cycle 5.0x Price", color = cycleLineCol, linewidth = 1, force_overlay = true)
+
+//==================================================
+// Pane guide lines
+//==================================================
+var line[] paneGuideLines = array.new_line()
+var label[] paneGuideLabels = array.new_label()
+var int lastGuideBar = na
+
+if barstate.islast and showPaneCycleLines and (na(lastGuideBar) or lastGuideBar != bar_index)
+    lastGuideBar := bar_index
+
+    paneGuideLineCount = array.size(paneGuideLines)
+    if paneGuideLineCount > 0
+        for i = 0 to paneGuideLineCount - 1
+            line.delete(array.get(paneGuideLines, i))
+    array.clear(paneGuideLines)
+
+    paneGuideLabelCount = array.size(paneGuideLabels)
+    if paneGuideLabelCount > 0
+        for i = 0 to paneGuideLabelCount - 1
+            label.delete(array.get(paneGuideLabels, i))
+    array.clear(paneGuideLabels)
+
+    guideMax = limitLinesToTouched and not na(maxTouchedMult) ? math.min(paneGuideMaxMult, maxTouchedMult + 0.05) : paneGuideMaxMult
+    guideCount = int(math.floor((guideMax - paneGuideMinMult) / paneGuideStepMult))
+    guideCount := math.max(guideCount, 0)
+
+    leftX = math.max(0, bar_index - paneGuideBackBars)
+    rightX = bar_index + paneGuideForwardBars
+
+    for i = 0 to guideCount
+        mult = paneGuideMinMult + i * paneGuideStepMult
+        isWhole = math.abs(mult - math.round(mult)) < 0.001
+        ln = line.new(
+             x1 = leftX,
+             y1 = mult,
+             x2 = rightX,
+             y2 = mult,
+             xloc = xloc.bar_index,
+             extend = extend.none,
+             color = color.new(cycleLineColor, isWhole ? 55 : 78),
+             style = isWhole ? line.style_solid : line.style_dotted,
+             width = isWhole ? 2 : 1
+        )
+        array.push(paneGuideLines, ln)
+
+        lb = label.new(
+             x = rightX,
+             y = mult,
+             text = str.tostring(mult, "#.0") + "x",
+             xloc = xloc.bar_index,
+             style = label.style_label_left,
+             textcolor = color.white,
+             color = color.new(color.black, 85),
+             size = size.tiny
+        )
+        array.push(paneGuideLabels, lb)
+
+if barstate.islast and not showPaneCycleLines
+    paneGuideLineCount = array.size(paneGuideLines)
+    if paneGuideLineCount > 0
+        for i = 0 to paneGuideLineCount - 1
+            line.delete(array.get(paneGuideLines, i))
+    array.clear(paneGuideLines)
+
+    paneGuideLabelCount = array.size(paneGuideLabels)
+    if paneGuideLabelCount > 0
+        for i = 0 to paneGuideLabelCount - 1
+            label.delete(array.get(paneGuideLabels, i))
+    array.clear(paneGuideLabels)
+
+//==================================================
+// Cumulative profile on the right
+//==================================================
+var box[] cumulativeProfileBoxes = array.new_box()
+
+if barstate.islast
+    cumulativeBoxCount = array.size(cumulativeProfileBoxes)
+    if cumulativeBoxCount > 0
+        for i = 0 to cumulativeBoxCount - 1
+            box.delete(array.get(cumulativeProfileBoxes, i))
+    array.clear(cumulativeProfileBoxes)
+
+    cumulativeProfileReady =
+         showCumulativeProfile and
+         array.size(cumulativeProfileBins) == profileBinCount and
+         not na(cumulativeProfileMaxValue) and
+         cumulativeProfileMaxValue > 0 and
+         not na(fixedProfileBinWidth) and
+         fixedProfileBinWidth > 0
+
+    if cumulativeProfileReady
+        baseX = bar_index + cumulativeProfileRightOffsetBars
+        fillTransp = cumulativeProfileTransparency
+        lineTransp = int(math.max(0.0, fillTransp - 18.0))
+        displayBinStep = int(math.max(math.ceil(profileBinCount * 1.0 / maxDrawableProfileBoxes), 1))
+        displayMaxValue = 0.0
+
+        for b = 0 to profileBinCount - 1
+            if b % displayBinStep == 0
+                groupEnd = int(math.min(b + displayBinStep - 1, profileBinCount - 1))
+                groupValue = 0.0
+
+                for g = b to groupEnd
+                    groupValue += array.get(cumulativeProfileBins, g)
+
+                displayMaxValue := math.max(displayMaxValue, groupValue)
+
+        if displayMaxValue > 0
+            for b = 0 to profileBinCount - 1
+                if b % displayBinStep == 0
+                    groupEnd = int(math.min(b + displayBinStep - 1, profileBinCount - 1))
+                    groupValue = 0.0
+
+                    for g = b to groupEnd
+                        groupValue += array.get(cumulativeProfileBins, g)
+
+                    binLow = profileMinMult + b * fixedProfileBinWidth
+                    binHigh = math.min(profileMinMult + (groupEnd + 1) * fixedProfileBinWidth, profileMaxMult)
+                    clippedLow = math.max(binLow, profileDisplayMinMult)
+                    clippedHigh = math.min(binHigh, profileDisplayMaxMult)
+
+                    if clippedHigh > clippedLow
+                        normalizedSize = 100.0 * groupValue / displayMaxValue
+                        normalizedSize := math.max(0.0, math.min(normalizedSize, 100.0))
+                        widthBars = int(math.round(normalizedSize))
+
+                        if widthBars > 0
+                            bx = box.new(
+                                 left = baseX,
+                                 top = clippedHigh,
+                                 right = baseX + widthBars,
+                                 bottom = clippedLow,
+                                 xloc = xloc.bar_index,
+                                 border_color = color.new(cumulativeProfileColor, lineTransp),
+                                 border_width = cumulativeProfileOutlineWidth,
+                                 bgcolor = color.new(cumulativeProfileColor, fillTransp)
+                            )
+                            array.push(cumulativeProfileBoxes, bx)

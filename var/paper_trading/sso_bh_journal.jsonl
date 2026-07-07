@@ -1,0 +1,6 @@
+{"run_at": "2026-06-28T15:51:36", "strategy": "sso_bh", "data_through": "2026-06-26", "last_rebal_date": "2026-06-26", "exposure": 1.0, "cash": 0.0, "market_regime": "정상(buy&hold)", "n_holdings": 1, "targets": {"SSO": 1.0}}
+{"run_at": "2026-06-29T14:37:00", "strategy": "sso_bh", "data_through": "2026-06-29", "last_rebal_date": "2026-06-29", "exposure": 1.0, "cash": 0.0, "market_regime": "정상(buy&hold)", "n_holdings": 1, "targets": {"SSO": 1.0}}
+{"run_at": "2026-06-29T14:39:54", "strategy": "sso_bh", "data_through": "2026-06-29", "last_rebal_date": "2026-06-29", "exposure": 1.0, "cash": 0.0, "market_regime": "정상(buy&hold)", "n_holdings": 1, "targets": {"SSO": 1.0}}
+{"run_at": "2026-06-29T14:42:19", "strategy": "sso_bh", "data_through": "2026-06-29", "last_rebal_date": "2026-06-29", "exposure": 1.0, "cash": 0.0, "market_regime": "정상(buy&hold)", "n_holdings": 1, "targets": {"SSO": 1.0}}
+{"run_at": "2026-06-29T15:07:52", "strategy": "sso_bh", "data_through": "2026-06-29", "last_rebal_date": "2026-06-29", "exposure": 1.0, "cash": 0.0, "market_regime": "정상(buy&hold)", "n_holdings": 1, "targets": {"SSO": 1.0}}
+{"run_at": "2026-06-29T15:20:25", "strategy": "sso_bh", "data_through": "2026-06-29", "last_rebal_date": "2026-06-29", "exposure": 1.0, "cash": 0.0, "market_regime": "정상(buy&hold)", "n_holdings": 1, "targets": {"SSO": 1.0}}

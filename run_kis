@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# KIS 모의투자 · 한투 계좌 모니터 대시보드 런처.
+# (백테스트 대시보드는 ./run_dashboard.sh — 별개의 standalone 앱이다.)
+# 다크 미니멀 테마(.streamlit/config.toml)가 적용되도록 repo 루트에서 실행한다.
+# 자격증명은 .env(KIS_APP_*=실, KIS_MOCK_*=모의)에서 대시보드가 직접 로드한다.
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+VENV_ACTIVATE="$ROOT/.venv/bin/activate"
+
+if [[ ! -f "$VENV_ACTIVATE" ]]; then
+    echo "ERROR: virtual environment not found: $VENV_ACTIVATE" >&2
+    exit 1
+fi
+
+cd "$ROOT"
+source "$VENV_ACTIVATE"
+export PYTHONPATH="$ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
+exec streamlit run scripts/profile_sizing/live/kis_dashboard.py "$@"

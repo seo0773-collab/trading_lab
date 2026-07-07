@@ -1,0 +1,393 @@
+
+//@version=6
+indicator(
+     "Cycle Slope Profile - Time Weighted",
+     shorttitle = "SlopeProfile",
+     overlay = false,
+     max_lines_count = 100,
+     max_labels_count = 50,
+     max_boxes_count = 500,
+     max_bars_back = 5000
+)
+
+//==================================================
+// Inputs
+//==================================================
+groupCore = "Core"
+
+baseCalcTf = input.timeframe(
+     "D",
+     "Base Calculation Timeframe",
+     group = groupCore,
+     tooltip = "cycle / slope / profile을 계산할 고정 TF입니다. 기본값 D."
+)
+
+baseLen = input.int(200, "Base Cycle Length", minval = 10, maxval = 1000, group = groupCore)
+
+baseType = input.string(
+     "SMA",
+     "Base Cycle Type",
+     options = ["SMA", "EMA", "RMA", "WMA", "VWMA"],
+     group = groupCore
+)
+
+baseScale = input.float(1.0, "Base Cycle Scale", minval = 0.1, maxval = 10.0, step = 0.05, group = groupCore)
+
+// ---- Slope / Angle ----
+groupSlope = "Slope / Angle"
+
+slopeLookback = input.int(
+     5,
+     "Slope Lookback (bars)",
+     minval = 1,
+     maxval = 200,
+     group = groupSlope,
+     tooltip = "baseCalcTf 기준 n-bar % 변화율로 기울기를 계산합니다. (cycle - cycle[n]) / cycle[n]"
+)
+
+angleNormMode = input.string(
+     "Fixed Sensitivity",
+     "Angle Normalization",
+     options = ["Fixed Sensitivity", "Z-Score"],
+     group = groupSlope,
+     tooltip = "Fixed Sensitivity: slopePct * sensitivity를 atan에 넣어 각도로 변환합니다. Z-Score: rolling stdev로 나눠 무차원 z값을 각도로 매핑합니다. 레짐 간 비교 일관성이 필요하면 Z-Score를 권장합니다."
+)
+
+slopeSensitivity = input.float(
+     300.0,
+     "Sensitivity (Fixed mode)",
+     minval = 1.0,
+     maxval = 10000.0,
+     step = 10.0,
+     group = groupSlope,
+     tooltip = "SMA200/D 기준 slopePct는 대략 ±1% 안에 갇히므로, ±90° 공간을 활용하려면 수백 단위 배율이 필요합니다. angle 라인이 ±60° 부근까지 스윙하도록 튜닝하세요."
+)
+
+zScoreLen = input.int(252, "Z-Score Stdev Length", minval = 20, maxval = 2000, group = groupSlope)
+
+zScoreAngleScale = input.float(
+     1.0,
+     "Z-Score Angle Scale",
+     minval = 0.1,
+     maxval = 10.0,
+     step = 0.1,
+     group = groupSlope,
+     tooltip = "z=1이 atan(1 * scale)에 매핑됩니다. scale=1이면 z=1 → 45°."
+)
+
+// ---- Slope Profile ----
+groupProfile = "Slope Profile"
+
+rollingProfileBars = input.int(
+     126,
+     "Rolling Window Bars",
+     minval = 20,
+     maxval = 2000,
+     group = groupProfile,
+     tooltip = "baseCalcTf 기준 rolling profile 길이입니다. percentile 레짐 판정에 사용됩니다."
+)
+
+profilePercentileValue = input.float(20.0, "Upper / Lower Profile Percent", minval = 1.0, maxval = 49.0, step = 1.0, group = groupProfile)
+
+profilePercentileSmoothLen = input.int(5, "Percentile EMA Smoothing", minval = 1, maxval = 100, group = groupProfile)
+
+angleBinCount = input.int(
+     120,
+     "Angle Bins (-90 ~ +90)",
+     minval = 30,
+     maxval = 360,
+     group = groupProfile,
+     tooltip = "180도를 몇 개의 bin으로 나눌지 정합니다. 120이면 bin당 1.5도."
+)
+
+profileWeightMode = input.string(
+     "Time",
+     "Profile Weight Mode",
+     options = ["Time", "Volume", "Volume With 1 Fallback"],
+     group = groupProfile,
+     tooltip = "1안 기본값은 Time(레짐 점유 분포)입니다. Volume 모드는 참여자 진입 레짐 분석용 실험 옵션입니다."
+)
+
+// ---- Cumulative Profile ----
+groupCumulativeProfile = "Cumulative Profile"
+
+showCumulativeProfile = input.bool(true, "Show Cumulative Profile", group = groupCumulativeProfile)
+showRollingProfile = input.bool(true, "Show Rolling Profile", group = groupCumulativeProfile, tooltip = "rolling window 분포를 cumulative 안쪽에 겹쳐 그립니다.")
+cumulativeProfileRightOffsetBars = input.int(6, "Right Offset Bars", minval = 1, maxval = 100, group = groupCumulativeProfile)
+cumulativeProfileColor = input.color(color.gray, "Cumulative Color", group = groupCumulativeProfile)
+rollingProfileColor = input.color(color.orange, "Rolling Color", group = groupCumulativeProfile)
+cumulativeProfileTransparency = input.int(72, "Profile Transparency", minval = 0, maxval = 100, group = groupCumulativeProfile)
+cumulativeProfileOutlineWidth = input.int(1, "Profile Outline Width", minval = 1, maxval = 4, group = groupCumulativeProfile)
+
+// ---- Display / Style ----
+groupStyle = "Display / Style"
+
+showAngleLine = input.bool(true, "Angle Line", group = groupStyle)
+showPercentileLines = input.bool(true, "Percentile Angle Lines", group = groupStyle)
+showRegimeBackground = input.bool(true, "Regime Background", group = groupStyle)
+angleUpColor = input.color(color.lime, "Up Regime", group = groupStyle)
+angleDownColor = input.color(color.red, "Down Regime", group = groupStyle)
+angleNeutralColor = input.color(color.gray, "Neutral", group = groupStyle)
+regimeBgTransparency = input.int(88, "Regime BG Transparency", minval = 50, maxval = 100, group = groupStyle)
+
+// Fixed constants
+angleMin = -90.0
+angleMax = 90.0
+angleBinWidth = (angleMax - angleMin) / angleBinCount
+cumulativeProfileMaxWidthBars = 100
+maxDrawableProfileBoxes = 240
+
+//==================================================
+// Functions
+//==================================================
+f_smooth(src, len, mode) =>
+    mode == "SMA" ? ta.sma(src, len) :
+     mode == "EMA" ? ta.ema(src, len) :
+     mode == "RMA" ? ta.rma(src, len) :
+     mode == "WMA" ? ta.wma(src, len) :
+     mode == "VWMA" ? ta.vwma(src, len) :
+     ta.sma(src, len)
+
+f_bar_weight(int _barsAgo) =>
+    rawVol = nz(volume[_barsAgo])
+    profileWeightMode == "Time" ? 1.0 :
+     profileWeightMode == "Volume" ? rawVol :
+     rawVol > 0 ? rawVol : 1.0
+
+f_add_point_to_profile(float[] _vp, float _angle, float _weight, float _sign) =>
+    if not na(_angle) and not na(_weight) and _weight > 0 and array.size(_vp) == angleBinCount
+        if _angle >= angleMin and _angle <= angleMax
+            idx = int(math.floor((_angle - angleMin) / angleBinWidth))
+            idx := math.max(0, math.min(idx, angleBinCount - 1))
+            oldValue = array.get(_vp, idx)
+            array.set(_vp, idx, math.max(oldValue + _sign * _weight, 0.0))
+
+f_calc_profile_stats(float[] _vp) =>
+    totalValue = 0.0
+    maxValue = 0.0
+
+    for b = 0 to angleBinCount - 1
+        v = array.get(_vp, b)
+        totalValue += v
+        maxValue := math.max(maxValue, v)
+
+    float lowerRaw = na
+    float upperRaw = na
+
+    if totalValue > 0
+        targetValue = totalValue * profilePercentileValue / 100.0
+
+        lowerCum = 0.0
+        for b = 0 to angleBinCount - 1
+            v = array.get(_vp, b)
+            before = lowerCum
+            after = before + v
+
+            if na(lowerRaw) and after >= targetValue
+                hitRatio = v > 0 ? (targetValue - before) / v : 1.0
+                hitRatio := math.max(0.0, math.min(hitRatio, 1.0))
+                lowerRaw := angleMin + b * angleBinWidth + hitRatio * angleBinWidth
+
+            lowerCum := after
+
+        upperCum = 0.0
+        for j = 0 to angleBinCount - 1
+            b = angleBinCount - 1 - j
+            v = array.get(_vp, b)
+            before = upperCum
+            after = before + v
+
+            if na(upperRaw) and after >= targetValue
+                hitRatio = v > 0 ? (targetValue - before) / v : 1.0
+                hitRatio := math.max(0.0, math.min(hitRatio, 1.0))
+                binHigh = angleMin + (b + 1) * angleBinWidth
+                upperRaw := binHigh - hitRatio * angleBinWidth
+
+            upperCum := after
+
+    [lowerRaw, upperRaw, totalValue, maxValue]
+
+f_profile_max(float[] _bins) =>
+    maxValue = 0.0
+    if array.size(_bins) == angleBinCount
+        for b = 0 to angleBinCount - 1
+            maxValue := math.max(maxValue, array.get(_bins, b))
+    maxValue
+
+//==================================================
+// Engine (runs on baseCalcTf)
+//==================================================
+f_engine() =>
+    var float[] rollingVp = array.new_float()
+    var float[] cumulativeVp = array.new_float()
+    var float[] emptyFloatArr = array.new_float()
+
+    cycle = f_smooth(close, baseLen, baseType) * baseScale
+
+    // ---- slope -> angle ----
+    prevCycle = cycle[slopeLookback]
+    slopePct = not na(prevCycle) and prevCycle > 0 ? (cycle - prevCycle) / prevCycle : na
+
+    // stdev must be computed unconditionally for series consistency
+    slopeSd = ta.stdev(slopePct, zScoreLen)
+
+    float scaled = na
+    if angleNormMode == "Z-Score"
+        scaled := not na(slopeSd) and slopeSd > 0 ? slopePct / slopeSd * zScoreAngleScale : na
+    else
+        scaled := slopePct * slopeSensitivity
+
+    angle = not na(scaled) ? math.todegrees(math.atan(scaled)) : na
+
+    // ---- profiles ----
+    if barstate.isfirst
+        array.clear(rollingVp)
+        array.clear(cumulativeVp)
+        for i = 0 to angleBinCount - 1
+            array.push(rollingVp, 0.0)
+            array.push(cumulativeVp, 0.0)
+
+    barWeight = f_bar_weight(0)
+    f_add_point_to_profile(rollingVp, angle, barWeight, 1.0)
+    f_add_point_to_profile(cumulativeVp, angle, barWeight, 1.0)
+
+    if bar_index >= rollingProfileBars
+        oldAngle = angle[rollingProfileBars]
+        oldWeight = f_bar_weight(rollingProfileBars)
+        f_add_point_to_profile(rollingVp, oldAngle, oldWeight, -1.0)
+
+    [lowerRaw, upperRaw, _, _] = f_calc_profile_stats(rollingVp)
+
+    lowerSmooth = profilePercentileSmoothLen > 1 ? ta.ema(lowerRaw, profilePercentileSmoothLen) : lowerRaw
+    upperSmooth = profilePercentileSmoothLen > 1 ? ta.ema(upperRaw, profilePercentileSmoothLen) : upperRaw
+
+    cumulativeMaxValue = f_profile_max(cumulativeVp)
+    rollingMaxValue = f_profile_max(rollingVp)
+
+    float[] outCumulativeBins = emptyFloatArr
+    float[] outRollingBins = emptyFloatArr
+
+    if barstate.islast
+        outCumulativeBins := array.copy(cumulativeVp)
+        outRollingBins := array.copy(rollingVp)
+
+    [angle, lowerSmooth, upperSmooth, outCumulativeBins, cumulativeMaxValue, outRollingBins, rollingMaxValue]
+
+//==================================================
+// Base TF request
+//==================================================
+[slopeAngle, lowerAngleCut, upperAngleCut, cumulativeBins, cumulativeMaxValue, rollingBins, rollingMaxValue] =
+     request.security(
+         syminfo.tickerid,
+         baseCalcTf,
+         f_engine(),
+         barmerge.gaps_off,
+         barmerge.lookahead_off
+     )
+
+//==================================================
+// Regime classification
+//==================================================
+isUpRegime = not na(slopeAngle) and not na(upperAngleCut) and slopeAngle > upperAngleCut
+isDownRegime = not na(slopeAngle) and not na(lowerAngleCut) and slopeAngle < lowerAngleCut
+
+angleLineColor = isUpRegime ? angleUpColor : isDownRegime ? angleDownColor : angleNeutralColor
+
+//==================================================
+// Plots
+//==================================================
+plot(
+     showAngleLine ? slopeAngle : na,
+     title = "Cycle Slope Angle",
+     color = angleLineColor,
+     linewidth = 2
+)
+
+plot(
+     showPercentileLines ? lowerAngleCut : na,
+     title = "Lower Percentile Angle",
+     color = color.new(angleDownColor, 40),
+     linewidth = 1
+)
+
+plot(
+     showPercentileLines ? upperAngleCut : na,
+     title = "Upper Percentile Angle",
+     color = color.new(angleUpColor, 40),
+     linewidth = 1
+)
+
+hline(0, "Zero Angle", color = color.new(color.gray, 40), linestyle = hline.style_solid)
+hline(45, "+45", color = color.new(color.gray, 75), linestyle = hline.style_dotted)
+hline(-45, "-45", color = color.new(color.gray, 75), linestyle = hline.style_dotted)
+hline(90, "+90", color = color.new(color.gray, 85), linestyle = hline.style_dotted)
+hline(-90, "-90", color = color.new(color.gray, 85), linestyle = hline.style_dotted)
+
+bgcolor(
+     showRegimeBackground ?
+         (isUpRegime ? color.new(angleUpColor, regimeBgTransparency) :
+          isDownRegime ? color.new(angleDownColor, regimeBgTransparency) : na) : na,
+     title = "Regime Background"
+)
+
+//==================================================
+// Profile rendering (right side)
+//==================================================
+var box[] profileBoxes = array.new_box()
+
+f_draw_profile(float[] _bins, float _maxValue, int _baseX, color _col) =>
+    if array.size(_bins) == angleBinCount and not na(_maxValue) and _maxValue > 0
+        fillTransp = cumulativeProfileTransparency
+        lineTransp = int(math.max(0.0, fillTransp - 18.0))
+        displayBinStep = int(math.max(math.ceil(angleBinCount * 1.0 / maxDrawableProfileBoxes), 1))
+
+        displayMaxValue = 0.0
+        for b = 0 to angleBinCount - 1
+            if b % displayBinStep == 0
+                groupEnd = int(math.min(b + displayBinStep - 1, angleBinCount - 1))
+                groupValue = 0.0
+                for g = b to groupEnd
+                    groupValue += array.get(_bins, g)
+                displayMaxValue := math.max(displayMaxValue, groupValue)
+
+        if displayMaxValue > 0
+            for b = 0 to angleBinCount - 1
+                if b % displayBinStep == 0
+                    groupEnd = int(math.min(b + displayBinStep - 1, angleBinCount - 1))
+                    groupValue = 0.0
+                    for g = b to groupEnd
+                        groupValue += array.get(_bins, g)
+
+                    if groupValue > 0
+                        binLow = angleMin + b * angleBinWidth
+                        binHigh = math.min(angleMin + (groupEnd + 1) * angleBinWidth, angleMax)
+                        normalizedSize = 100.0 * groupValue / displayMaxValue
+                        widthBars = int(math.round(math.max(0.0, math.min(normalizedSize, 100.0)) * cumulativeProfileMaxWidthBars / 100.0))
+
+                        if widthBars > 0
+                            bx = box.new(
+                                 left = _baseX,
+                                 top = binHigh,
+                                 right = _baseX + widthBars,
+                                 bottom = binLow,
+                                 xloc = xloc.bar_index,
+                                 border_color = color.new(_col, lineTransp),
+                                 border_width = cumulativeProfileOutlineWidth,
+                                 bgcolor = color.new(_col, fillTransp)
+                            )
+                            array.push(profileBoxes, bx)
+
+if barstate.islast
+    boxCount = array.size(profileBoxes)
+    if boxCount > 0
+        for i = 0 to boxCount - 1
+            box.delete(array.get(profileBoxes, i))
+    array.clear(profileBoxes)
+
+    baseX = bar_index + cumulativeProfileRightOffsetBars
+
+    if showCumulativeProfile
+        f_draw_profile(cumulativeBins, cumulativeMaxValue, baseX, cumulativeProfileColor)
+
+    if showRollingProfile
+        f_draw_profile(rollingBins, rollingMaxValue, baseX, rollingProfileColor)

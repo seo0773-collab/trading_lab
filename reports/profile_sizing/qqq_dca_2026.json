@@ -1,0 +1,23 @@
+{
+  "period": "2026-01-02~2026-07-02",
+  "bars": 119,
+  "initial_krw": 2000000.0,
+  "monthly_krw": 200000.0,
+  "invested_principal": 3400000.0,
+  "final_value": 4067297.836660344,
+  "profit": 667297.8366603442,
+  "return_on_principal": 0.19626406960598364,
+  "cagr": 0.5630788106354707,
+  "twr_mdd": -0.05955820981799509,
+  "twr_sharpe": 2.211262310597707,
+  "account_mdd": -0.05679029917527578,
+  "shares": 3.0,
+  "price_krw": 1105819.8098679185,
+  "value_krw": 3317459.4296037555,
+  "cash_krw": 749838.4070565888,
+  "cash_weight": 0.18435788013800353,
+  "order_count": 2,
+  "cost_paid": 6636.042190056147,
+  "cost_us": 0.0025103,
+  "min_us_order_usd": 50.0
+}

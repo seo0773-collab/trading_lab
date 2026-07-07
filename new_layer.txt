@@ -1,0 +1,23 @@
+
+# Global Capital Flow Regime Engine 설계 계획
+
+1. 목표는 경제를 예측하는 것이 아니라 글로벌 자금 이동을 추적하여 투자 국가를 선택하는 것이다.
+2. 전략은 **Global Regime → Country Selection → Sector Selection → Trading Strategy**의 계층 구조로 설계한다.
+3. Yahoo Finance에서 수집 가능한 데이터만 사용하여 구현한다.
+4. Risk-On / Risk-Off 레짐을 VIX, DXY, 미국채 금리, S&P500, Nasdaq 등으로 판단한다.
+5. 투자 대상은 국가 ETF(SPY, EWJ, EWY, EWW, INDA, EWT, EWG 등)로 통일한다.
+6. 각 국가의 3M/6M/12M 모멘텀과 상대수익률(Relative Strength)을 계산한다.
+7. 각 국가 ETF를 SPY 대비 Ratio 차트로 분석하여 상대 강도를 측정한다.
+8. 통화 강도(USDJPY, USDKRW, USDMXN 등)를 함께 반영하여 실제 자금 이동 여부를 확인한다.
+9. 거래량 증가율과 변동성 축소 여부를 Flow Score에 포함한다.
+10. 52주 신고가와의 거리 및 추세 지속성도 평가한다.
+11. Flow Score의 변화율(Acceleration)을 계산하여 새롭게 자금이 유입되는 국가를 탐지한다.
+12. 모든 지표를 정규화(Z-score)하여 하나의 Capital Rotation Index(CRI)로 통합한다.
+13. 가중치는 설정 파일로 분리하여 백테스트를 통해 최적화 가능하도록 한다.
+14. 매월 또는 매주 국가별 CRI를 계산하여 순위를 생성한다.
+15. 상위 N개 국가만 투자 대상으로 선택하며 비중은 점수 기반으로 결정한다.
+16. 국가 교체 시 Turnover와 거래비용을 고려한 리밸런싱 로직을 적용한다.
+17. 국가 선택 이후 해당 국가 내부의 섹터 로테이션 모듈과 연동한다.
+18. 최종적으로 선택된 섹터에서 기존 yoon2 전략을 실행하도록 모듈화한다.
+19. 모든 단계는 독립적인 모듈로 구현하여 유지보수와 확장이 가능하도록 설계한다.
+20. 백테스트를 통해 CRI의 설명력, 국가 교체 빈도, CAGR, MDD, Sharpe, Turnover를 함께 평가한다.

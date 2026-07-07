@@ -1,0 +1,74 @@
+{
+  "period": "2026-01-02~2026-07-02",
+  "bars": 119,
+  "initial_krw": 2000000.0,
+  "monthly_krw": 200000.0,
+  "invested_principal": 3400000.0,
+  "final_value": 4306179.131662441,
+  "profit": 906179.1316624414,
+  "return_on_principal": 0.2665232740183652,
+  "cagr": 0.9151910680774302,
+  "twr_mdd": -0.0698993814234421,
+  "twr_sharpe": 2.9743847232706453,
+  "account_mdd": -0.058969154115496414,
+  "cash_krw": 66526.09251016026,
+  "cash_weight": 0.0154489840009227,
+  "rebalance_count": 8,
+  "order_count": 36,
+  "turnover_per_year": 7.202500364578528,
+  "cost_paid": 20484.773006459694,
+  "holdings": [
+    {
+      "symbol": "IYH",
+      "currency": "USD",
+      "shares": 7.0,
+      "price_krw": 107400.7727345489,
+      "value_krw": 751805.4091418423,
+      "weight": 0.17458758359910603
+    },
+    {
+      "symbol": "091160.KS",
+      "currency": "KRW",
+      "shares": 5.0,
+      "price_krw": 149255.0,
+      "value_krw": 746275.0,
+      "weight": 0.17330328748119064
+    },
+    {
+      "symbol": "091170.KS",
+      "currency": "KRW",
+      "shares": 46.0,
+      "price_krw": 15470.0,
+      "value_krw": 711620.0,
+      "weight": 0.16525554981389554
+    },
+    {
+      "symbol": "VGT",
+      "currency": "USD",
+      "shares": 4.0,
+      "price_krw": 177899.5041700378,
+      "value_krw": 711598.0166801512,
+      "weight": 0.16525044474994519
+    },
+    {
+      "symbol": "091180.KS",
+      "currency": "KRW",
+      "shares": 22.0,
+      "price_krw": 30675.0,
+      "value_krw": 674850.0,
+      "weight": 0.1567166574743647
+    },
+    {
+      "symbol": "FENY",
+      "currency": "USD",
+      "shares": 14.0,
+      "price_krw": 45964.615237877704,
+      "value_krw": 643504.6133302879,
+      "weight": 0.14943749288057526
+    }
+  ],
+  "cost_kr": 0.000646527,
+  "cost_us": 0.0025103,
+  "min_kr_order": 50000.0,
+  "min_us_order_usd": 50.0
+}
