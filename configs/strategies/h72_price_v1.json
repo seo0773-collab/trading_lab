@@ -11,7 +11,7 @@
   "slow_window": 720,
   "slope_span": 24,
   "slope_mode": "linear",
-  "fee_bps_per_side": 10.0,
+  "fee_bps_per_side": 20.103,
   "execution": "next_open",
   "exit_on_opposite": true,
   "long_only": false,

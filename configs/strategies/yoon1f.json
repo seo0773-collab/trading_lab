@@ -63,7 +63,7 @@
     "defense_buy_allowed": false
   },
   "costs": {
-    "fee_bps_per_side": 5.0,
+    "fee_bps_per_side": 20.103,
     "slippage_bps": 5.0
   },
   "trend_overlay": {

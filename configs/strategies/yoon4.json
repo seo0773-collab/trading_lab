@@ -59,7 +59,7 @@
   },
   "rebalance": {
     "min_weight_change": 0.03,
-    "fee_bps_per_side": 5.0,
+    "fee_bps_per_side": 20.103,
     "slippage_bps": 5.0
   },
   "benchmark_symbol": "SPY",

@@ -94,10 +94,22 @@ class Rebalance:
     defense_buy_allowed: bool = False  # 방어장 신규 매수 금지(plan §10)
 
 
+# KIS 실거래 편도 비용(bp) — 계좌 실조건(2026-07-05 확인) 기준.
+# US = 매매 수수료 0.10%(우대) + 제비용 0.103bp + 환전 편도 10bp(기본 스프레드
+#      기준환율 대비 1% × 우대 90%). 환전은 통화간 이동에만 발생하지만 보수적으로
+#      미국 편도 비용에 합산한다(yoon2m_live_verify 관행).
+# KR = 온라인 수수료 0.0140527% + 제비용(원화 거래라 환전 없음, ETF 매도 거래세 면제).
+# 소수 표기 대응 상수: src/trading_lab/execution/integer_dca.py 의 DEFAULT_KIS_*_COST.
+KIS_US_FEE_BPS = 20.103
+KIS_KR_FEE_BPS = 1.46527
+
+
 @dataclass(frozen=True)
 class Costs:
-    fee_bps_per_side: float = 5.0     # 편도 수수료(bp)
-    slippage_bps: float = 5.0         # 슬리피지(bp)
+    # 백테스트 기본값 = 실거래(KIS) 수수료 가정. 기본 유니버스가 미국 상장이므로
+    # US 실측치를 쓰고, 한국 전용 config(yoon1j_kr 등)는 KIS_KR_FEE_BPS로 override.
+    fee_bps_per_side: float = KIS_US_FEE_BPS  # 편도 수수료(bp)
+    slippage_bps: float = 5.0                 # 슬리피지(bp)
 
 
 @dataclass(frozen=True)

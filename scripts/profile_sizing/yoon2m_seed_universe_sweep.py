@@ -38,8 +38,8 @@ from run_kalman_pipeline import load_yfinance  # noqa: E402
 
 TOPK = 3
 FREQ = "monthly"
-COST_KR = 0.0015     # 0.15%/side (수수료+슬리피지)
-COST_US = 0.0060     # 0.60%/side (수수료+슬리피지+환전 스프레드, 보수적)
+COST_KR = 0.000646527  # 0.0647%/side = KIS 국내 수수료 0.0147% + 슬리피지 0.05% (계좌 실조건 2026-07-05)
+COST_US = 0.0025103    # 0.2510%/side = 수수료 0.1%우대+제비용 + 환전 0.1%(90%우대) + 슬리피지 0.05%
 SEEDS = [2_000_000, 2_500_000, 3_000_000, 3_500_000, 4_000_000]
 VARIANTS = {          # lp 슬리브 유니버스에서 IXN 자리를 바꾼다
     "현행(IXN)": None,

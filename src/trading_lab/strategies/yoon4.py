@@ -172,7 +172,8 @@ class Yoon4Handler(Yoon1kHandler):
         assets = country_syms + safe_syms
         ret_mat = pd.concat([rets[country_syms], safe_close[safe_syms].pct_change()],
                             axis=1).reindex(idx).fillna(0.0).to_numpy()
-        rcost = float((config.get("rebalance") or {}).get("fee_bps_per_side", 5.0)) \
+        # 전 종목 미국 상장 → 기본값은 KIS 실거래 편도 비용(US, 우대+환전 포함)로 둔다.
+        rcost = float((config.get("rebalance") or {}).get("fee_bps_per_side", 20.103)) \
             + float((config.get("rebalance") or {}).get("slippage_bps", 5.0))
         thr = float((config.get("rebalance") or {}).get("min_weight_change", 0.03))
 

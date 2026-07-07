@@ -22,8 +22,11 @@ from trading_lab.strategies.profile_portfolio import ProfilePortfolioHandler
 from trading_lab.ui.presentation import account_value_series, total_invested
 
 
+# KIS 편도 비용(소수) — 계좌 실조건(2026-07-05 확인, 우대율 반영).
+# US = 수수료 0.10%(우대) + 제비용 0.00103% + 환전 편도 0.10%(스프레드 1%×우대 90%).
+# KR = 온라인 수수료+제비용(환전 없음). bp 대응 상수: scripts/profile_sizing/config.py.
 DEFAULT_KIS_KR_COST = 0.000146527
-DEFAULT_KIS_US_COST = 0.0025103
+DEFAULT_KIS_US_COST = 0.0020103
 
 
 @dataclass(frozen=True)
