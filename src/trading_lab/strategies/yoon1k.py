@@ -74,6 +74,19 @@ class Yoon1kHandler:
                     continue
             if bcols:
                 frames["__BENCH__"] = pd.concat(bcols, axis=1)
+            gate = (config.get("currency_allocation") or {}).get("risk_gate") or {}
+            if str(gate.get("source", "trend")).lower() != "trend" and gate.get("enabled", False):
+                needed = set(gate.get("symbols", [])) | set(gate.get("vix_symbols", []))
+                if gate.get("safe_asset"):
+                    needed.add(str(gate["safe_asset"]))
+                gcols = {}
+                for sym in needed:
+                    try:
+                        gcols[sym] = load_yfinance(sym, interval, period)
+                    except Exception:  # noqa: BLE001
+                        continue
+                if gcols:
+                    frames["__GATE__"] = pd.concat(gcols, axis=1)
         return pd.concat(frames, axis=1)  # 3레벨 (group, symbol, field)
 
     # ---- 아티팩트: 하위 NAV → 통화 환산 → 50/50 결합 → 메타 성과 ----
@@ -105,16 +118,39 @@ class Yoon1kHandler:
                 t["symbol"] = sub_id + ":" + t["symbol"].astype(str)
                 sub_trades.append(t)
 
-        # 공통 인덱스 + 가중 리밸런싱 결합(전체 구간)
+        # 공통 인덱스 + 가중 리밸런싱 결합(전체 구간).
+        # 기본은 기존 그대로 intersection(일봉 등 같은 달력에서 동작하던 방식을
+        # 그대로 보존 — 이미 검증된 final0706 등의 수치를 바꾸지 않기 위함).
+        # 서로 다른 거래소의 인트라데이 봉(예: 4h)은 실제 봉 시각이 겹치지 않아
+        # (미국 4h는 현지장 개장 기준 UTC 13:30/17:39대, 한국은 00:00/04:00대)
+        # intersection이 완전히 비어버리는 경우에만, 겹치는 실구간(각 슬리브가
+        # 실제로 데이터를 가진 구간의 교집합) 안에서 union+ffill로 폴백한다.
+        # 겹치는 실구간 **밖**(한쪽 슬리브가 아예 존재하지 않던 과거, 예: 상장 전)
+        # 까지 bfill로 끌어오면 존재하지도 않았던 자산에 가짜 평평한 수익률을
+        # 배정해 장기 백테스트를 심각하게 왜곡한다(실측으로 발견) — 그래서 idx를
+        # 겹치는 실구간으로 먼저 자른 뒤 union+ffill만 한다(bfill 없음).
         idx = navs[0].index
         for n in navs[1:]:
             idx = idx.intersection(n.index)
+        if len(idx) == 0:
+            starts = [n.dropna().index.min() for n in navs]
+            ends = [n.dropna().index.max() for n in navs]
+            overlap_lo, overlap_hi = max(starts), min(ends)
+            idx = navs[0].index
+            for n in navs[1:]:
+                idx = idx.union(n.index)
+            idx = idx[(idx >= overlap_lo) & (idx <= overlap_hi)]
         idx = idx.sort_values()
         sub_ids = [s["config"] for s in config["sub_strategies"]]
         target_weights = self._target_weight_frame(config, raw, idx, weights)
         weights = target_weights.iloc[0].to_list()
+        combine_navs = [n.reindex(idx).ffill() for n in navs]
+        combine_cols = list(sub_ids)
+        if "__CASH__" in target_weights.columns:
+            combine_navs.append(self._cash_proxy_nav(raw, config, idx))
+            combine_cols.append("__CASH__")
         combo_values = self._combine_values_dynamic(
-            [n.reindex(idx) for n in navs], target_weights, idx, freq, sub_ids)
+            combine_navs, target_weights, idx, freq, combine_cols)
         combo = combo_values.sum(axis=1)
 
         window = self._slice(idx, phase, config)
@@ -127,7 +163,7 @@ class Yoon1kHandler:
         for name, ser in sleeve_cols.items():           # 통화별 슬리브(원화 기준) 보조지표
             s = ser.reindex(window)
             forecast[name] = (s / s.iloc[0]) if s.notna().any() else s
-        for sid in sub_ids:
+        for sid in combine_cols:
             forecast[f"target_w_{sid}"] = target_weights[sid].reindex(window)
 
         # 자산군(통화 슬리브)별 평가가치 비중(행 합=100%) → 누적 면적 '웨이브'.
@@ -138,7 +174,7 @@ class Yoon1kHandler:
         share_win = combo_values.reindex(window)
         shares = share_win.div(share_win.sum(axis=1), axis=0).fillna(0.0)
         shares = shares.rename(columns={
-            sid: f"{cur_label[sid]} ({sid})" for sid in sub_ids})
+            sid: f"{cur_label.get(sid, 'CASH')} ({sid})" for sid in combine_cols})
         shares.index.name = "time"
         sleeve_weights = shares.reset_index()
 
@@ -182,6 +218,27 @@ class Yoon1kHandler:
 
     # ---------------- helpers ----------------
     @staticmethod
+    def _cash_proxy_nav(raw: pd.DataFrame, config: dict[str, Any], idx: pd.DatetimeIndex) -> pd.Series:
+        """`__CASH__` 슬롯이 담을 자산의 NAV. 기본은 순수 현금(수익률 0%).
+
+        `risk_gate.safe_asset`(예: "IEF")가 지정되면 게이트 발동 구간의 자금을
+        문자 그대로 현금이 아니라 그 안전자산의 실제 가격 수익률로 굴린다 — 신용
+        스프레드 신호 자체가 "안전자산이 상대적으로 강해진다"는 뜻이라, 방어
+        국면에서 국채 등의 상승분을 그냥 버리지 않기 위함.
+        """
+        gate = ((config.get("currency_allocation") or {}).get("risk_gate")) or {}
+        safe_sym = gate.get("safe_asset")
+        if not safe_sym or "__GATE__" not in raw.columns.get_level_values(0):
+            return pd.Series(1.0, index=idx, name="__CASH__")
+        gate_cols = raw["__GATE__"].columns.get_level_values(0)
+        if safe_sym not in gate_cols:
+            return pd.Series(1.0, index=idx, name="__CASH__")
+        px = raw["__GATE__"][safe_sym]["close"].reindex(idx).ffill()
+        if px.dropna().empty:
+            return pd.Series(1.0, index=idx, name="__CASH__")
+        return (px / px.dropna().iloc[0]).rename("__CASH__")
+
+    @staticmethod
     def _sub_config(sub_id: str, overrides: dict[str, Any] | None = None) -> dict[str, Any]:
         path = ROOT / "configs" / "strategies" / f"{sub_id}.json"
         cfg = json.loads(path.read_text(encoding="utf-8"))
@@ -218,7 +275,12 @@ class Yoon1kHandler:
             np.tile(static.to_numpy(), (len(idx), 1)), index=idx, columns=sub_ids)
 
         alloc = config.get("currency_allocation") or {}
-        if str(alloc.get("kind", "")).lower() != "world_bank_buffett_change_scaled_revert":
+        kind = str(alloc.get("kind", "")).lower()
+        if kind == "relative_momentum_fx_tilt":
+            return cls._relative_momentum_fx_weights(config, raw, idx, out, alloc)
+        if kind == "relative_momentum_fx2_overlay":
+            return cls._relative_momentum_fx2_weights(config, raw, idx, out, alloc)
+        if kind != "world_bank_buffett_change_scaled_revert":
             return out
         # 합성 테스트/오프라인 계약에서는 외부 World Bank 호출을 피하고 정적 비중으로 둔다.
         if "__FX__" not in raw.columns.get_level_values(0):
@@ -246,6 +308,285 @@ class Yoon1kHandler:
                 return out
         denom = dyn.sum(axis=1).replace(0.0, np.nan)
         return dyn.div(denom, axis=0).fillna(out)
+
+    @classmethod
+    def _relative_momentum_fx_weights(
+        cls,
+        config: dict[str, Any],
+        raw: pd.DataFrame,
+        idx: pd.DatetimeIndex,
+        static: pd.DataFrame,
+        alloc: dict[str, Any],
+    ) -> pd.DataFrame:
+        """Daily target path for monthly USD/KRW rebalance.
+
+        The signal is shifted by one bar by default, so rebalances use only
+        information available before the rebalance date.
+        """
+        if "__BENCH__" not in raw.columns.get_level_values(0):
+            return static
+        if "__FX__" not in raw.columns.get_level_values(0):
+            return static
+        if len(config["sub_strategies"]) != 2:
+            return static
+
+        base_cur = str(config.get("base_currency", "KRW"))
+        fx_sym = str(config.get("fx_symbol", ""))
+        bench_map = config.get("benchmark_symbols") or {}
+        usd_sid = krw_sid = None
+        for sub in config["sub_strategies"]:
+            sid = str(sub["config"])
+            cur = str(sub.get("currency", base_cur))
+            if cur == "USD":
+                usd_sid = sid
+            elif cur == "KRW":
+                krw_sid = sid
+            else:
+                return static
+        if usd_sid is None or krw_sid is None:
+            return static
+
+        usd_sym = bench_map.get("USD")
+        krw_sym = bench_map.get("KRW")
+        bench_cols = raw["__BENCH__"].columns.get_level_values(0)
+        if usd_sym not in bench_cols or krw_sym not in bench_cols:
+            return static
+
+        fx = cls._fx(raw, fx_sym)
+        if fx is None:
+            return static
+        lookback = int(alloc.get("lookback", 126))
+        fx_lookback = int(alloc.get("fx_lookback", lookback))
+        if lookback <= 0 or fx_lookback <= 0:
+            return static
+        signal_lag = int(alloc.get("signal_lag", 1))
+        neutral = float(alloc.get("neutral", 0.5))
+        tilt = float(alloc.get("tilt", 0.15))
+        scale = max(float(alloc.get("scale", 0.10)), 1e-9)
+        fx_weight = float(alloc.get("fx_weight", 0.5))
+        band = alloc.get("band", [0.0, 1.0])
+        lo, hi = float(band[0]), float(band[1])
+
+        usd_px = raw["__BENCH__"][usd_sym]["close"].reindex(idx).ffill()
+        krw_px = raw["__BENCH__"][krw_sym]["close"].reindex(idx).ffill()
+        fx = pd.Series(fx).reindex(idx).ffill()
+        if usd_px.dropna().empty or krw_px.dropna().empty or fx.dropna().empty:
+            return static
+
+        usd_nav = usd_px / usd_px.dropna().iloc[0]
+        krw_nav = krw_px / krw_px.dropna().iloc[0]
+        fx_nav = fx / fx.dropna().iloc[0]
+        usd_base_nav = usd_nav * fx_nav
+
+        relative_momentum = (
+            usd_base_nav.pct_change(lookback) - krw_nav.pct_change(lookback)
+        )
+        fx_trend = fx_nav.pct_change(fx_lookback)
+        score = relative_momentum + fx_weight * fx_trend
+        usd_w = neutral + tilt * np.tanh(score / scale)
+        usd_w = usd_w.clip(lo, hi).shift(signal_lag)
+        usd_w = usd_w.reindex(idx).ffill()
+        usd_w = usd_w.fillna(static[usd_sid])
+
+        dyn = static.copy()
+        dyn[usd_sid] = usd_w
+        dyn[krw_sid] = 1.0 - usd_w
+        denom = dyn.sum(axis=1).replace(0.0, np.nan)
+        return dyn.div(denom, axis=0).fillna(static)
+
+    @classmethod
+    def _relative_momentum_fx2_weights(
+        cls,
+        config: dict[str, Any],
+        raw: pd.DataFrame,
+        idx: pd.DatetimeIndex,
+        static: pd.DataFrame,
+        alloc: dict[str, Any],
+    ) -> pd.DataFrame:
+        """Relative USD/KRW tilt with fast override, vol blend, and cash gate."""
+        if "__BENCH__" not in raw.columns.get_level_values(0):
+            return static
+        if "__FX__" not in raw.columns.get_level_values(0):
+            return static
+        if len(config["sub_strategies"]) != 2:
+            return static
+
+        base_cur = str(config.get("base_currency", "KRW"))
+        fx_sym = str(config.get("fx_symbol", ""))
+        bench_map = config.get("benchmark_symbols") or {}
+        usd_sid = krw_sid = None
+        for sub in config["sub_strategies"]:
+            sid = str(sub["config"])
+            cur = str(sub.get("currency", base_cur))
+            if cur == "USD":
+                usd_sid = sid
+            elif cur == "KRW":
+                krw_sid = sid
+        if usd_sid is None or krw_sid is None:
+            return static
+
+        usd_sym = bench_map.get("USD")
+        krw_sym = bench_map.get("KRW")
+        bench_cols = raw["__BENCH__"].columns.get_level_values(0)
+        if usd_sym not in bench_cols or krw_sym not in bench_cols:
+            return static
+        fx = cls._fx(raw, fx_sym)
+        if fx is None:
+            return static
+
+        lookback = int(alloc.get("lookback", 63))
+        signal_lag = int(alloc.get("signal_lag", 1))
+        neutral = float(alloc.get("neutral", 0.5))
+        tilt = float(alloc.get("tilt", 0.125))
+        scale = max(float(alloc.get("scale", 0.10)), 1e-9)
+        band = alloc.get("band", [0.40, 0.60])
+        lo, hi = float(band[0]), float(band[1])
+
+        usd_px = raw["__BENCH__"][usd_sym]["close"].reindex(idx).ffill()
+        krw_px = raw["__BENCH__"][krw_sym]["close"].reindex(idx).ffill()
+        fx = pd.Series(fx).reindex(idx).ffill()
+        if usd_px.dropna().empty or krw_px.dropna().empty or fx.dropna().empty:
+            return static
+
+        usd_nav = usd_px / usd_px.dropna().iloc[0]
+        krw_nav = krw_px / krw_px.dropna().iloc[0]
+        fx_nav = fx / fx.dropna().iloc[0]
+        usd_base_nav = usd_nav * fx_nav
+        score = usd_base_nav.pct_change(lookback) - krw_nav.pct_change(lookback)
+        usd_w = neutral + tilt * np.tanh(score / scale)
+        usd_w = usd_w.clip(lo, hi)
+
+        override = alloc.get("fast_override") or {}
+        if override.get("enabled", False):
+            fast_lb = int(override.get("lookback", 20))
+            fast_score = usd_base_nav.pct_change(fast_lb) - krw_nav.pct_change(fast_lb)
+            fx_fast = fx_nav.pct_change(fast_lb)
+            trigger = (
+                (usd_w <= float(override.get("usd_floor_trigger", 0.42)))
+                & (
+                    (fast_score >= float(override.get("relative_threshold", 0.03)))
+                    | (fx_fast >= float(override.get("fx_threshold", 0.03)))
+                )
+            )
+            usd_w = usd_w.where(~trigger, np.maximum(usd_w, float(override.get("min_usd", 0.50))))
+
+        vol_adjust = alloc.get("vol_adjust") or {}
+        if vol_adjust.get("enabled", False):
+            vol_lb = int(vol_adjust.get("lookback", 63))
+            blend = float(vol_adjust.get("blend", 0.35))
+            us_vol = usd_base_nav.pct_change().rolling(vol_lb).std()
+            kr_vol = krw_nav.pct_change().rolling(vol_lb).std()
+            vol_w = (kr_vol / (us_vol + kr_vol).replace(0.0, np.nan)).clip(lo, hi)
+            usd_w = ((1.0 - blend) * usd_w + blend * vol_w).clip(lo, hi)
+
+        exposure = pd.Series(1.0, index=idx)
+        gate = alloc.get("risk_gate") or {}
+        if gate.get("enabled", False):
+            source = str(gate.get("source", "trend")).lower()
+            off_scale = float(gate.get("off_scale", 0.65))
+            severity: pd.Series | None = None
+            if source in ("credit_spread", "credit_and_vix"):
+                severity = cls._credit_spread_severity(raw, idx, gate)
+                weak = severity > 0.0
+                if source == "credit_and_vix":
+                    vix_flag = cls._vix_weak(raw, idx, gate)
+                    weak = weak & vix_flag
+                    severity = severity.where(vix_flag, 0.0)
+            else:
+                lb = int(gate.get("lookback", 63))
+                sma_lb = int(gate.get("sma_lookback", 200))
+                dd_threshold = float(gate.get("dd_threshold", -0.10))
+                vol_threshold = float(gate.get("vol_threshold", 0.24))
+                us_ret = usd_base_nav.pct_change(lb)
+                kr_ret = krw_nav.pct_change(lb)
+                us_sma = usd_base_nav.rolling(sma_lb).mean()
+                kr_sma = krw_nav.rolling(sma_lb).mean()
+                us_dd = usd_base_nav / usd_base_nav.rolling(lb).max() - 1.0
+                kr_dd = krw_nav / krw_nav.rolling(lb).max() - 1.0
+                us_vol = usd_base_nav.pct_change().rolling(lb).std() * np.sqrt(252.0)
+                kr_vol = krw_nav.pct_change().rolling(lb).std() * np.sqrt(252.0)
+                weak = (
+                    (us_ret < 0.0) & (kr_ret < 0.0)
+                    & (usd_base_nav < us_sma) & (krw_nav < kr_sma)
+                    & ((us_dd < dd_threshold) | (kr_dd < dd_threshold) | (np.maximum(us_vol, kr_vol) > vol_threshold))
+                )
+            weak = weak.reindex(idx).fillna(False)
+
+            min_consecutive = int(gate.get("min_consecutive", 1))
+            if min_consecutive > 1:
+                confirmed = weak.rolling(min_consecutive).sum() >= min_consecutive
+                weak = confirmed & weak
+                if severity is not None:
+                    severity = severity.where(weak, 0.0)
+
+            continuous = gate.get("continuous") or {}
+            if continuous.get("enabled", False) and severity is not None:
+                cap = max(float(continuous.get("severity_cap", 2.0)), 1e-9)
+                severity_frac = (severity.clip(upper=cap) / cap).clip(0.0, 1.0)
+                exposure = 1.0 - severity_frac * (1.0 - off_scale)
+            else:
+                exposure = exposure.where(~weak, off_scale)
+
+        usd_w = usd_w.shift(signal_lag).reindex(idx).ffill().fillna(static[usd_sid])
+        exposure = exposure.shift(signal_lag).reindex(idx).ffill().fillna(1.0).clip(0.0, 1.0)
+        dyn = static.copy()
+        dyn[usd_sid] = usd_w * exposure
+        dyn[krw_sid] = (1.0 - usd_w) * exposure
+        dyn["__CASH__"] = 1.0 - exposure
+        denom = dyn.sum(axis=1).replace(0.0, np.nan)
+        return dyn.div(denom, axis=0).fillna(static)
+
+    @staticmethod
+    def _credit_spread_severity(
+        raw: pd.DataFrame, idx: pd.DatetimeIndex, gate: dict[str, Any],
+    ) -> pd.Series:
+        """신용스프레드 대리(예: HYG/IEF) 상대모멘텀 붕괴 강도(0=미달, 1=임계값,
+        1보다 크면 더 심함).
+
+        추세확인형 게이트(가격이 200일선 아래로 확정된 뒤 발동)보다 리드타임이
+        길다(과거 22개 드로다운 에피소드 중앙값 -48거래일, `yoon2_final_fx_
+        leading_signals.md` 참고). 급성 신용경색형 크래시(2020-02 코로나 등)에서
+        특히 유효하고, 완만한 약세장에는 별 효과가 없다. `weak = severity > 0`로
+        이진화해서 쓰거나, `continuous.enabled`로 세기에 비례한 노출 축소에 쓴다.
+        """
+        if "__GATE__" not in raw.columns.get_level_values(0):
+            return pd.Series(0.0, index=idx)
+        symbols = gate.get("symbols", [])
+        if len(symbols) != 2:
+            return pd.Series(0.0, index=idx)
+        sym_a, sym_b = symbols
+        gate_cols = raw["__GATE__"].columns.get_level_values(0)
+        if sym_a not in gate_cols or sym_b not in gate_cols:
+            return pd.Series(0.0, index=idx)
+        pa = raw["__GATE__"][sym_a]["close"].reindex(idx).ffill()
+        pb = raw["__GATE__"][sym_b]["close"].reindex(idx).ffill()
+        ratio = (pa / pb).reindex(idx).ffill()
+        lookback = int(gate.get("lookback", 10))
+        sma_lookback = int(gate.get("sma_lookback", 20))
+        threshold = float(gate.get("threshold", -0.02))
+        mom = ratio.pct_change(lookback)
+        below_sma = ratio < ratio.rolling(sma_lookback).mean()
+        breach = (threshold - mom) / abs(threshold)
+        severity = breach.clip(lower=0.0).where(below_sma, 0.0)
+        return severity.fillna(0.0)
+
+    @staticmethod
+    def _vix_weak(raw: pd.DataFrame, idx: pd.DatetimeIndex, gate: dict[str, Any]) -> pd.Series:
+        """VIX 백워데이션(현물 VIX > VIX3M) & VIX가 바닥값 이상 -> 위험회피 플래그.
+
+        신용스프레드 신호와 AND 결합해 서로 다른 신호원이 동시에 확인할 때만
+        발동시켜 단독 신호의 노이즈를 줄이는 용도(`source="credit_and_vix"`).
+        """
+        if "__GATE__" not in raw.columns.get_level_values(0):
+            return pd.Series(False, index=idx)
+        vix_sym, vix3m_sym = gate.get("vix_symbols", ["^VIX", "^VIX3M"])
+        gate_cols = raw["__GATE__"].columns.get_level_values(0)
+        if vix_sym not in gate_cols or vix3m_sym not in gate_cols:
+            return pd.Series(False, index=idx)
+        vix = raw["__GATE__"][vix_sym]["close"].reindex(idx).ffill()
+        vix3m = raw["__GATE__"][vix3m_sym]["close"].reindex(idx).ffill()
+        floor = float(gate.get("vix_floor", 18.0))
+        return ((vix > vix3m) & (vix > floor)).fillna(False)
 
     @classmethod
     def _buffett_change_scaled_revert_wkr(

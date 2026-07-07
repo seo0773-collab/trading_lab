@@ -1,0 +1,91 @@
+{
+  "version": "yoon2_final_fx_credit_gate",
+  "_comment": "yoon2_final_fx 파생 실험: 기존 63일 상대모멘텀 USD/KRW 틸트(tilt 0.125, scale 0.10, 40~60%)는 그대로 두고, 위험 게이트의 신호원만 추세확인형(yoon2_final_fx_2, MDD 불변으로 기각)에서 신용스프레드 대리(HYG/IEF 10일 모멘텀 < -2% & 20일선 아래)로 교체한다. 과거 22개 드로다운 에피소드 리드타임 진단(중앙값 -48거래일)과 240개 파라미터 그리드/워크포워드/8000회 부트스트랩 검증 결과, MDD 개선은 92%(220/240) 조합에서 재현된다. 노이즈 필터링(min_consecutive=2)으로 발동일수 -26%·에피소드 -31%면서 CAGR 16.60%/Sharpe 1.228로 개선(원안 min_consecutive=1: 16.23%/1.212). 2차 개선(yoon2_final_fx_credit_gate_v2.md)에서 4가지 방향(IEF 대피, VIX AND결합, 연속형 노출, off_scale 재그리드) 실측: 게이트 발동분을 현금 대신 safe_asset=IEF로 대피시키는 안만 채택(신용경색 국면엔 국채가 반대로 강세 -> MDD 동일(-16.40%)한데 CAGR 16.84%/Sharpe 1.242로 추가 개선, 부트스트랩 P(Sharpe>) 79~88%). VIX AND결합(Sharpe 1.202로 악화)과 연속형 노출 축소(Sharpe 1.20~1.21로 악화)는 기각. 개선분의 대부분이 2020-02 코로나 크래시 1건에 집중돼(-17.13%->-8.84%) 표본 수가 적다는 한계가 있다(reports/profile_sizing/yoon2_final_fx_leading_signals.md, yoon2_final_fx_credit_gate_validate.md, yoon2_final_fx_credit_gate_denoise.md, yoon2_final_fx_credit_gate_v2.md). live_eligible=false, 페이퍼 검증 전 승격 보류.",
+  "interval": "1d",
+  "period": "max",
+  "base_currency": "KRW",
+  "fx_symbol": "KRW=X",
+  "rebalance_freq": "monthly",
+  "currency_allocation": {
+    "kind": "relative_momentum_fx2_overlay",
+    "lookback": 63,
+    "signal_lag": 1,
+    "neutral": 0.5,
+    "tilt": 0.125,
+    "scale": 0.1,
+    "band": [0.4, 0.6],
+    "risk_gate": {
+      "enabled": true,
+      "source": "credit_spread",
+      "symbols": ["HYG", "IEF"],
+      "lookback": 10,
+      "sma_lookback": 20,
+      "threshold": -0.02,
+      "off_scale": 0.5,
+      "min_consecutive": 2,
+      "safe_asset": "IEF"
+    }
+  },
+  "sub_strategies": [
+    {
+      "config": "yoon1j_lp",
+      "currency": "USD",
+      "weight": 0.5,
+      "overrides": {
+        "top_k": 3,
+        "hold_buffer": 2,
+        "universe": ["VGT", "XLF", "IYH", "FENY", "FIDU", "FSTA", "IYC", "XLU", "XLB", "FREL", "FCOM"]
+      }
+    },
+    {
+      "config": "yoon1j_kr",
+      "currency": "KRW",
+      "weight": 0.5,
+      "overrides": {
+        "top_k": 3,
+        "hold_buffer": 2
+      }
+    }
+  ],
+  "benchmark_symbols": {
+    "USD": "SPY",
+    "KRW": "069500.KS"
+  },
+  "benchmark_label": "50/50 SPY원화+KODEX200",
+  "train_frac": 0.6,
+  "validation_frac": 0.2,
+  "synthetic_symbols": 6,
+  "synthetic_bars": 2000,
+  "seed": 7,
+  "dashboard": {
+    "default_indicators": [
+      "sleeve_yoon1j_lp",
+      "sleeve_yoon1j_kr",
+      "target_w_yoon1j_lp",
+      "target_w_yoon1j_kr",
+      "target_w___CASH__"
+    ],
+    "indicator_labels": {
+      "sleeve_yoon1j_lp": "미국 슬리브 저가(원화환산, top3)",
+      "sleeve_yoon1j_kr": "한국 슬리브(원화, top3)",
+      "target_w_yoon1j_lp": "목표 USD 슬리브 비중",
+      "target_w_yoon1j_kr": "목표 KRW 슬리브 비중",
+      "target_w___CASH__": "목표 현금 비중(신용스프레드 게이트)"
+    },
+    "panels": [
+      {
+        "kind": "sleeve_weights",
+        "type": "stacked_area",
+        "x": "time",
+        "label": "2단계 슬리브 평가금액 비중",
+        "default": true
+      },
+      {
+        "kind": "perf_vs_bnh",
+        "type": "table",
+        "label": "벤치(50/50 패시브) 대비 성과",
+        "default": true
+      }
+    ]
+  }
+}

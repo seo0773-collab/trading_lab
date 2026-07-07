@@ -1,0 +1,570 @@
+{
+  "period": "2007-01-29~2026-07-02",
+  "bars": 4084,
+  "n_episodes": 22,
+  "lead_summary": {
+    "lagging_gate": {
+      "hit_rate": 0.36363636363636365,
+      "avg_offset": -2.375,
+      "median_offset": 19.0,
+      "leads_before_peak": 3,
+      "n": 8
+    },
+    "vix_backwardation": {
+      "hit_rate": 0.9090909090909091,
+      "avg_offset": -39.65,
+      "median_offset": -37.0,
+      "leads_before_peak": 16,
+      "n": 20
+    },
+    "credit_spread": {
+      "hit_rate": 0.8181818181818182,
+      "avg_offset": -43.72222222222222,
+      "median_offset": -48.0,
+      "leads_before_peak": 14,
+      "n": 18
+    }
+  },
+  "episode_leads": [
+    {
+      "peak": "2011-01-27",
+      "trough": "2011-03-15",
+      "mdd": -0.06261003395936637,
+      "lag_gate_lead": null,
+      "vix_lead": -41,
+      "credit_lead": -43
+    },
+    {
+      "peak": "2011-05-02",
+      "trough": "2011-08-22",
+      "mdd": -0.16397803771469888,
+      "lag_gate_lead": 63,
+      "vix_lead": -33,
+      "credit_lead": -46
+    },
+    {
+      "peak": "2013-05-30",
+      "trough": "2013-06-24",
+      "mdd": -0.05881113625612089,
+      "lag_gate_lead": null,
+      "vix_lead": -63,
+      "credit_lead": 4
+    },
+    {
+      "peak": "2014-03-05",
+      "trough": "2014-05-19",
+      "mdd": -0.06036618288977913,
+      "lag_gate_lead": null,
+      "vix_lead": -25,
+      "credit_lead": -25
+    },
+    {
+      "peak": "2014-09-19",
+      "trough": "2014-10-16",
+      "mdd": -0.05761244966091905,
+      "lag_gate_lead": null,
+      "vix_lead": 13,
+      "credit_lead": -41
+    },
+    {
+      "peak": "2015-07-21",
+      "trough": "2016-01-20",
+      "mdd": -0.09654037099741364,
+      "lag_gate_lead": 23,
+      "vix_lead": -15,
+      "credit_lead": -85
+    },
+    {
+      "peak": "2017-07-24",
+      "trough": "2017-09-06",
+      "mdd": -0.05712466557326035,
+      "lag_gate_lead": null,
+      "vix_lead": null,
+      "credit_lead": 13
+    },
+    {
+      "peak": "2018-01-29",
+      "trough": "2018-12-24",
+      "mdd": -0.10418711674239922,
+      "lag_gate_lead": 37,
+      "vix_lead": 5,
+      "credit_lead": -51
+    },
+    {
+      "peak": "2020-02-14",
+      "trough": "2020-03-19",
+      "mdd": -0.17133156941086325,
+      "lag_gate_lead": 15,
+      "vix_lead": -10,
+      "credit_lead": -88
+    },
+    {
+      "peak": "2020-09-02",
+      "trough": "2020-10-30",
+      "mdd": -0.08749508058823685,
+      "lag_gate_lead": -90,
+      "vix_lead": -90,
+      "credit_lead": -50
+    },
+    {
+      "peak": "2021-01-25",
+      "trough": "2021-01-29",
+      "mdd": -0.06288009812372808,
+      "lag_gate_lead": null,
+      "vix_lead": -60,
+      "credit_lead": -79
+    },
+    {
+      "peak": "2021-11-09",
+      "trough": "2021-12-01",
+      "mdd": -0.05591135254745638,
+      "lag_gate_lead": null,
+      "vix_lead": 15,
+      "credit_lead": -74
+    },
+    {
+      "peak": "2022-01-12",
+      "trough": "2022-01-27",
+      "mdd": -0.07386149933120767,
+      "lag_gate_lead": null,
+      "vix_lead": -27,
+      "credit_lead": -30
+    },
+    {
+      "peak": "2022-04-20",
+      "trough": "2023-01-03",
+      "mdd": -0.09525370783643539,
+      "lag_gate_lead": -37,
+      "vix_lead": -88,
+      "credit_lead": -89
+    },
+    {
+      "peak": "2023-07-28",
+      "trough": "2023-11-09",
+      "mdd": -0.11014793852116744,
+      "lag_gate_lead": null,
+      "vix_lead": null,
+      "credit_lead": -82
+    },
+    {
+      "peak": "2024-07-16",
+      "trough": "2024-08-05",
+      "mdd": -0.11998645471828717,
+      "lag_gate_lead": null,
+      "vix_lead": 13,
+      "credit_lead": 13
+    },
+    {
+      "peak": "2025-02-19",
+      "trough": "2025-04-08",
+      "mdd": -0.10321096973081867,
+      "lag_gate_lead": 32,
+      "vix_lead": -83,
+      "credit_lead": 30
+    },
+    {
+      "peak": "2025-07-15",
+      "trough": "2025-08-01",
+      "mdd": -0.051175956098938435,
+      "lag_gate_lead": -62,
+      "vix_lead": -86,
+      "credit_lead": -64
+    },
+    {
+      "peak": "2025-11-13",
+      "trough": "2025-11-21",
+      "mdd": -0.0643034906255785,
+      "lag_gate_lead": null,
+      "vix_lead": -20,
+      "credit_lead": null
+    },
+    {
+      "peak": "2026-02-26",
+      "trough": "2026-03-04",
+      "mdd": -0.10573909932096648,
+      "lag_gate_lead": null,
+      "vix_lead": -87,
+      "credit_lead": null
+    },
+    {
+      "peak": "2026-05-14",
+      "trough": "2026-05-20",
+      "mdd": -0.06506612730636796,
+      "lag_gate_lead": null,
+      "vix_lead": -49,
+      "credit_lead": null
+    },
+    {
+      "peak": "2026-06-04",
+      "trough": "2026-06-08",
+      "mdd": -0.06378001396372956,
+      "lag_gate_lead": null,
+      "vix_lead": -62,
+      "credit_lead": null
+    }
+  ],
+  "point_estimates": [
+    {
+      "label": "current",
+      "cagr": 0.16273741731261504,
+      "max_drawdown": -0.17133156941086325,
+      "sharpe": 1.18859088029904,
+      "total_return": 10.513794167831204,
+      "volatility": 0.13445462970131195
+    },
+    {
+      "label": "lagging_gate",
+      "cagr": 0.1588791903409319,
+      "max_drawdown": -0.1713315694108627,
+      "sharpe": 1.1715653465541727,
+      "total_return": 9.910002631709016,
+      "volatility": 0.13345588627811356
+    },
+    {
+      "label": "vix_gate",
+      "cagr": 0.15329515730273902,
+      "max_drawdown": -0.12931780084505629,
+      "sharpe": 1.1662701579426928,
+      "total_return": 9.08855256813699,
+      "volatility": 0.12946988878094665
+    },
+    {
+      "label": "credit_gate",
+      "cagr": 0.16232279241981118,
+      "max_drawdown": -0.16397803771469943,
+      "sharpe": 1.212285811240015,
+      "total_return": 10.447435097743416,
+      "volatility": 0.13117164845391543
+    },
+    {
+      "label": "vix_or_credit_gate",
+      "cagr": 0.1509836917324885,
+      "max_drawdown": -0.11998645471828684,
+      "sharpe": 1.166426253960016,
+      "total_return": 8.76581060353462,
+      "volatility": 0.1275155508673558
+    }
+  ],
+  "bootstrap_vs_current": {
+    "lagging_gate": {
+      "label_a": "lagging_gate",
+      "label_b": "current",
+      "period": "2007-01-29~2026-07-02",
+      "bars": 4084,
+      "iters": 5000,
+      "block": 20,
+      "ci95": {
+        "excess_sharpe": [
+          -0.04558991531146921,
+          -0.016748495355978776,
+          0.008811583096118384
+        ],
+        "excess_cagr": [
+          -0.008596318417486615,
+          -0.003676571578252741,
+          0.00016791668973625463
+        ],
+        "mdd_diff": [
+          -0.011402767477821355,
+          2.220446049250313e-16,
+          0.009895996535068716
+        ]
+      },
+      "prob": {
+        "sharpe_a_gt_b": 0.1008,
+        "cagr_a_gt_b": 0.0306,
+        "mdd_a_shallower": 0.5432
+      }
+    },
+    "vix_gate": {
+      "label_a": "vix_gate",
+      "label_b": "current",
+      "period": "2007-01-29~2026-07-02",
+      "bars": 4084,
+      "iters": 5000,
+      "block": 20,
+      "ci95": {
+        "excess_sharpe": [
+          -0.1100635839766537,
+          -0.023581135630627414,
+          0.06872903114445335
+        ],
+        "excess_cagr": [
+          -0.02395146528841636,
+          -0.009342588437773025,
+          0.0036995160085004637
+        ],
+        "mdd_diff": [
+          -0.01764917600546498,
+          0.00941842812838306,
+          0.06323426062404895
+        ]
+      },
+      "prob": {
+        "sharpe_a_gt_b": 0.2958,
+        "cagr_a_gt_b": 0.0832,
+        "mdd_a_shallower": 0.72
+      }
+    },
+    "credit_gate": {
+      "label_a": "credit_gate",
+      "label_b": "current",
+      "period": "2007-01-29~2026-07-02",
+      "bars": 4084,
+      "iters": 5000,
+      "block": 20,
+      "ci95": {
+        "excess_sharpe": [
+          -0.0445386281471408,
+          0.02081349877606692,
+          0.11629270544916935
+        ],
+        "excess_cagr": [
+          -0.010094722189362648,
+          -0.0008036647678152375,
+          0.011305935322551235
+        ],
+        "mdd_diff": [
+          -0.011067313482714839,
+          0.006476957088959345,
+          0.07855196220031133
+        ]
+      },
+      "prob": {
+        "sharpe_a_gt_b": 0.705,
+        "cagr_a_gt_b": 0.442,
+        "mdd_a_shallower": 0.7316
+      }
+    },
+    "vix_or_credit_gate": {
+      "label_a": "vix_or_credit_gate",
+      "label_b": "current",
+      "period": "2007-01-29~2026-07-02",
+      "bars": 4084,
+      "iters": 5000,
+      "block": 20,
+      "ci95": {
+        "excess_sharpe": [
+          -0.1272701895923191,
+          -0.02283980861553292,
+          0.10222913839544187
+        ],
+        "excess_cagr": [
+          -0.028452351720197794,
+          -0.011694135747137957,
+          0.005675513763592562
+        ],
+        "mdd_diff": [
+          -0.019820957536646245,
+          0.01706915044738222,
+          0.09338604898541031
+        ]
+      },
+      "prob": {
+        "sharpe_a_gt_b": 0.3382,
+        "cagr_a_gt_b": 0.0884,
+        "mdd_a_shallower": 0.7884
+      }
+    }
+  },
+  "episode_mdd_compare": [
+    {
+      "peak": "2011-01-27",
+      "trough": "2011-03-15",
+      "current_mdd": -0.06261003395936637,
+      "lagging_gate_mdd": -0.06261003395936637,
+      "vix_gate_mdd": -0.06261003395936637,
+      "credit_gate_mdd": -0.06261003395936615,
+      "vix_or_credit_gate_mdd": -0.06261003395936615
+    },
+    {
+      "peak": "2011-05-02",
+      "trough": "2011-08-22",
+      "current_mdd": -0.16397803771469888,
+      "lagging_gate_mdd": -0.16397803771469888,
+      "vix_gate_mdd": -0.11198946038556079,
+      "credit_gate_mdd": -0.16397803771469943,
+      "vix_or_credit_gate_mdd": -0.11198946038556135
+    },
+    {
+      "peak": "2013-05-30",
+      "trough": "2013-06-24",
+      "current_mdd": -0.05881113625612089,
+      "lagging_gate_mdd": -0.05881113625612089,
+      "vix_gate_mdd": -0.05881113625612089,
+      "credit_gate_mdd": -0.058811136256120666,
+      "vix_or_credit_gate_mdd": -0.05881113625612122
+    },
+    {
+      "peak": "2014-03-05",
+      "trough": "2014-05-19",
+      "current_mdd": -0.06036618288977913,
+      "lagging_gate_mdd": -0.06036618288977935,
+      "vix_gate_mdd": -0.060366182889779574,
+      "credit_gate_mdd": -0.06036618288977946,
+      "vix_or_credit_gate_mdd": -0.06036618288977924
+    },
+    {
+      "peak": "2014-09-19",
+      "trough": "2014-10-16",
+      "current_mdd": -0.05761244966091905,
+      "lagging_gate_mdd": -0.05761244966091916,
+      "vix_gate_mdd": -0.05761244966091905,
+      "credit_gate_mdd": -0.05761244966091905,
+      "vix_or_credit_gate_mdd": -0.05761244966091883
+    },
+    {
+      "peak": "2015-07-21",
+      "trough": "2016-01-20",
+      "current_mdd": -0.09654037099741364,
+      "lagging_gate_mdd": -0.09654037099741353,
+      "vix_gate_mdd": -0.09314314196954909,
+      "credit_gate_mdd": -0.0926294986523355,
+      "vix_or_credit_gate_mdd": -0.09314314196954931
+    },
+    {
+      "peak": "2017-07-24",
+      "trough": "2017-09-06",
+      "current_mdd": -0.05712466557326035,
+      "lagging_gate_mdd": -0.05712466557326068,
+      "vix_gate_mdd": -0.057124665573260236,
+      "credit_gate_mdd": -0.05712466557326046,
+      "vix_or_credit_gate_mdd": -0.05712466557326057
+    },
+    {
+      "peak": "2018-01-29",
+      "trough": "2018-12-24",
+      "current_mdd": -0.10418711674239922,
+      "lagging_gate_mdd": -0.10418711674240011,
+      "vix_gate_mdd": -0.10666284202360665,
+      "credit_gate_mdd": -0.10418711674240011,
+      "vix_or_credit_gate_mdd": -0.10666284202360743
+    },
+    {
+      "peak": "2020-02-14",
+      "trough": "2020-03-19",
+      "current_mdd": -0.17133156941086325,
+      "lagging_gate_mdd": -0.1713315694108627,
+      "vix_gate_mdd": -0.12931780084505629,
+      "credit_gate_mdd": -0.0884474808481448,
+      "vix_or_credit_gate_mdd": -0.08844748084814502
+    },
+    {
+      "peak": "2020-09-02",
+      "trough": "2020-10-30",
+      "current_mdd": -0.08749508058823685,
+      "lagging_gate_mdd": -0.08749508058823663,
+      "vix_gate_mdd": -0.08749508058823696,
+      "credit_gate_mdd": -0.08749508058823685,
+      "vix_or_credit_gate_mdd": -0.08749508058823707
+    },
+    {
+      "peak": "2021-01-25",
+      "trough": "2021-01-29",
+      "current_mdd": -0.06288009812372808,
+      "lagging_gate_mdd": -0.06288009812372786,
+      "vix_gate_mdd": -0.06288009812372786,
+      "credit_gate_mdd": -0.06288009812372786,
+      "vix_or_credit_gate_mdd": -0.06288009812372775
+    },
+    {
+      "peak": "2021-11-09",
+      "trough": "2021-12-01",
+      "current_mdd": -0.05591135254745638,
+      "lagging_gate_mdd": -0.05591135254745638,
+      "vix_gate_mdd": -0.05591135254745616,
+      "credit_gate_mdd": -0.05591135254745627,
+      "vix_or_credit_gate_mdd": -0.05591135254745638
+    },
+    {
+      "peak": "2022-01-12",
+      "trough": "2022-01-27",
+      "current_mdd": -0.07386149933120767,
+      "lagging_gate_mdd": -0.07386149933120767,
+      "vix_gate_mdd": -0.07386149933120789,
+      "credit_gate_mdd": -0.07386149933120778,
+      "vix_or_credit_gate_mdd": -0.07386149933120756
+    },
+    {
+      "peak": "2022-04-20",
+      "trough": "2023-01-03",
+      "current_mdd": -0.09525370783643539,
+      "lagging_gate_mdd": -0.10267286955301935,
+      "vix_gate_mdd": -0.10645367296759001,
+      "credit_gate_mdd": -0.0985670871671892,
+      "vix_or_credit_gate_mdd": -0.10972603556990668
+    },
+    {
+      "peak": "2023-07-28",
+      "trough": "2023-11-09",
+      "current_mdd": -0.11014793852116744,
+      "lagging_gate_mdd": -0.110147938521167,
+      "vix_gate_mdd": -0.11014793852116767,
+      "credit_gate_mdd": -0.11014793852116722,
+      "vix_or_credit_gate_mdd": -0.11014793852116722
+    },
+    {
+      "peak": "2024-07-16",
+      "trough": "2024-08-05",
+      "current_mdd": -0.11998645471828717,
+      "lagging_gate_mdd": -0.11998645471828728,
+      "vix_gate_mdd": -0.11998645471828706,
+      "credit_gate_mdd": -0.11998645471828717,
+      "vix_or_credit_gate_mdd": -0.11998645471828684
+    },
+    {
+      "peak": "2025-02-19",
+      "trough": "2025-04-08",
+      "current_mdd": -0.10321096973081867,
+      "lagging_gate_mdd": -0.10321096973081834,
+      "vix_gate_mdd": -0.10321096973081911,
+      "credit_gate_mdd": -0.10321096973081867,
+      "vix_or_credit_gate_mdd": -0.10321096973081834
+    },
+    {
+      "peak": "2025-07-15",
+      "trough": "2025-08-01",
+      "current_mdd": -0.051175956098938435,
+      "lagging_gate_mdd": -0.05117595609893788,
+      "vix_gate_mdd": -0.05117595609893788,
+      "credit_gate_mdd": -0.05117595609893821,
+      "vix_or_credit_gate_mdd": -0.051175956098938546
+    },
+    {
+      "peak": "2025-11-13",
+      "trough": "2025-11-21",
+      "current_mdd": -0.0643034906255785,
+      "lagging_gate_mdd": -0.06430349062557816,
+      "vix_gate_mdd": -0.06430349062557816,
+      "credit_gate_mdd": -0.06430349062557816,
+      "vix_or_credit_gate_mdd": -0.06430349062557839
+    },
+    {
+      "peak": "2026-02-26",
+      "trough": "2026-03-04",
+      "current_mdd": -0.10573909932096648,
+      "lagging_gate_mdd": -0.10573909932096648,
+      "vix_gate_mdd": -0.10573909932096648,
+      "credit_gate_mdd": -0.10573909932096648,
+      "vix_or_credit_gate_mdd": -0.10573909932096659
+    },
+    {
+      "peak": "2026-05-14",
+      "trough": "2026-05-20",
+      "current_mdd": -0.06506612730636796,
+      "lagging_gate_mdd": -0.06506612730636796,
+      "vix_gate_mdd": -0.06506612730636807,
+      "credit_gate_mdd": -0.06506612730636818,
+      "vix_or_credit_gate_mdd": -0.06506612730636818
+    },
+    {
+      "peak": "2026-06-04",
+      "trough": "2026-06-08",
+      "current_mdd": -0.06378001396372956,
+      "lagging_gate_mdd": -0.06378001396372956,
+      "vix_gate_mdd": -0.06378001396372956,
+      "credit_gate_mdd": -0.06378001396372945,
+      "vix_or_credit_gate_mdd": -0.06378001396372945
+    }
+  ]
+}

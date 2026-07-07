@@ -1,0 +1,106 @@
+{
+  "period": "2026-01-02~2026-07-02",
+  "bars": 119,
+  "initial_krw": 2000000.0,
+  "monthly_krw": 200000.0,
+  "invested_principal": 3400000.0,
+  "final_value": 4234345.946895022,
+  "profit": 834345.946895022,
+  "return_on_principal": 0.24539586673383007,
+  "cagr": 0.9041657994367398,
+  "twr_mdd": -0.10010020369941053,
+  "twr_sharpe": 2.4535001367397737,
+  "account_mdd": -0.0802371964928511,
+  "cash_krw": 53852.831850798335,
+  "cash_weight": 0.01271809921206078,
+  "rebalance_count": 8,
+  "order_count": 49,
+  "turnover_per_year": 5.425906236844969,
+  "cost_paid": 13490.161820257275,
+  "holdings": [
+    {
+      "symbol": "091160.KS",
+      "currency": "KRW",
+      "shares": 4.0,
+      "price_krw": 149255.0,
+      "value_krw": 597020.0,
+      "weight": 0.14099462053585518
+    },
+    {
+      "symbol": "091170.KS",
+      "currency": "KRW",
+      "shares": 33.0,
+      "price_krw": 15470.0,
+      "value_krw": 510510.0,
+      "weight": 0.12056407445271419
+    },
+    {
+      "symbol": "091180.KS",
+      "currency": "KRW",
+      "shares": 16.0,
+      "price_krw": 30675.0,
+      "value_krw": 490800.0,
+      "weight": 0.11590928236742105
+    },
+    {
+      "symbol": "102960.KS",
+      "currency": "KRW",
+      "shares": 31.0,
+      "price_krw": 15390.0,
+      "value_krw": 477090.0,
+      "weight": 0.11267147417415019
+    },
+    {
+      "symbol": "102970.KS",
+      "currency": "KRW",
+      "shares": 22.0,
+      "price_krw": 21230.0,
+      "value_krw": 467060.0,
+      "weight": 0.11030274943465297
+    },
+    {
+      "symbol": "VGT",
+      "currency": "USD",
+      "shares": 2.0,
+      "price_krw": 177899.5041700378,
+      "value_krw": 355799.0083400756,
+      "weight": 0.08402691060256362
+    },
+    {
+      "symbol": "FSTA",
+      "currency": "USD",
+      "shares": 4.0,
+      "price_krw": 83332.20133042149,
+      "value_krw": 333328.80532168597,
+      "weight": 0.07872025798130892
+    },
+    {
+      "symbol": "IYH",
+      "currency": "USD",
+      "shares": 3.0,
+      "price_krw": 107400.7727345489,
+      "value_krw": 322202.3182036467,
+      "weight": 0.07609258247779979
+    },
+    {
+      "symbol": "FENY",
+      "currency": "USD",
+      "shares": 7.0,
+      "price_krw": 45964.615237877704,
+      "value_krw": 321752.30666514393,
+      "weight": 0.07598630596091936
+    },
+    {
+      "symbol": "FIDU",
+      "currency": "USD",
+      "shares": 2.0,
+      "price_krw": 152465.33825683594,
+      "value_krw": 304930.6765136719,
+      "weight": 0.07201364280055404
+    }
+  ],
+  "cost_kr": 0.000646527,
+  "cost_us": 0.0025103,
+  "min_kr_order": 50000.0,
+  "min_us_order_usd": 50.0
+}

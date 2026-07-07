@@ -1,0 +1,6316 @@
+{
+  "yoon1j_kr": {
+    "strategy_id": "yoon1j_kr",
+    "universe": [
+      "091160.KS",
+      "091170.KS",
+      "091180.KS",
+      "102960.KS",
+      "102970.KS",
+      "117460.KS",
+      "117680.KS",
+      "140700.KS"
+    ],
+    "n_rebalances": 199,
+    "selected_avg_corr_mean": 0.3990549720833011,
+    "selected_avg_corr_median": 0.38531917555177886,
+    "random_avg_corr_mean": 0.43401893985917134,
+    "high_corr_months_gt_0.7": 7,
+    "high_corr_pct": 0.035175879396984924,
+    "rows": [
+      {
+        "date": "2010-01-29",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS"
+        ],
+        "selected_avg_corr": 0.4181350687819187,
+        "random_avg_corr": 0.41813506878191853,
+        "n_candidates": 3
+      },
+      {
+        "date": "2010-02-26",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS"
+        ],
+        "selected_avg_corr": 0.41687168084550447,
+        "random_avg_corr": 0.4377853423967971,
+        "n_candidates": 5
+      },
+      {
+        "date": "2010-03-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS"
+        ],
+        "selected_avg_corr": 0.45143706999062,
+        "random_avg_corr": 0.45723074615554127,
+        "n_candidates": 5
+      },
+      {
+        "date": "2010-04-30",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS"
+        ],
+        "selected_avg_corr": 0.43491153080204786,
+        "random_avg_corr": 0.44700369322661093,
+        "n_candidates": 5
+      },
+      {
+        "date": "2010-05-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS"
+        ],
+        "selected_avg_corr": 0.43662606279854416,
+        "random_avg_corr": 0.4463546655215131,
+        "n_candidates": 5
+      },
+      {
+        "date": "2010-06-30",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS"
+        ],
+        "selected_avg_corr": 0.3283517567827104,
+        "random_avg_corr": 0.38781318497197187,
+        "n_candidates": 5
+      },
+      {
+        "date": "2010-07-30",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS"
+        ],
+        "selected_avg_corr": 0.3487534698453589,
+        "random_avg_corr": 0.41449971007441627,
+        "n_candidates": 5
+      },
+      {
+        "date": "2010-08-31",
+        "symbols": [
+          "091160.KS",
+          "091180.KS",
+          "102960.KS"
+        ],
+        "selected_avg_corr": 0.28313647699072086,
+        "random_avg_corr": 0.41541835210161265,
+        "n_candidates": 7
+      },
+      {
+        "date": "2010-09-30",
+        "symbols": [
+          "091160.KS",
+          "091180.KS",
+          "102960.KS"
+        ],
+        "selected_avg_corr": 0.2563903386566199,
+        "random_avg_corr": 0.3461450866025003,
+        "n_candidates": 7
+      },
+      {
+        "date": "2010-10-29",
+        "symbols": [
+          "091180.KS",
+          "102960.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.34024344702515563,
+        "random_avg_corr": 0.379163179375026,
+        "n_candidates": 7
+      },
+      {
+        "date": "2010-11-30",
+        "symbols": [
+          "091180.KS",
+          "102960.KS",
+          "117460.KS"
+        ],
+        "selected_avg_corr": 0.3386410224364053,
+        "random_avg_corr": 0.3262620252817676,
+        "n_candidates": 7
+      },
+      {
+        "date": "2010-12-30",
+        "symbols": [
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "117460.KS"
+        ],
+        "selected_avg_corr": 0.22855215039554508,
+        "random_avg_corr": 0.28176424840766373,
+        "n_candidates": 7
+      },
+      {
+        "date": "2011-01-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS"
+        ],
+        "selected_avg_corr": 0.1786564967753351,
+        "random_avg_corr": 0.2853804907973585,
+        "n_candidates": 7
+      },
+      {
+        "date": "2011-02-28",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS"
+        ],
+        "selected_avg_corr": 0.22367999264930652,
+        "random_avg_corr": 0.2898692401862514,
+        "n_candidates": 7
+      },
+      {
+        "date": "2011-03-31",
+        "symbols": [
+          "091170.KS",
+          "091180.KS",
+          "102960.KS"
+        ],
+        "selected_avg_corr": 0.28130391987608827,
+        "random_avg_corr": 0.3361068013209848,
+        "n_candidates": 7
+      },
+      {
+        "date": "2011-04-29",
+        "symbols": [
+          "091170.KS",
+          "091180.KS",
+          "102960.KS"
+        ],
+        "selected_avg_corr": 0.20491183579602987,
+        "random_avg_corr": 0.2858238482393132,
+        "n_candidates": 7
+      },
+      {
+        "date": "2011-05-31",
+        "symbols": [
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "117460.KS"
+        ],
+        "selected_avg_corr": 0.306522602547824,
+        "random_avg_corr": 0.34999560890902404,
+        "n_candidates": 7
+      },
+      {
+        "date": "2011-06-30",
+        "symbols": [
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "117460.KS"
+        ],
+        "selected_avg_corr": 0.33651711518800376,
+        "random_avg_corr": 0.37512464160552184,
+        "n_candidates": 7
+      },
+      {
+        "date": "2011-07-29",
+        "symbols": [
+          "091170.KS",
+          "091180.KS",
+          "117460.KS"
+        ],
+        "selected_avg_corr": 0.2805057482027482,
+        "random_avg_corr": 0.38202906845429363,
+        "n_candidates": 7
+      },
+      {
+        "date": "2011-08-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS"
+        ],
+        "selected_avg_corr": 0.44058156257559306,
+        "random_avg_corr": 0.5547037631489504,
+        "n_candidates": 7
+      },
+      {
+        "date": "2011-09-30",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS"
+        ],
+        "selected_avg_corr": 0.5264028272530487,
+        "random_avg_corr": 0.6428874511819518,
+        "n_candidates": 7
+      },
+      {
+        "date": "2011-10-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS"
+        ],
+        "selected_avg_corr": 0.5460696557830621,
+        "random_avg_corr": 0.677359528974682,
+        "n_candidates": 7
+      },
+      {
+        "date": "2011-11-30",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.6579328216580068,
+        "random_avg_corr": 0.7111478506933155,
+        "n_candidates": 7
+      },
+      {
+        "date": "2011-12-29",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.6744651573150412,
+        "random_avg_corr": 0.7386254052201628,
+        "n_candidates": 7
+      },
+      {
+        "date": "2012-01-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "117460.KS",
+          "117680.KS"
+        ],
+        "selected_avg_corr": 0.6921096084978525,
+        "random_avg_corr": 0.7344060096356853,
+        "n_candidates": 7
+      },
+      {
+        "date": "2012-02-29",
+        "symbols": [
+          "091170.KS",
+          "102960.KS",
+          "117460.KS",
+          "117680.KS"
+        ],
+        "selected_avg_corr": 0.7874733663822613,
+        "random_avg_corr": 0.6809272529294074,
+        "n_candidates": 8
+      },
+      {
+        "date": "2012-03-30",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "102960.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.511351478113402,
+        "random_avg_corr": 0.5999132189772638,
+        "n_candidates": 8
+      },
+      {
+        "date": "2012-04-30",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.43468438073869753,
+        "random_avg_corr": 0.5325900338961754,
+        "n_candidates": 8
+      },
+      {
+        "date": "2012-05-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.3852966482703018,
+        "random_avg_corr": 0.5066341745533086,
+        "n_candidates": 8
+      },
+      {
+        "date": "2012-06-29",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102970.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.4001106235888473,
+        "random_avg_corr": 0.46218184835997744,
+        "n_candidates": 8
+      },
+      {
+        "date": "2012-07-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102970.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.4254068421620117,
+        "random_avg_corr": 0.48803255592540523,
+        "n_candidates": 8
+      },
+      {
+        "date": "2012-08-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102970.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.4673879417675629,
+        "random_avg_corr": 0.5003184019026763,
+        "n_candidates": 8
+      },
+      {
+        "date": "2012-09-28",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102970.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.49629832053032424,
+        "random_avg_corr": 0.567662469384605,
+        "n_candidates": 8
+      },
+      {
+        "date": "2012-10-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.4447712946801681,
+        "random_avg_corr": 0.5429374166205976,
+        "n_candidates": 8
+      },
+      {
+        "date": "2012-11-30",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "102970.KS",
+          "117680.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.49663923972328394,
+        "random_avg_corr": 0.5261903271718901,
+        "n_candidates": 8
+      },
+      {
+        "date": "2012-12-28",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "117680.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.36421431482113764,
+        "random_avg_corr": 0.4776578509563445,
+        "n_candidates": 8
+      },
+      {
+        "date": "2013-01-31",
+        "symbols": [
+          "091160.KS",
+          "102970.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.2473107702405671,
+        "random_avg_corr": 0.3655769954168973,
+        "n_candidates": 8
+      },
+      {
+        "date": "2013-02-28",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "102970.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.3456746319088198,
+        "random_avg_corr": 0.41647590783645766,
+        "n_candidates": 8
+      },
+      {
+        "date": "2013-03-29",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "102970.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.2838759049423212,
+        "random_avg_corr": 0.3597146014188214,
+        "n_candidates": 8
+      },
+      {
+        "date": "2013-04-30",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "102970.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.31666628237335787,
+        "random_avg_corr": 0.36272296512153523,
+        "n_candidates": 8
+      },
+      {
+        "date": "2013-05-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "102970.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.34772621375119384,
+        "random_avg_corr": 0.3958684698209262,
+        "n_candidates": 8
+      },
+      {
+        "date": "2013-06-28",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.5386601495382962,
+        "random_avg_corr": 0.42654321435496206,
+        "n_candidates": 8
+      },
+      {
+        "date": "2013-07-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.3515401146768337,
+        "random_avg_corr": 0.40205666478487456,
+        "n_candidates": 8
+      },
+      {
+        "date": "2013-08-30",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.3275767230249063,
+        "random_avg_corr": 0.4279775969194501,
+        "n_candidates": 8
+      },
+      {
+        "date": "2013-09-30",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.32717820374169,
+        "random_avg_corr": 0.44067226644131385,
+        "n_candidates": 8
+      },
+      {
+        "date": "2013-10-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.2974874854771681,
+        "random_avg_corr": 0.38555954084648614,
+        "n_candidates": 8
+      },
+      {
+        "date": "2013-11-29",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.30273234380092245,
+        "random_avg_corr": 0.41512400404279604,
+        "n_candidates": 8
+      },
+      {
+        "date": "2013-12-30",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.3006465263811452,
+        "random_avg_corr": 0.40093039287600674,
+        "n_candidates": 8
+      },
+      {
+        "date": "2014-01-29",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.3091719570998975,
+        "random_avg_corr": 0.3794902331762037,
+        "n_candidates": 8
+      },
+      {
+        "date": "2014-02-28",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.3222494563485922,
+        "random_avg_corr": 0.3813341488966075,
+        "n_candidates": 8
+      },
+      {
+        "date": "2014-03-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.3395933281738452,
+        "random_avg_corr": 0.37976452013611145,
+        "n_candidates": 8
+      },
+      {
+        "date": "2014-04-30",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "102960.KS",
+          "117680.KS"
+        ],
+        "selected_avg_corr": 0.3578860345084411,
+        "random_avg_corr": 0.391950134239741,
+        "n_candidates": 8
+      },
+      {
+        "date": "2014-05-30",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "117680.KS"
+        ],
+        "selected_avg_corr": 0.3197595164160316,
+        "random_avg_corr": 0.3914271383761326,
+        "n_candidates": 8
+      },
+      {
+        "date": "2014-06-30",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "117680.KS"
+        ],
+        "selected_avg_corr": 0.32446851411348393,
+        "random_avg_corr": 0.41442040880756076,
+        "n_candidates": 8
+      },
+      {
+        "date": "2014-07-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "102970.KS",
+          "117680.KS"
+        ],
+        "selected_avg_corr": 0.32793011506409164,
+        "random_avg_corr": 0.35630106533442574,
+        "n_candidates": 8
+      },
+      {
+        "date": "2014-08-29",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "102970.KS",
+          "117680.KS"
+        ],
+        "selected_avg_corr": 0.27170112677453956,
+        "random_avg_corr": 0.30554682234878466,
+        "n_candidates": 8
+      },
+      {
+        "date": "2014-09-30",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "102970.KS",
+          "117680.KS"
+        ],
+        "selected_avg_corr": 0.2214158944945365,
+        "random_avg_corr": 0.26517770959724424,
+        "n_candidates": 8
+      },
+      {
+        "date": "2014-10-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "102970.KS",
+          "117680.KS"
+        ],
+        "selected_avg_corr": 0.30020728102114164,
+        "random_avg_corr": 0.298175669663998,
+        "n_candidates": 8
+      },
+      {
+        "date": "2014-11-28",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "102970.KS",
+          "117680.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.2761003808216912,
+        "random_avg_corr": 0.2667057055206704,
+        "n_candidates": 8
+      },
+      {
+        "date": "2014-12-30",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "102970.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.2526575679853945,
+        "random_avg_corr": 0.29801792799926974,
+        "n_candidates": 8
+      },
+      {
+        "date": "2015-01-30",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "102970.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.28399039841849133,
+        "random_avg_corr": 0.27244624684380864,
+        "n_candidates": 8
+      },
+      {
+        "date": "2015-02-27",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "102970.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.2931111651845603,
+        "random_avg_corr": 0.2892974378644287,
+        "n_candidates": 8
+      },
+      {
+        "date": "2015-03-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "102970.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.2623835373767396,
+        "random_avg_corr": 0.2655616151714414,
+        "n_candidates": 8
+      },
+      {
+        "date": "2015-04-30",
+        "symbols": [
+          "091160.KS",
+          "102970.KS",
+          "117460.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.18055924766601786,
+        "random_avg_corr": 0.24894213181376004,
+        "n_candidates": 8
+      },
+      {
+        "date": "2015-05-29",
+        "symbols": [
+          "091160.KS",
+          "102970.KS",
+          "117460.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.2034628406299285,
+        "random_avg_corr": 0.2639418584569195,
+        "n_candidates": 8
+      },
+      {
+        "date": "2015-06-30",
+        "symbols": [
+          "091160.KS",
+          "102970.KS",
+          "117460.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.19331847204142472,
+        "random_avg_corr": 0.2318509896917251,
+        "n_candidates": 8
+      },
+      {
+        "date": "2015-07-31",
+        "symbols": [
+          "091160.KS",
+          "102970.KS",
+          "117460.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.21295150843290192,
+        "random_avg_corr": 0.2460685344988963,
+        "n_candidates": 8
+      },
+      {
+        "date": "2015-08-31",
+        "symbols": [
+          "091160.KS",
+          "102970.KS",
+          "117460.KS"
+        ],
+        "selected_avg_corr": 0.36418075948338435,
+        "random_avg_corr": 0.25738358438355846,
+        "n_candidates": 8
+      },
+      {
+        "date": "2015-09-30",
+        "symbols": [
+          "091160.KS",
+          "091180.KS",
+          "102970.KS",
+          "117460.KS"
+        ],
+        "selected_avg_corr": 0.28682403088337,
+        "random_avg_corr": 0.3539017593943086,
+        "n_candidates": 8
+      },
+      {
+        "date": "2015-10-30",
+        "symbols": [
+          "091160.KS",
+          "091180.KS",
+          "102970.KS",
+          "117460.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.26925063944190786,
+        "random_avg_corr": 0.3419922651259885,
+        "n_candidates": 8
+      },
+      {
+        "date": "2015-11-30",
+        "symbols": [
+          "091160.KS",
+          "091180.KS",
+          "117460.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.22099132825460302,
+        "random_avg_corr": 0.3467077681475073,
+        "n_candidates": 8
+      },
+      {
+        "date": "2015-12-30",
+        "symbols": [
+          "091160.KS",
+          "091180.KS",
+          "117460.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.2660171013339377,
+        "random_avg_corr": 0.39049087422280293,
+        "n_candidates": 8
+      },
+      {
+        "date": "2016-01-29",
+        "symbols": [
+          "091160.KS",
+          "091180.KS",
+          "117460.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.3029821359039316,
+        "random_avg_corr": 0.46407833175429675,
+        "n_candidates": 8
+      },
+      {
+        "date": "2016-02-29",
+        "symbols": [
+          "091160.KS",
+          "091180.KS",
+          "117460.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.3177312590484955,
+        "random_avg_corr": 0.4631185722815695,
+        "n_candidates": 8
+      },
+      {
+        "date": "2016-03-31",
+        "symbols": [
+          "091160.KS",
+          "091180.KS",
+          "117460.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.2709172181319487,
+        "random_avg_corr": 0.4235585200417422,
+        "n_candidates": 8
+      },
+      {
+        "date": "2016-04-29",
+        "symbols": [
+          "091160.KS",
+          "091180.KS",
+          "117460.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.2817533868952274,
+        "random_avg_corr": 0.43438807133965524,
+        "n_candidates": 8
+      },
+      {
+        "date": "2016-05-31",
+        "symbols": [
+          "091160.KS",
+          "091180.KS",
+          "102970.KS",
+          "117460.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.3879582627511829,
+        "random_avg_corr": 0.42393035843521826,
+        "n_candidates": 8
+      },
+      {
+        "date": "2016-06-30",
+        "symbols": [
+          "091160.KS",
+          "091180.KS",
+          "117460.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.31713326055756536,
+        "random_avg_corr": 0.4508967979617038,
+        "n_candidates": 8
+      },
+      {
+        "date": "2016-07-29",
+        "symbols": [
+          "091160.KS",
+          "091180.KS",
+          "102960.KS",
+          "117460.KS",
+          "117680.KS"
+        ],
+        "selected_avg_corr": 0.42085184334376846,
+        "random_avg_corr": 0.405587777205692,
+        "n_candidates": 8
+      },
+      {
+        "date": "2016-08-31",
+        "symbols": [
+          "091160.KS",
+          "091180.KS",
+          "102960.KS",
+          "117460.KS",
+          "117680.KS"
+        ],
+        "selected_avg_corr": 0.4089343696520606,
+        "random_avg_corr": 0.4185013892607488,
+        "n_candidates": 8
+      },
+      {
+        "date": "2016-09-30",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "117460.KS"
+        ],
+        "selected_avg_corr": 0.3755117019253501,
+        "random_avg_corr": 0.4141650420536866,
+        "n_candidates": 8
+      },
+      {
+        "date": "2016-10-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS"
+        ],
+        "selected_avg_corr": 0.3300632671525435,
+        "random_avg_corr": 0.4169996512737877,
+        "n_candidates": 8
+      },
+      {
+        "date": "2016-11-30",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "117680.KS"
+        ],
+        "selected_avg_corr": 0.3083596619211333,
+        "random_avg_corr": 0.3723543592055657,
+        "n_candidates": 8
+      },
+      {
+        "date": "2016-12-29",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "117460.KS",
+          "117680.KS"
+        ],
+        "selected_avg_corr": 0.3383828504958948,
+        "random_avg_corr": 0.3250616242976987,
+        "n_candidates": 8
+      },
+      {
+        "date": "2017-01-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "102960.KS",
+          "117680.KS"
+        ],
+        "selected_avg_corr": 0.2667649063308417,
+        "random_avg_corr": 0.3077616730679439,
+        "n_candidates": 8
+      },
+      {
+        "date": "2017-02-28",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "102960.KS"
+        ],
+        "selected_avg_corr": 0.16093036756479026,
+        "random_avg_corr": 0.2936889521160114,
+        "n_candidates": 8
+      },
+      {
+        "date": "2017-03-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "102960.KS"
+        ],
+        "selected_avg_corr": 0.15113389883180717,
+        "random_avg_corr": 0.2351253245415438,
+        "n_candidates": 8
+      },
+      {
+        "date": "2017-04-28",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "102960.KS"
+        ],
+        "selected_avg_corr": 0.17509826443117738,
+        "random_avg_corr": 0.27357608774482467,
+        "n_candidates": 8
+      },
+      {
+        "date": "2017-05-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "102960.KS"
+        ],
+        "selected_avg_corr": 0.08545815470457202,
+        "random_avg_corr": 0.24283294709354347,
+        "n_candidates": 8
+      },
+      {
+        "date": "2017-06-30",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "102960.KS"
+        ],
+        "selected_avg_corr": 0.049689335000595795,
+        "random_avg_corr": 0.23816921940771701,
+        "n_candidates": 8
+      },
+      {
+        "date": "2017-07-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "102960.KS"
+        ],
+        "selected_avg_corr": 0.07165831688189313,
+        "random_avg_corr": 0.2040614364495645,
+        "n_candidates": 8
+      },
+      {
+        "date": "2017-08-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.3600817780297065,
+        "random_avg_corr": 0.24091764379798403,
+        "n_candidates": 8
+      },
+      {
+        "date": "2017-09-29",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.39269670596142786,
+        "random_avg_corr": 0.23901824685395198,
+        "n_candidates": 8
+      },
+      {
+        "date": "2017-10-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.37921303700914577,
+        "random_avg_corr": 0.21923980432143772,
+        "n_candidates": 8
+      },
+      {
+        "date": "2017-11-30",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.35282012961964626,
+        "random_avg_corr": 0.19658238822221322,
+        "n_candidates": 8
+      },
+      {
+        "date": "2017-12-28",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.3294760798303357,
+        "random_avg_corr": 0.22615360301938914,
+        "n_candidates": 8
+      },
+      {
+        "date": "2018-01-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.3104882666696443,
+        "random_avg_corr": 0.20521862533717367,
+        "n_candidates": 8
+      },
+      {
+        "date": "2018-02-28",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.30778284213779167,
+        "random_avg_corr": 0.2695494418881124,
+        "n_candidates": 8
+      },
+      {
+        "date": "2018-03-30",
+        "symbols": [
+          "091160.KS",
+          "102970.KS",
+          "117460.KS"
+        ],
+        "selected_avg_corr": 0.4131720050237169,
+        "random_avg_corr": 0.2994136014286194,
+        "n_candidates": 8
+      },
+      {
+        "date": "2018-04-30",
+        "symbols": [
+          "091160.KS",
+          "102970.KS",
+          "117460.KS"
+        ],
+        "selected_avg_corr": 0.40721083538782293,
+        "random_avg_corr": 0.3180861610721883,
+        "n_candidates": 8
+      },
+      {
+        "date": "2018-05-31",
+        "symbols": [
+          "091160.KS",
+          "102970.KS",
+          "117460.KS"
+        ],
+        "selected_avg_corr": 0.4203821964278494,
+        "random_avg_corr": 0.35384317981579716,
+        "n_candidates": 8
+      },
+      {
+        "date": "2018-06-29",
+        "symbols": [
+          "091160.KS",
+          "102960.KS",
+          "102970.KS",
+          "117460.KS"
+        ],
+        "selected_avg_corr": 0.42254256423524916,
+        "random_avg_corr": 0.35608027370526957,
+        "n_candidates": 8
+      },
+      {
+        "date": "2018-07-31",
+        "symbols": [
+          "091160.KS",
+          "102960.KS",
+          "102970.KS",
+          "117460.KS"
+        ],
+        "selected_avg_corr": 0.5232823551379006,
+        "random_avg_corr": 0.37158562897585196,
+        "n_candidates": 8
+      },
+      {
+        "date": "2018-08-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "102960.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.4007523409278326,
+        "random_avg_corr": 0.3475867316560096,
+        "n_candidates": 8
+      },
+      {
+        "date": "2018-09-28",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.20397993204818055,
+        "random_avg_corr": 0.33395189378426227,
+        "n_candidates": 8
+      },
+      {
+        "date": "2018-10-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.36024406160405203,
+        "random_avg_corr": 0.4028448776530537,
+        "n_candidates": 8
+      },
+      {
+        "date": "2018-11-30",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.412535913025335,
+        "random_avg_corr": 0.44391973270994456,
+        "n_candidates": 8
+      },
+      {
+        "date": "2018-12-28",
+        "symbols": [
+          "091160.KS",
+          "091180.KS",
+          "102960.KS",
+          "102970.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.4014566205306358,
+        "random_avg_corr": 0.4408373516223364,
+        "n_candidates": 8
+      },
+      {
+        "date": "2019-01-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "102960.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.4402488090495142,
+        "random_avg_corr": 0.4458671950906675,
+        "n_candidates": 8
+      },
+      {
+        "date": "2019-02-28",
+        "symbols": [
+          "091160.KS",
+          "102970.KS",
+          "117460.KS"
+        ],
+        "selected_avg_corr": 0.6238147263539908,
+        "random_avg_corr": 0.42623426048045077,
+        "n_candidates": 8
+      },
+      {
+        "date": "2019-03-29",
+        "symbols": [
+          "102960.KS",
+          "102970.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.42388897954963706,
+        "random_avg_corr": 0.43950225972756846,
+        "n_candidates": 8
+      },
+      {
+        "date": "2019-04-30",
+        "symbols": [
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "102970.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.35877652252733144,
+        "random_avg_corr": 0.403793413176801,
+        "n_candidates": 8
+      },
+      {
+        "date": "2019-05-31",
+        "symbols": [
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.4096439107056078,
+        "random_avg_corr": 0.4575051561325732,
+        "n_candidates": 8
+      },
+      {
+        "date": "2019-06-28",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.40600988745596506,
+        "random_avg_corr": 0.4381324061142268,
+        "n_candidates": 8
+      },
+      {
+        "date": "2019-07-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.4400832182590463,
+        "random_avg_corr": 0.48433357409421857,
+        "n_candidates": 8
+      },
+      {
+        "date": "2019-08-30",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.5094134229338148,
+        "random_avg_corr": 0.5337704923330937,
+        "n_candidates": 8
+      },
+      {
+        "date": "2019-09-30",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.4821987768660579,
+        "random_avg_corr": 0.5274090624769269,
+        "n_candidates": 8
+      },
+      {
+        "date": "2019-10-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.4776955189332699,
+        "random_avg_corr": 0.503668654996376,
+        "n_candidates": 8
+      },
+      {
+        "date": "2019-11-29",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.4086407378313462,
+        "random_avg_corr": 0.5169967169884505,
+        "n_candidates": 8
+      },
+      {
+        "date": "2019-12-30",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS"
+        ],
+        "selected_avg_corr": 0.33743081494202953,
+        "random_avg_corr": 0.5072291877871393,
+        "n_candidates": 8
+      },
+      {
+        "date": "2020-01-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.4058272012832797,
+        "random_avg_corr": 0.5373794501242777,
+        "n_candidates": 8
+      },
+      {
+        "date": "2020-02-28",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS"
+        ],
+        "selected_avg_corr": 0.512195548364336,
+        "random_avg_corr": 0.590668246405853,
+        "n_candidates": 8
+      },
+      {
+        "date": "2020-03-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS"
+        ],
+        "selected_avg_corr": 0.7813392846109366,
+        "random_avg_corr": 0.8171031616559171,
+        "n_candidates": 8
+      },
+      {
+        "date": "2020-04-29",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS"
+        ],
+        "selected_avg_corr": 0.7756987543990933,
+        "random_avg_corr": 0.7932168653538297,
+        "n_candidates": 8
+      },
+      {
+        "date": "2020-05-29",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS"
+        ],
+        "selected_avg_corr": 0.7573084351590977,
+        "random_avg_corr": 0.7799770154463559,
+        "n_candidates": 8
+      },
+      {
+        "date": "2020-06-30",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "117460.KS"
+        ],
+        "selected_avg_corr": 0.8033982531952839,
+        "random_avg_corr": 0.7961357795114922,
+        "n_candidates": 8
+      },
+      {
+        "date": "2020-07-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "117460.KS"
+        ],
+        "selected_avg_corr": 0.7678873684776161,
+        "random_avg_corr": 0.7816688408120197,
+        "n_candidates": 8
+      },
+      {
+        "date": "2020-08-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "117460.KS"
+        ],
+        "selected_avg_corr": 0.7505566856352651,
+        "random_avg_corr": 0.7678562902205569,
+        "n_candidates": 8
+      },
+      {
+        "date": "2020-09-29",
+        "symbols": [
+          "091160.KS",
+          "091180.KS",
+          "117460.KS"
+        ],
+        "selected_avg_corr": 0.6091211937497015,
+        "random_avg_corr": 0.6216718319596847,
+        "n_candidates": 8
+      },
+      {
+        "date": "2020-10-30",
+        "symbols": [
+          "091160.KS",
+          "091180.KS",
+          "102970.KS",
+          "117460.KS"
+        ],
+        "selected_avg_corr": 0.6003351406366346,
+        "random_avg_corr": 0.6048735562151173,
+        "n_candidates": 8
+      },
+      {
+        "date": "2020-11-30",
+        "symbols": [
+          "091160.KS",
+          "091180.KS",
+          "102960.KS",
+          "102970.KS",
+          "117460.KS"
+        ],
+        "selected_avg_corr": 0.5959849983272408,
+        "random_avg_corr": 0.6037702423524244,
+        "n_candidates": 8
+      },
+      {
+        "date": "2020-12-30",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.5019444590253315,
+        "random_avg_corr": 0.4865626380407661,
+        "n_candidates": 8
+      },
+      {
+        "date": "2021-01-29",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.49648221568324785,
+        "random_avg_corr": 0.5118462762030997,
+        "n_candidates": 8
+      },
+      {
+        "date": "2021-02-26",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.48739585897482307,
+        "random_avg_corr": 0.5212145338949261,
+        "n_candidates": 8
+      },
+      {
+        "date": "2021-03-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.4587526746012795,
+        "random_avg_corr": 0.4784828623335268,
+        "n_candidates": 8
+      },
+      {
+        "date": "2021-04-30",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.4203595638965263,
+        "random_avg_corr": 0.4367962177627898,
+        "n_candidates": 8
+      },
+      {
+        "date": "2021-05-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.3956896424782866,
+        "random_avg_corr": 0.4305573731098648,
+        "n_candidates": 8
+      },
+      {
+        "date": "2021-06-30",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.38163349611751346,
+        "random_avg_corr": 0.3938154947387009,
+        "n_candidates": 8
+      },
+      {
+        "date": "2021-07-30",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.3953218018371595,
+        "random_avg_corr": 0.3861428530011574,
+        "n_candidates": 8
+      },
+      {
+        "date": "2021-08-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "102960.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.3434077050494167,
+        "random_avg_corr": 0.3479593501601499,
+        "n_candidates": 8
+      },
+      {
+        "date": "2021-09-30",
+        "symbols": [
+          "091170.KS",
+          "102960.KS",
+          "117460.KS"
+        ],
+        "selected_avg_corr": 0.3166494922982764,
+        "random_avg_corr": 0.3323543664885026,
+        "n_candidates": 8
+      },
+      {
+        "date": "2021-10-29",
+        "symbols": [
+          "091170.KS",
+          "102960.KS",
+          "117460.KS"
+        ],
+        "selected_avg_corr": 0.35850179591021564,
+        "random_avg_corr": 0.32738247358379574,
+        "n_candidates": 8
+      },
+      {
+        "date": "2021-11-30",
+        "symbols": [
+          "091170.KS",
+          "102970.KS",
+          "117460.KS"
+        ],
+        "selected_avg_corr": 0.46917054045031475,
+        "random_avg_corr": 0.46271506228994563,
+        "n_candidates": 8
+      },
+      {
+        "date": "2021-12-30",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "117460.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.3843512752341116,
+        "random_avg_corr": 0.4648485318615015,
+        "n_candidates": 8
+      },
+      {
+        "date": "2022-01-28",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "102960.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.38531917555177886,
+        "random_avg_corr": 0.46106608896228335,
+        "n_candidates": 8
+      },
+      {
+        "date": "2022-02-28",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "102960.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.4177507080464155,
+        "random_avg_corr": 0.5254100351799956,
+        "n_candidates": 8
+      },
+      {
+        "date": "2022-03-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "102960.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.4170936818879358,
+        "random_avg_corr": 0.5140546833488756,
+        "n_candidates": 8
+      },
+      {
+        "date": "2022-04-29",
+        "symbols": [
+          "091170.KS",
+          "091180.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.48723933956465953,
+        "random_avg_corr": 0.535302036571195,
+        "n_candidates": 8
+      },
+      {
+        "date": "2022-05-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "117680.KS"
+        ],
+        "selected_avg_corr": 0.4965718393475771,
+        "random_avg_corr": 0.541190175539212,
+        "n_candidates": 8
+      },
+      {
+        "date": "2022-06-30",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS"
+        ],
+        "selected_avg_corr": 0.500920888126822,
+        "random_avg_corr": 0.5645034912107115,
+        "n_candidates": 8
+      },
+      {
+        "date": "2022-07-29",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "117460.KS"
+        ],
+        "selected_avg_corr": 0.5899828386056483,
+        "random_avg_corr": 0.5898464039821945,
+        "n_candidates": 8
+      },
+      {
+        "date": "2022-08-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "117460.KS"
+        ],
+        "selected_avg_corr": 0.5506363269334726,
+        "random_avg_corr": 0.5507427963828673,
+        "n_candidates": 8
+      },
+      {
+        "date": "2022-09-30",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS"
+        ],
+        "selected_avg_corr": 0.5091253227355688,
+        "random_avg_corr": 0.5856783720799925,
+        "n_candidates": 8
+      },
+      {
+        "date": "2022-10-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS"
+        ],
+        "selected_avg_corr": 0.5187702556933468,
+        "random_avg_corr": 0.5815581212990419,
+        "n_candidates": 8
+      },
+      {
+        "date": "2022-11-30",
+        "symbols": [
+          "091160.KS",
+          "102960.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.6113480148548122,
+        "random_avg_corr": 0.5865739307389447,
+        "n_candidates": 8
+      },
+      {
+        "date": "2022-12-29",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "102960.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.4532710082486923,
+        "random_avg_corr": 0.5544720286466097,
+        "n_candidates": 8
+      },
+      {
+        "date": "2023-01-31",
+        "symbols": [
+          "091160.KS",
+          "091180.KS",
+          "102960.KS"
+        ],
+        "selected_avg_corr": 0.42861086367905293,
+        "random_avg_corr": 0.46233144541137433,
+        "n_candidates": 8
+      },
+      {
+        "date": "2023-02-28",
+        "symbols": [
+          "091160.KS",
+          "091180.KS",
+          "102960.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.3545978704330183,
+        "random_avg_corr": 0.4620992132748261,
+        "n_candidates": 8
+      },
+      {
+        "date": "2023-03-31",
+        "symbols": [
+          "102960.KS",
+          "117460.KS",
+          "117680.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.3982278640334908,
+        "random_avg_corr": 0.41910681189464233,
+        "n_candidates": 8
+      },
+      {
+        "date": "2023-04-28",
+        "symbols": [
+          "102960.KS",
+          "117460.KS",
+          "117680.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.3256947257490998,
+        "random_avg_corr": 0.3342140469050153,
+        "n_candidates": 8
+      },
+      {
+        "date": "2023-05-31",
+        "symbols": [
+          "091160.KS",
+          "091180.KS",
+          "102960.KS",
+          "117460.KS",
+          "117680.KS"
+        ],
+        "selected_avg_corr": 0.3932487804936126,
+        "random_avg_corr": 0.3457053312870642,
+        "n_candidates": 8
+      },
+      {
+        "date": "2023-06-30",
+        "symbols": [
+          "091160.KS",
+          "091180.KS",
+          "102960.KS",
+          "117460.KS"
+        ],
+        "selected_avg_corr": 0.33674157834610846,
+        "random_avg_corr": 0.3023382479717851,
+        "n_candidates": 8
+      },
+      {
+        "date": "2023-07-28",
+        "symbols": [
+          "091160.KS",
+          "091180.KS",
+          "102960.KS",
+          "117460.KS"
+        ],
+        "selected_avg_corr": 0.251190933317517,
+        "random_avg_corr": 0.2700890688091019,
+        "n_candidates": 8
+      },
+      {
+        "date": "2023-08-31",
+        "symbols": [
+          "091160.KS",
+          "091180.KS",
+          "102960.KS",
+          "117460.KS"
+        ],
+        "selected_avg_corr": 0.22597103027343354,
+        "random_avg_corr": 0.2628203127392056,
+        "n_candidates": 8
+      },
+      {
+        "date": "2023-09-27",
+        "symbols": [
+          "091160.KS",
+          "091180.KS",
+          "102960.KS"
+        ],
+        "selected_avg_corr": 0.13109915925962298,
+        "random_avg_corr": 0.2762876584793544,
+        "n_candidates": 8
+      },
+      {
+        "date": "2023-10-31",
+        "symbols": [
+          "091160.KS",
+          "091180.KS",
+          "102960.KS",
+          "117680.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.20185342790283095,
+        "random_avg_corr": 0.2824954174590755,
+        "n_candidates": 8
+      },
+      {
+        "date": "2023-11-30",
+        "symbols": [
+          "091160.KS",
+          "091180.KS",
+          "117680.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.1974543384928451,
+        "random_avg_corr": 0.33569700266370567,
+        "n_candidates": 8
+      },
+      {
+        "date": "2023-12-28",
+        "symbols": [
+          "091160.KS",
+          "091180.KS",
+          "117680.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.21352106871810086,
+        "random_avg_corr": 0.35588609856130127,
+        "n_candidates": 8
+      },
+      {
+        "date": "2024-01-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "117680.KS"
+        ],
+        "selected_avg_corr": 0.3802821848724211,
+        "random_avg_corr": 0.3727937898590751,
+        "n_candidates": 8
+      },
+      {
+        "date": "2024-02-29",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS"
+        ],
+        "selected_avg_corr": 0.4043968476734352,
+        "random_avg_corr": 0.4780675530977371,
+        "n_candidates": 8
+      },
+      {
+        "date": "2024-03-29",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS"
+        ],
+        "selected_avg_corr": 0.41152123511684197,
+        "random_avg_corr": 0.4443900381335389,
+        "n_candidates": 8
+      },
+      {
+        "date": "2024-04-30",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS"
+        ],
+        "selected_avg_corr": 0.38003670532081424,
+        "random_avg_corr": 0.4675777754759513,
+        "n_candidates": 8
+      },
+      {
+        "date": "2024-05-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS"
+        ],
+        "selected_avg_corr": 0.29800789246705,
+        "random_avg_corr": 0.43968397037193113,
+        "n_candidates": 8
+      },
+      {
+        "date": "2024-06-28",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS"
+        ],
+        "selected_avg_corr": 0.2789196861835444,
+        "random_avg_corr": 0.4392522725640663,
+        "n_candidates": 8
+      },
+      {
+        "date": "2024-07-31",
+        "symbols": [
+          "091170.KS",
+          "091180.KS",
+          "102960.KS"
+        ],
+        "selected_avg_corr": 0.3665639291034426,
+        "random_avg_corr": 0.39977310929167836,
+        "n_candidates": 8
+      },
+      {
+        "date": "2024-08-30",
+        "symbols": [
+          "091170.KS",
+          "102960.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.5885846873993397,
+        "random_avg_corr": 0.5592492532614602,
+        "n_candidates": 8
+      },
+      {
+        "date": "2024-09-30",
+        "symbols": [
+          "091170.KS",
+          "102960.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.5767164921681368,
+        "random_avg_corr": 0.5199285353576331,
+        "n_candidates": 8
+      },
+      {
+        "date": "2024-10-31",
+        "symbols": [
+          "091170.KS",
+          "102960.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.5371967051709429,
+        "random_avg_corr": 0.4878339828275848,
+        "n_candidates": 8
+      },
+      {
+        "date": "2024-11-29",
+        "symbols": [
+          "091170.KS",
+          "102960.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.5138344421489226,
+        "random_avg_corr": 0.48067537290437395,
+        "n_candidates": 8
+      },
+      {
+        "date": "2024-12-30",
+        "symbols": [
+          "091170.KS",
+          "102960.KS",
+          "102970.KS",
+          "140700.KS"
+        ],
+        "selected_avg_corr": 0.606347833208272,
+        "random_avg_corr": 0.5102641825603371,
+        "n_candidates": 8
+      },
+      {
+        "date": "2025-01-31",
+        "symbols": [
+          "091170.KS",
+          "102960.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.594149320752739,
+        "random_avg_corr": 0.5401710723481377,
+        "n_candidates": 8
+      },
+      {
+        "date": "2025-02-28",
+        "symbols": [
+          "091170.KS",
+          "102960.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.4840030689858777,
+        "random_avg_corr": 0.3696213071292268,
+        "n_candidates": 8
+      },
+      {
+        "date": "2025-03-31",
+        "symbols": [
+          "091170.KS",
+          "102960.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.5023135536916128,
+        "random_avg_corr": 0.41000844506080103,
+        "n_candidates": 8
+      },
+      {
+        "date": "2025-04-30",
+        "symbols": [
+          "091170.KS",
+          "102960.KS",
+          "102970.KS",
+          "117680.KS"
+        ],
+        "selected_avg_corr": 0.5162473227757708,
+        "random_avg_corr": 0.5118682797020528,
+        "n_candidates": 8
+      },
+      {
+        "date": "2025-05-30",
+        "symbols": [
+          "091170.KS",
+          "102960.KS",
+          "102970.KS",
+          "117680.KS"
+        ],
+        "selected_avg_corr": 0.5094714348384326,
+        "random_avg_corr": 0.5142233298388149,
+        "n_candidates": 8
+      },
+      {
+        "date": "2025-06-30",
+        "symbols": [
+          "091170.KS",
+          "102960.KS",
+          "102970.KS",
+          "117680.KS"
+        ],
+        "selected_avg_corr": 0.501106352462427,
+        "random_avg_corr": 0.5126682420439794,
+        "n_candidates": 8
+      },
+      {
+        "date": "2025-07-31",
+        "symbols": [
+          "091170.KS",
+          "102960.KS",
+          "102970.KS",
+          "117680.KS"
+        ],
+        "selected_avg_corr": 0.4445821797954393,
+        "random_avg_corr": 0.4593258990682187,
+        "n_candidates": 8
+      },
+      {
+        "date": "2025-08-29",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.49443719304401,
+        "random_avg_corr": 0.5113428313886127,
+        "n_candidates": 8
+      },
+      {
+        "date": "2025-09-30",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.48140784600258685,
+        "random_avg_corr": 0.5020694665219744,
+        "n_candidates": 8
+      },
+      {
+        "date": "2025-10-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.3697200587659607,
+        "random_avg_corr": 0.3371419181675794,
+        "n_candidates": 8
+      },
+      {
+        "date": "2025-11-28",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.4318854729392235,
+        "random_avg_corr": 0.4116105629324994,
+        "n_candidates": 8
+      },
+      {
+        "date": "2025-12-30",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.4204158199831115,
+        "random_avg_corr": 0.4201444349978176,
+        "n_candidates": 8
+      },
+      {
+        "date": "2026-01-30",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.36132489023276176,
+        "random_avg_corr": 0.3751887151827049,
+        "n_candidates": 8
+      },
+      {
+        "date": "2026-02-27",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.3830720772827214,
+        "random_avg_corr": 0.39962306592192715,
+        "n_candidates": 8
+      },
+      {
+        "date": "2026-03-31",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.6302371487457082,
+        "random_avg_corr": 0.6464431264634174,
+        "n_candidates": 8
+      },
+      {
+        "date": "2026-04-30",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.6620384950613205,
+        "random_avg_corr": 0.6822625187295154,
+        "n_candidates": 8
+      },
+      {
+        "date": "2026-05-29",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.6409400461824986,
+        "random_avg_corr": 0.6722028913160982,
+        "n_candidates": 8
+      },
+      {
+        "date": "2026-06-30",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102960.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.6512693105876002,
+        "random_avg_corr": 0.6601104569752718,
+        "n_candidates": 8
+      },
+      {
+        "date": "2026-07-06",
+        "symbols": [
+          "091160.KS",
+          "091170.KS",
+          "091180.KS",
+          "102970.KS"
+        ],
+        "selected_avg_corr": 0.5954779133115798,
+        "random_avg_corr": 0.6604570672269378,
+        "n_candidates": 8
+      }
+    ]
+  },
+  "yoon1j_lp": {
+    "strategy_id": "yoon1j_lp",
+    "universe": [
+      "VGT",
+      "XLF",
+      "IYH",
+      "FENY",
+      "FIDU",
+      "FSTA",
+      "IYC",
+      "XLU",
+      "XLB",
+      "FREL",
+      "FCOM"
+    ],
+    "n_rebalances": 322,
+    "selected_avg_corr_mean": 0.6136632288603678,
+    "selected_avg_corr_median": 0.6378181669890016,
+    "random_avg_corr_mean": 0.5873919709767765,
+    "high_corr_months_gt_0.7": 111,
+    "high_corr_pct": 0.3447204968944099,
+    "rows": [
+      {
+        "date": "1999-10-29",
+        "symbols": [
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.38385288611429697,
+        "random_avg_corr": 0.383852886114297,
+        "n_candidates": 3
+      },
+      {
+        "date": "1999-11-30",
+        "symbols": [
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.4077364153351064,
+        "random_avg_corr": 0.40773641533510646,
+        "n_candidates": 3
+      },
+      {
+        "date": "1999-12-31",
+        "symbols": [
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.38957678625621234,
+        "random_avg_corr": 0.3895767862562122,
+        "n_candidates": 3
+      },
+      {
+        "date": "2000-01-31",
+        "symbols": [
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.3901904468858353,
+        "random_avg_corr": 0.3901904468858354,
+        "n_candidates": 3
+      },
+      {
+        "date": "2000-02-29",
+        "symbols": [
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.4251718683563275,
+        "random_avg_corr": 0.4251718683563276,
+        "n_candidates": 3
+      },
+      {
+        "date": "2000-03-31",
+        "symbols": [
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.43613690975616665,
+        "random_avg_corr": 0.43613690975616665,
+        "n_candidates": 3
+      },
+      {
+        "date": "2000-04-28",
+        "symbols": [
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.4588011848081612,
+        "random_avg_corr": 0.45880118480816107,
+        "n_candidates": 3
+      },
+      {
+        "date": "2000-05-31",
+        "symbols": [
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.4453384483908566,
+        "random_avg_corr": 0.4453384483908565,
+        "n_candidates": 3
+      },
+      {
+        "date": "2000-06-30",
+        "symbols": [
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.40426458294217404,
+        "random_avg_corr": 0.40426458294217404,
+        "n_candidates": 3
+      },
+      {
+        "date": "2000-07-31",
+        "symbols": [
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.3924794816261639,
+        "random_avg_corr": 0.39247948162616403,
+        "n_candidates": 3
+      },
+      {
+        "date": "2000-08-31",
+        "symbols": [
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.3552010306638238,
+        "random_avg_corr": 0.35520103066382397,
+        "n_candidates": 3
+      },
+      {
+        "date": "2000-09-29",
+        "symbols": [
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.2832494503759167,
+        "random_avg_corr": 0.28324945037591676,
+        "n_candidates": 3
+      },
+      {
+        "date": "2000-10-31",
+        "symbols": [
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.217646100713791,
+        "random_avg_corr": 0.21764610071379106,
+        "n_candidates": 3
+      },
+      {
+        "date": "2000-11-30",
+        "symbols": [
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.18110145809587377,
+        "random_avg_corr": 0.18110145809587383,
+        "n_candidates": 3
+      },
+      {
+        "date": "2000-12-29",
+        "symbols": [
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.18313378115549103,
+        "random_avg_corr": 0.18313378115549103,
+        "n_candidates": 3
+      },
+      {
+        "date": "2001-01-31",
+        "symbols": [
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.16551499536882672,
+        "random_avg_corr": 0.16551499536882666,
+        "n_candidates": 3
+      },
+      {
+        "date": "2001-02-28",
+        "symbols": [
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.19369130394438291,
+        "random_avg_corr": 0.19369130394438286,
+        "n_candidates": 3
+      },
+      {
+        "date": "2001-03-30",
+        "symbols": [
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.23545297787056177,
+        "random_avg_corr": 0.2354529778705618,
+        "n_candidates": 3
+      },
+      {
+        "date": "2001-04-30",
+        "symbols": [
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.287204300367822,
+        "random_avg_corr": 0.31267932426033807,
+        "n_candidates": 5
+      },
+      {
+        "date": "2001-05-31",
+        "symbols": [
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.28535420971158293,
+        "random_avg_corr": 0.34973624947858845,
+        "n_candidates": 5
+      },
+      {
+        "date": "2001-06-29",
+        "symbols": [
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.30087961694762955,
+        "random_avg_corr": 0.3730613176751883,
+        "n_candidates": 5
+      },
+      {
+        "date": "2001-07-31",
+        "symbols": [
+          "IYC",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.43609994490260795,
+        "random_avg_corr": 0.4500687881921965,
+        "n_candidates": 5
+      },
+      {
+        "date": "2001-08-31",
+        "symbols": [
+          "IYC",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.45196524557991585,
+        "random_avg_corr": 0.4653381877368627,
+        "n_candidates": 5
+      },
+      {
+        "date": "2001-09-28",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.4457838931733512,
+        "random_avg_corr": 0.4457838931733512,
+        "n_candidates": 5
+      },
+      {
+        "date": "2001-10-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.41832516740227677,
+        "random_avg_corr": 0.41832516740227665,
+        "n_candidates": 5
+      },
+      {
+        "date": "2001-11-30",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.40751883213998585,
+        "random_avg_corr": 0.4075188321399857,
+        "n_candidates": 5
+      },
+      {
+        "date": "2001-12-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.4231357411175273,
+        "random_avg_corr": 0.42313574111752705,
+        "n_candidates": 5
+      },
+      {
+        "date": "2002-01-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.4200536563305647,
+        "random_avg_corr": 0.4200536563305646,
+        "n_candidates": 5
+      },
+      {
+        "date": "2002-02-28",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.4448908283145424,
+        "random_avg_corr": 0.4448908283145426,
+        "n_candidates": 5
+      },
+      {
+        "date": "2002-03-28",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.4358929908354593,
+        "random_avg_corr": 0.4358929908354592,
+        "n_candidates": 5
+      },
+      {
+        "date": "2002-04-30",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.496611063852564,
+        "random_avg_corr": 0.4966110638525639,
+        "n_candidates": 5
+      },
+      {
+        "date": "2002-05-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.510843612402387,
+        "random_avg_corr": 0.5108436124023871,
+        "n_candidates": 5
+      },
+      {
+        "date": "2002-06-28",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.5490323125638785,
+        "random_avg_corr": 0.5490323125638787,
+        "n_candidates": 5
+      },
+      {
+        "date": "2002-07-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6495225782216234,
+        "random_avg_corr": 0.6495225782216235,
+        "n_candidates": 5
+      },
+      {
+        "date": "2002-08-30",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6747177403154319,
+        "random_avg_corr": 0.6747177403154322,
+        "n_candidates": 5
+      },
+      {
+        "date": "2002-09-30",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6876195163674551,
+        "random_avg_corr": 0.6876195163674552,
+        "n_candidates": 5
+      },
+      {
+        "date": "2002-10-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6837861689102547,
+        "random_avg_corr": 0.683786168910255,
+        "n_candidates": 5
+      },
+      {
+        "date": "2002-11-29",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6848476471845848,
+        "random_avg_corr": 0.6848476471845851,
+        "n_candidates": 5
+      },
+      {
+        "date": "2002-12-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6831641229388442,
+        "random_avg_corr": 0.6831641229388443,
+        "n_candidates": 5
+      },
+      {
+        "date": "2003-01-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6934076914089908,
+        "random_avg_corr": 0.6934076914089905,
+        "n_candidates": 5
+      },
+      {
+        "date": "2003-02-28",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6747672882914675,
+        "random_avg_corr": 0.6747672882914674,
+        "n_candidates": 5
+      },
+      {
+        "date": "2003-03-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6821033116918593,
+        "random_avg_corr": 0.682103311691859,
+        "n_candidates": 5
+      },
+      {
+        "date": "2003-04-30",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6999036822399944,
+        "random_avg_corr": 0.6999036822399947,
+        "n_candidates": 5
+      },
+      {
+        "date": "2003-05-30",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.7108871336437448,
+        "random_avg_corr": 0.7108871336437448,
+        "n_candidates": 5
+      },
+      {
+        "date": "2003-06-30",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.7383568922400943,
+        "random_avg_corr": 0.7383568922400945,
+        "n_candidates": 5
+      },
+      {
+        "date": "2003-07-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.7114505793915987,
+        "random_avg_corr": 0.7114505793915986,
+        "n_candidates": 5
+      },
+      {
+        "date": "2003-08-29",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.7202814680113644,
+        "random_avg_corr": 0.7202814680113645,
+        "n_candidates": 5
+      },
+      {
+        "date": "2003-09-30",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6705202127714724,
+        "random_avg_corr": 0.6705202127714723,
+        "n_candidates": 5
+      },
+      {
+        "date": "2003-10-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6469758187794811,
+        "random_avg_corr": 0.6469758187794812,
+        "n_candidates": 5
+      },
+      {
+        "date": "2003-11-28",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6312783807844384,
+        "random_avg_corr": 0.6312783807844383,
+        "n_candidates": 5
+      },
+      {
+        "date": "2003-12-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.5977355129371557,
+        "random_avg_corr": 0.5977355129371558,
+        "n_candidates": 5
+      },
+      {
+        "date": "2004-01-30",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.5676303845784594,
+        "random_avg_corr": 0.5676303845784594,
+        "n_candidates": 5
+      },
+      {
+        "date": "2004-02-27",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.528829457490319,
+        "random_avg_corr": 0.5288294574903191,
+        "n_candidates": 5
+      },
+      {
+        "date": "2004-03-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.5726902263586024,
+        "random_avg_corr": 0.5726902263586024,
+        "n_candidates": 5
+      },
+      {
+        "date": "2004-04-30",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.5895691471614268,
+        "random_avg_corr": 0.5895691471614268,
+        "n_candidates": 5
+      },
+      {
+        "date": "2004-05-28",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6383333151390762,
+        "random_avg_corr": 0.6383333151390761,
+        "n_candidates": 5
+      },
+      {
+        "date": "2004-06-30",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6400785630436654,
+        "random_avg_corr": 0.6400785630436655,
+        "n_candidates": 5
+      },
+      {
+        "date": "2004-07-30",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6483569401514784,
+        "random_avg_corr": 0.6483569401514786,
+        "n_candidates": 5
+      },
+      {
+        "date": "2004-08-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6708026528744437,
+        "random_avg_corr": 0.6708026528744436,
+        "n_candidates": 5
+      },
+      {
+        "date": "2004-09-30",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6249242488948227,
+        "random_avg_corr": 0.6249242488948226,
+        "n_candidates": 5
+      },
+      {
+        "date": "2004-10-29",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6037817755802541,
+        "random_avg_corr": 0.6037817755802543,
+        "n_candidates": 5
+      },
+      {
+        "date": "2004-11-30",
+        "symbols": [
+          "IYC",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.571865165447238,
+        "random_avg_corr": 0.4851942542883346,
+        "n_candidates": 6
+      },
+      {
+        "date": "2004-12-31",
+        "symbols": [
+          "IYC",
+          "VGT",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.475295543439661,
+        "random_avg_corr": 0.4860733430276209,
+        "n_candidates": 6
+      },
+      {
+        "date": "2005-01-31",
+        "symbols": [
+          "IYC",
+          "VGT",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.5014048976698768,
+        "random_avg_corr": 0.4908990350436382,
+        "n_candidates": 6
+      },
+      {
+        "date": "2005-02-28",
+        "symbols": [
+          "IYC",
+          "VGT",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.5083702772960561,
+        "random_avg_corr": 0.5147039318175666,
+        "n_candidates": 6
+      },
+      {
+        "date": "2005-03-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLB",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.49387171530723945,
+        "random_avg_corr": 0.527408722556616,
+        "n_candidates": 6
+      },
+      {
+        "date": "2005-04-29",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.5237785006842129,
+        "random_avg_corr": 0.5655344397684235,
+        "n_candidates": 6
+      },
+      {
+        "date": "2005-05-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.5289610617811473,
+        "random_avg_corr": 0.5855214097427462,
+        "n_candidates": 6
+      },
+      {
+        "date": "2005-06-30",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.5702408946020988,
+        "random_avg_corr": 0.6171483670182251,
+        "n_candidates": 6
+      },
+      {
+        "date": "2005-07-29",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.562311892441337,
+        "random_avg_corr": 0.6012976784920852,
+        "n_candidates": 6
+      },
+      {
+        "date": "2005-08-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.5681130854394094,
+        "random_avg_corr": 0.600864556962048,
+        "n_candidates": 6
+      },
+      {
+        "date": "2005-09-30",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.5479561713063462,
+        "random_avg_corr": 0.611412092937351,
+        "n_candidates": 6
+      },
+      {
+        "date": "2005-10-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6194395448184244,
+        "random_avg_corr": 0.6249456300739796,
+        "n_candidates": 6
+      },
+      {
+        "date": "2005-11-30",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6124977478697717,
+        "random_avg_corr": 0.6073159539666401,
+        "n_candidates": 6
+      },
+      {
+        "date": "2005-12-30",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6097199586259108,
+        "random_avg_corr": 0.6125588586019323,
+        "n_candidates": 6
+      },
+      {
+        "date": "2006-01-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6026347463691418,
+        "random_avg_corr": 0.603453566816802,
+        "n_candidates": 6
+      },
+      {
+        "date": "2006-02-28",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.5929598194200347,
+        "random_avg_corr": 0.5970925018493112,
+        "n_candidates": 6
+      },
+      {
+        "date": "2006-03-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.6747033446322156,
+        "random_avg_corr": 0.5802772609552134,
+        "n_candidates": 6
+      },
+      {
+        "date": "2006-04-28",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.6573272871016238,
+        "random_avg_corr": 0.5579125903052674,
+        "n_candidates": 6
+      },
+      {
+        "date": "2006-05-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLB",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.6439395615173235,
+        "random_avg_corr": 0.5869783495301442,
+        "n_candidates": 6
+      },
+      {
+        "date": "2006-06-30",
+        "symbols": [
+          "IYC",
+          "VGT",
+          "XLB",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7410916699070088,
+        "random_avg_corr": 0.6492008262267905,
+        "n_candidates": 6
+      },
+      {
+        "date": "2006-07-31",
+        "symbols": [
+          "VGT",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6424632284152405,
+        "random_avg_corr": 0.6670611334837299,
+        "n_candidates": 6
+      },
+      {
+        "date": "2006-08-31",
+        "symbols": [
+          "VGT",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6109166664049485,
+        "random_avg_corr": 0.6670016527086238,
+        "n_candidates": 6
+      },
+      {
+        "date": "2006-09-29",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6094155406558847,
+        "random_avg_corr": 0.6512166078799677,
+        "n_candidates": 6
+      },
+      {
+        "date": "2006-10-31",
+        "symbols": [
+          "IYH",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6089041575878619,
+        "random_avg_corr": 0.6348687707408883,
+        "n_candidates": 6
+      },
+      {
+        "date": "2006-11-30",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.5166994784305226,
+        "random_avg_corr": 0.5742959970706873,
+        "n_candidates": 6
+      },
+      {
+        "date": "2006-12-29",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.443629491034285,
+        "random_avg_corr": 0.4670471367438048,
+        "n_candidates": 6
+      },
+      {
+        "date": "2007-01-31",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.353819210229787,
+        "random_avg_corr": 0.3740974702114971,
+        "n_candidates": 6
+      },
+      {
+        "date": "2007-02-28",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.49431309206445007,
+        "random_avg_corr": 0.5273978011268938,
+        "n_candidates": 6
+      },
+      {
+        "date": "2007-03-30",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.5866868587499058,
+        "random_avg_corr": 0.6221534093499602,
+        "n_candidates": 6
+      },
+      {
+        "date": "2007-04-30",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.5834982418315368,
+        "random_avg_corr": 0.6159740393766994,
+        "n_candidates": 6
+      },
+      {
+        "date": "2007-05-31",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6339932585371425,
+        "random_avg_corr": 0.6867624892060732,
+        "n_candidates": 6
+      },
+      {
+        "date": "2007-06-29",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6913298439935266,
+        "random_avg_corr": 0.7179587454652034,
+        "n_candidates": 6
+      },
+      {
+        "date": "2007-07-31",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLB",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.7332831416822154,
+        "random_avg_corr": 0.769553529095807,
+        "n_candidates": 6
+      },
+      {
+        "date": "2007-08-31",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLB"
+        ],
+        "selected_avg_corr": 0.7910739713938453,
+        "random_avg_corr": 0.7680330752555476,
+        "n_candidates": 6
+      },
+      {
+        "date": "2007-09-28",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLB"
+        ],
+        "selected_avg_corr": 0.7920416612038318,
+        "random_avg_corr": 0.7641819235038614,
+        "n_candidates": 6
+      },
+      {
+        "date": "2007-10-31",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLB"
+        ],
+        "selected_avg_corr": 0.7834373152903886,
+        "random_avg_corr": 0.7697346955493044,
+        "n_candidates": 6
+      },
+      {
+        "date": "2007-11-30",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6996682513848135,
+        "random_avg_corr": 0.7479496887498561,
+        "n_candidates": 6
+      },
+      {
+        "date": "2007-12-31",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6914564110281547,
+        "random_avg_corr": 0.7383638576592513,
+        "n_candidates": 6
+      },
+      {
+        "date": "2008-01-31",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.619193689051204,
+        "random_avg_corr": 0.6663701696759274,
+        "n_candidates": 6
+      },
+      {
+        "date": "2008-02-29",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLB",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.6609190561741444,
+        "random_avg_corr": 0.631731541204403,
+        "n_candidates": 6
+      },
+      {
+        "date": "2008-03-31",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.6248427229810921,
+        "random_avg_corr": 0.6058119473922523,
+        "n_candidates": 6
+      },
+      {
+        "date": "2008-04-30",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.5849347022831457,
+        "random_avg_corr": 0.6098099283263146,
+        "n_candidates": 6
+      },
+      {
+        "date": "2008-05-30",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLB",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.5544691925222403,
+        "random_avg_corr": 0.5941219096267679,
+        "n_candidates": 6
+      },
+      {
+        "date": "2008-06-30",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLB",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.5826423047509413,
+        "random_avg_corr": 0.5808936443755858,
+        "n_candidates": 6
+      },
+      {
+        "date": "2008-07-31",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.6447222467058026,
+        "random_avg_corr": 0.543645507886992,
+        "n_candidates": 6
+      },
+      {
+        "date": "2008-08-29",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.6676996272551713,
+        "random_avg_corr": 0.5498028248070503,
+        "n_candidates": 6
+      },
+      {
+        "date": "2008-09-30",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7596244599192966,
+        "random_avg_corr": 0.6175594041666227,
+        "n_candidates": 6
+      },
+      {
+        "date": "2008-10-31",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7662252069816944,
+        "random_avg_corr": 0.7641830346983757,
+        "n_candidates": 6
+      },
+      {
+        "date": "2008-11-28",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.8028827773629429,
+        "random_avg_corr": 0.7947594508860208,
+        "n_candidates": 6
+      },
+      {
+        "date": "2008-12-31",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.787407352513026,
+        "random_avg_corr": 0.8197223253627357,
+        "n_candidates": 6
+      },
+      {
+        "date": "2009-01-30",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.7946367950348462,
+        "random_avg_corr": 0.8118480569627473,
+        "n_candidates": 6
+      },
+      {
+        "date": "2009-02-27",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.7890511348000349,
+        "random_avg_corr": 0.8244602335760622,
+        "n_candidates": 6
+      },
+      {
+        "date": "2009-03-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.8065436757751895,
+        "random_avg_corr": 0.8174470205218299,
+        "n_candidates": 6
+      },
+      {
+        "date": "2009-04-30",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLB",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.8183925160873585,
+        "random_avg_corr": 0.767881342858318,
+        "n_candidates": 6
+      },
+      {
+        "date": "2009-05-29",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLB",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.7383926965976114,
+        "random_avg_corr": 0.7341006418261422,
+        "n_candidates": 6
+      },
+      {
+        "date": "2009-06-30",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLB",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6543426951943289,
+        "random_avg_corr": 0.6879241462689023,
+        "n_candidates": 6
+      },
+      {
+        "date": "2009-07-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLB",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6957642958984231,
+        "random_avg_corr": 0.68243428664406,
+        "n_candidates": 6
+      },
+      {
+        "date": "2009-08-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLB",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.69595112758406,
+        "random_avg_corr": 0.6602634049149047,
+        "n_candidates": 6
+      },
+      {
+        "date": "2009-09-30",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.5914847351385726,
+        "random_avg_corr": 0.5915083004256141,
+        "n_candidates": 6
+      },
+      {
+        "date": "2009-10-30",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.6379862547816512,
+        "random_avg_corr": 0.6549643139664766,
+        "n_candidates": 6
+      },
+      {
+        "date": "2009-11-30",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.708809111892652,
+        "random_avg_corr": 0.7063654218421735,
+        "n_candidates": 6
+      },
+      {
+        "date": "2009-12-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7106611810901479,
+        "random_avg_corr": 0.7087623133604354,
+        "n_candidates": 6
+      },
+      {
+        "date": "2010-01-29",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7324409488250184,
+        "random_avg_corr": 0.7026625556989824,
+        "n_candidates": 6
+      },
+      {
+        "date": "2010-02-26",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7766297673651427,
+        "random_avg_corr": 0.7455411594903683,
+        "n_candidates": 6
+      },
+      {
+        "date": "2010-03-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7679002649515106,
+        "random_avg_corr": 0.7415502396046484,
+        "n_candidates": 6
+      },
+      {
+        "date": "2010-04-30",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7386275391281485,
+        "random_avg_corr": 0.7126812737936177,
+        "n_candidates": 6
+      },
+      {
+        "date": "2010-05-28",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.8141955724125752,
+        "random_avg_corr": 0.7848738696141905,
+        "n_candidates": 6
+      },
+      {
+        "date": "2010-06-30",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT"
+        ],
+        "selected_avg_corr": 0.8582732642557246,
+        "random_avg_corr": 0.8269943330558484,
+        "n_candidates": 6
+      },
+      {
+        "date": "2010-07-30",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.8363372673350837,
+        "random_avg_corr": 0.8290399805131281,
+        "n_candidates": 6
+      },
+      {
+        "date": "2010-08-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.8358864311310101,
+        "random_avg_corr": 0.8358025444991107,
+        "n_candidates": 6
+      },
+      {
+        "date": "2010-09-30",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.8331669322052244,
+        "random_avg_corr": 0.8390162709238197,
+        "n_candidates": 6
+      },
+      {
+        "date": "2010-10-29",
+        "symbols": [
+          "IYC",
+          "VGT",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.8459820768392455,
+        "random_avg_corr": 0.8460305655161436,
+        "n_candidates": 6
+      },
+      {
+        "date": "2010-11-30",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.7993137111661786,
+        "random_avg_corr": 0.7984887524801718,
+        "n_candidates": 6
+      },
+      {
+        "date": "2010-12-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.7628932576601212,
+        "random_avg_corr": 0.7570489002215329,
+        "n_candidates": 6
+      },
+      {
+        "date": "2011-01-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.737781164885935,
+        "random_avg_corr": 0.732815094016787,
+        "n_candidates": 6
+      },
+      {
+        "date": "2011-02-28",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.7084250631875592,
+        "random_avg_corr": 0.7040998913578472,
+        "n_candidates": 6
+      },
+      {
+        "date": "2011-03-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.7085833104630653,
+        "random_avg_corr": 0.705967438328435,
+        "n_candidates": 6
+      },
+      {
+        "date": "2011-04-29",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.7117391608315191,
+        "random_avg_corr": 0.7013068201561552,
+        "n_candidates": 6
+      },
+      {
+        "date": "2011-05-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6986828036616789,
+        "random_avg_corr": 0.6879954390517803,
+        "n_candidates": 6
+      },
+      {
+        "date": "2011-06-30",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.7298875884660956,
+        "random_avg_corr": 0.7075808596712531,
+        "n_candidates": 6
+      },
+      {
+        "date": "2011-07-29",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.725730959662256,
+        "random_avg_corr": 0.724523489665948,
+        "n_candidates": 6
+      },
+      {
+        "date": "2011-08-31",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.8213664823502116,
+        "random_avg_corr": 0.8664485780148558,
+        "n_candidates": 6
+      },
+      {
+        "date": "2011-09-30",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.8475842550194598,
+        "random_avg_corr": 0.8674960994219739,
+        "n_candidates": 6
+      },
+      {
+        "date": "2011-10-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.8673878002221684,
+        "random_avg_corr": 0.8741700522031456,
+        "n_candidates": 6
+      },
+      {
+        "date": "2011-11-30",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.8801533965241479,
+        "random_avg_corr": 0.8846983688625556,
+        "n_candidates": 6
+      },
+      {
+        "date": "2011-12-30",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.8762322389313305,
+        "random_avg_corr": 0.8861350667046681,
+        "n_candidates": 6
+      },
+      {
+        "date": "2012-01-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.8709440839835342,
+        "random_avg_corr": 0.8738269668885787,
+        "n_candidates": 6
+      },
+      {
+        "date": "2012-02-29",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.8121053622745459,
+        "random_avg_corr": 0.8293846373340968,
+        "n_candidates": 6
+      },
+      {
+        "date": "2012-03-30",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.7985152598856515,
+        "random_avg_corr": 0.8316253990314095,
+        "n_candidates": 6
+      },
+      {
+        "date": "2012-04-30",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.7689561142654474,
+        "random_avg_corr": 0.7840192155451927,
+        "n_candidates": 6
+      },
+      {
+        "date": "2012-05-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6714702354708568,
+        "random_avg_corr": 0.6902778758171062,
+        "n_candidates": 6
+      },
+      {
+        "date": "2012-06-29",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6235144567159638,
+        "random_avg_corr": 0.6869485686648292,
+        "n_candidates": 6
+      },
+      {
+        "date": "2012-07-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.680075839281915,
+        "random_avg_corr": 0.7066452534970057,
+        "n_candidates": 6
+      },
+      {
+        "date": "2012-08-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6823627403846106,
+        "random_avg_corr": 0.7023567929266226,
+        "n_candidates": 6
+      },
+      {
+        "date": "2012-09-28",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6882517445836298,
+        "random_avg_corr": 0.7160752663520014,
+        "n_candidates": 6
+      },
+      {
+        "date": "2012-10-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6736768291549216,
+        "random_avg_corr": 0.6910544436240887,
+        "n_candidates": 6
+      },
+      {
+        "date": "2012-11-30",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6622543156647228,
+        "random_avg_corr": 0.7108519180426285,
+        "n_candidates": 6
+      },
+      {
+        "date": "2012-12-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7848133059693763,
+        "random_avg_corr": 0.6396945641461524,
+        "n_candidates": 6
+      },
+      {
+        "date": "2013-01-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7668677959127642,
+        "random_avg_corr": 0.6367906839514512,
+        "n_candidates": 6
+      },
+      {
+        "date": "2013-02-28",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7944869918663375,
+        "random_avg_corr": 0.67264402447688,
+        "n_candidates": 6
+      },
+      {
+        "date": "2013-03-28",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7685023936009604,
+        "random_avg_corr": 0.6782709633598838,
+        "n_candidates": 6
+      },
+      {
+        "date": "2013-04-30",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7935861765085391,
+        "random_avg_corr": 0.6639763042140469,
+        "n_candidates": 6
+      },
+      {
+        "date": "2013-05-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.775142678796911,
+        "random_avg_corr": 0.6630488257137651,
+        "n_candidates": 6
+      },
+      {
+        "date": "2013-06-28",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7769295214242908,
+        "random_avg_corr": 0.7408396795472171,
+        "n_candidates": 6
+      },
+      {
+        "date": "2013-07-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7647666546192683,
+        "random_avg_corr": 0.6897628193689072,
+        "n_candidates": 6
+      },
+      {
+        "date": "2013-08-30",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.76258631024446,
+        "random_avg_corr": 0.6765433835883042,
+        "n_candidates": 6
+      },
+      {
+        "date": "2013-09-30",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7633412996696372,
+        "random_avg_corr": 0.6894966880156211,
+        "n_candidates": 6
+      },
+      {
+        "date": "2013-10-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7786380242879272,
+        "random_avg_corr": 0.695101207702019,
+        "n_candidates": 6
+      },
+      {
+        "date": "2013-11-29",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7905523628801737,
+        "random_avg_corr": 0.6981496675493987,
+        "n_candidates": 6
+      },
+      {
+        "date": "2013-12-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7498670690209153,
+        "random_avg_corr": 0.659368529853396,
+        "n_candidates": 6
+      },
+      {
+        "date": "2014-01-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.790116284899938,
+        "random_avg_corr": 0.6902339991920631,
+        "n_candidates": 6
+      },
+      {
+        "date": "2014-02-28",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7900159342461551,
+        "random_avg_corr": 0.6945458354632578,
+        "n_candidates": 6
+      },
+      {
+        "date": "2014-03-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7896202709428369,
+        "random_avg_corr": 0.693064028701973,
+        "n_candidates": 6
+      },
+      {
+        "date": "2014-04-30",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7945404132673137,
+        "random_avg_corr": 0.6287392170122882,
+        "n_candidates": 6
+      },
+      {
+        "date": "2014-05-30",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.8022930811486418,
+        "random_avg_corr": 0.6301105808260753,
+        "n_candidates": 6
+      },
+      {
+        "date": "2014-06-30",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7915135326259984,
+        "random_avg_corr": 0.598843765154141,
+        "n_candidates": 6
+      },
+      {
+        "date": "2014-07-31",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7999872603874977,
+        "random_avg_corr": 0.5501370727260763,
+        "n_candidates": 6
+      },
+      {
+        "date": "2014-08-29",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.75178947159699,
+        "random_avg_corr": 0.5143939761163999,
+        "n_candidates": 10
+      },
+      {
+        "date": "2014-09-30",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7747075136463047,
+        "random_avg_corr": 0.5407999919591157,
+        "n_candidates": 10
+      },
+      {
+        "date": "2014-10-31",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7982184333435236,
+        "random_avg_corr": 0.6049633017817589,
+        "n_candidates": 10
+      },
+      {
+        "date": "2014-11-28",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7785490270970056,
+        "random_avg_corr": 0.5626210424966047,
+        "n_candidates": 10
+      },
+      {
+        "date": "2014-12-31",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.782692182249713,
+        "random_avg_corr": 0.5896550297543255,
+        "n_candidates": 10
+      },
+      {
+        "date": "2015-01-30",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7692115908840972,
+        "random_avg_corr": 0.6116196157230434,
+        "n_candidates": 10
+      },
+      {
+        "date": "2015-02-27",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.75622215212226,
+        "random_avg_corr": 0.6205881829409499,
+        "n_candidates": 10
+      },
+      {
+        "date": "2015-03-31",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7578019329234787,
+        "random_avg_corr": 0.606377817366257,
+        "n_candidates": 10
+      },
+      {
+        "date": "2015-04-30",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7015199269811455,
+        "random_avg_corr": 0.6227681157030253,
+        "n_candidates": 10
+      },
+      {
+        "date": "2015-05-29",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7372325061323499,
+        "random_avg_corr": 0.6465730674770357,
+        "n_candidates": 10
+      },
+      {
+        "date": "2015-06-30",
+        "symbols": [
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7580447783057546,
+        "random_avg_corr": 0.6250448470537735,
+        "n_candidates": 10
+      },
+      {
+        "date": "2015-07-31",
+        "symbols": [
+          "FSTA",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7038364264157821,
+        "random_avg_corr": 0.616579522156212,
+        "n_candidates": 10
+      },
+      {
+        "date": "2015-08-31",
+        "symbols": [
+          "FENY",
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7320663795317819,
+        "random_avg_corr": 0.7125296196409691,
+        "n_candidates": 10
+      },
+      {
+        "date": "2015-09-30",
+        "symbols": [
+          "FENY",
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7616832580488603,
+        "random_avg_corr": 0.7577254077456858,
+        "n_candidates": 10
+      },
+      {
+        "date": "2015-10-30",
+        "symbols": [
+          "IYC",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.8674934836446232,
+        "random_avg_corr": 0.708058180785812,
+        "n_candidates": 10
+      },
+      {
+        "date": "2015-11-30",
+        "symbols": [
+          "FSTA",
+          "IYC",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.8367224805699399,
+        "random_avg_corr": 0.6903939643585567,
+        "n_candidates": 11
+      },
+      {
+        "date": "2015-12-31",
+        "symbols": [
+          "FREL",
+          "FSTA",
+          "IYC",
+          "VGT"
+        ],
+        "selected_avg_corr": 0.7858115533317616,
+        "random_avg_corr": 0.7091260055427979,
+        "n_candidates": 11
+      },
+      {
+        "date": "2016-01-29",
+        "symbols": [
+          "FREL",
+          "FSTA",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.7424933869281714,
+        "random_avg_corr": 0.7384603717202667,
+        "n_candidates": 11
+      },
+      {
+        "date": "2016-02-29",
+        "symbols": [
+          "FREL",
+          "FSTA",
+          "XLB",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6090875694907413,
+        "random_avg_corr": 0.6934119765412728,
+        "n_candidates": 11
+      },
+      {
+        "date": "2016-03-31",
+        "symbols": [
+          "FREL",
+          "FSTA",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6260319156548312,
+        "random_avg_corr": 0.6593138687101482,
+        "n_candidates": 11
+      },
+      {
+        "date": "2016-04-29",
+        "symbols": [
+          "FREL",
+          "FSTA",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6329842099784253,
+        "random_avg_corr": 0.6410882471719506,
+        "n_candidates": 11
+      },
+      {
+        "date": "2016-05-31",
+        "symbols": [
+          "FIDU",
+          "FREL",
+          "FSTA",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6183574759718145,
+        "random_avg_corr": 0.6378033919264533,
+        "n_candidates": 11
+      },
+      {
+        "date": "2016-06-30",
+        "symbols": [
+          "FENY",
+          "FIDU",
+          "FSTA",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.49368087713870384,
+        "random_avg_corr": 0.6210162671945104,
+        "n_candidates": 11
+      },
+      {
+        "date": "2016-07-29",
+        "symbols": [
+          "FIDU",
+          "FSTA",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.4275444567590254,
+        "random_avg_corr": 0.5622253684828479,
+        "n_candidates": 11
+      },
+      {
+        "date": "2016-08-31",
+        "symbols": [
+          "FIDU",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.745594700525727,
+        "random_avg_corr": 0.5010639095118665,
+        "n_candidates": 11
+      },
+      {
+        "date": "2016-09-30",
+        "symbols": [
+          "FIDU",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7875325565445603,
+        "random_avg_corr": 0.5565780898770704,
+        "n_candidates": 11
+      },
+      {
+        "date": "2016-10-31",
+        "symbols": [
+          "FENY",
+          "FIDU",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7422901761839332,
+        "random_avg_corr": 0.5847147444091708,
+        "n_candidates": 11
+      },
+      {
+        "date": "2016-11-30",
+        "symbols": [
+          "FENY",
+          "FIDU",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.6453085163743851,
+        "random_avg_corr": 0.5180231381888899,
+        "n_candidates": 11
+      },
+      {
+        "date": "2016-12-30",
+        "symbols": [
+          "FENY",
+          "FIDU",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.49268368067628754,
+        "random_avg_corr": 0.4337403562114797,
+        "n_candidates": 11
+      },
+      {
+        "date": "2017-01-31",
+        "symbols": [
+          "FENY",
+          "FIDU",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.49010315357250306,
+        "random_avg_corr": 0.4302511984504213,
+        "n_candidates": 11
+      },
+      {
+        "date": "2017-02-28",
+        "symbols": [
+          "FENY",
+          "FIDU",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.48317450090166836,
+        "random_avg_corr": 0.4438565275047892,
+        "n_candidates": 11
+      },
+      {
+        "date": "2017-03-31",
+        "symbols": [
+          "FIDU",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.5113988883714363,
+        "random_avg_corr": 0.2900327258444698,
+        "n_candidates": 11
+      },
+      {
+        "date": "2017-04-28",
+        "symbols": [
+          "FIDU",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.47184472840261654,
+        "random_avg_corr": 0.3258433911186345,
+        "n_candidates": 11
+      },
+      {
+        "date": "2017-05-31",
+        "symbols": [
+          "FIDU",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.5204761013391491,
+        "random_avg_corr": 0.35004145044235024,
+        "n_candidates": 11
+      },
+      {
+        "date": "2017-06-30",
+        "symbols": [
+          "FIDU",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.5176571844045968,
+        "random_avg_corr": 0.3080783725121219,
+        "n_candidates": 11
+      },
+      {
+        "date": "2017-07-31",
+        "symbols": [
+          "FIDU",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.5088932645058448,
+        "random_avg_corr": 0.31719330768715387,
+        "n_candidates": 11
+      },
+      {
+        "date": "2017-08-31",
+        "symbols": [
+          "FIDU",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.544297746832111,
+        "random_avg_corr": 0.3193590412404441,
+        "n_candidates": 11
+      },
+      {
+        "date": "2017-09-29",
+        "symbols": [
+          "FIDU",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.5180400419441069,
+        "random_avg_corr": 0.3602532716256237,
+        "n_candidates": 11
+      },
+      {
+        "date": "2017-10-31",
+        "symbols": [
+          "FIDU",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.4594567645012712,
+        "random_avg_corr": 0.3004982266411856,
+        "n_candidates": 11
+      },
+      {
+        "date": "2017-11-30",
+        "symbols": [
+          "FIDU",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.38052728709370726,
+        "random_avg_corr": 0.2630276448807842,
+        "n_candidates": 11
+      },
+      {
+        "date": "2017-12-29",
+        "symbols": [
+          "FIDU",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.41426173400091315,
+        "random_avg_corr": 0.2542183944698124,
+        "n_candidates": 11
+      },
+      {
+        "date": "2018-01-31",
+        "symbols": [
+          "FIDU",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.4444370161844881,
+        "random_avg_corr": 0.28492384593437314,
+        "n_candidates": 11
+      },
+      {
+        "date": "2018-02-28",
+        "symbols": [
+          "FIDU",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.6936758372533548,
+        "random_avg_corr": 0.5080890949936564,
+        "n_candidates": 11
+      },
+      {
+        "date": "2018-03-29",
+        "symbols": [
+          "FIDU",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7786499214811736,
+        "random_avg_corr": 0.5976982972206045,
+        "n_candidates": 11
+      },
+      {
+        "date": "2018-04-30",
+        "symbols": [
+          "FIDU",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7922051530257542,
+        "random_avg_corr": 0.5675468748731535,
+        "n_candidates": 11
+      },
+      {
+        "date": "2018-05-31",
+        "symbols": [
+          "FIDU",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7929623185198137,
+        "random_avg_corr": 0.6225382494114975,
+        "n_candidates": 11
+      },
+      {
+        "date": "2018-06-29",
+        "symbols": [
+          "FENY",
+          "IYH",
+          "VGT"
+        ],
+        "selected_avg_corr": 0.6771607271387324,
+        "random_avg_corr": 0.5635291515352766,
+        "n_candidates": 11
+      },
+      {
+        "date": "2018-07-31",
+        "symbols": [
+          "FENY",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.6810635931565906,
+        "random_avg_corr": 0.5780936359663331,
+        "n_candidates": 11
+      },
+      {
+        "date": "2018-08-31",
+        "symbols": [
+          "FENY",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.5672857169420783,
+        "random_avg_corr": 0.44454623843598934,
+        "n_candidates": 11
+      },
+      {
+        "date": "2018-09-28",
+        "symbols": [
+          "FENY",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.4280109927098228,
+        "random_avg_corr": 0.36924063281322633,
+        "n_candidates": 11
+      },
+      {
+        "date": "2018-10-31",
+        "symbols": [
+          "FREL",
+          "IYH",
+          "VGT",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.3100625822866154,
+        "random_avg_corr": 0.44701375371537727,
+        "n_candidates": 11
+      },
+      {
+        "date": "2018-11-30",
+        "symbols": [
+          "FREL",
+          "FSTA",
+          "IYC",
+          "IYH",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.40447518077353595,
+        "random_avg_corr": 0.45906473610151244,
+        "n_candidates": 11
+      },
+      {
+        "date": "2018-12-31",
+        "symbols": [
+          "FREL",
+          "FSTA",
+          "IYH",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.5763253231130437,
+        "random_avg_corr": 0.5611345955164573,
+        "n_candidates": 11
+      },
+      {
+        "date": "2019-01-31",
+        "symbols": [
+          "FREL",
+          "FSTA",
+          "IYH",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.5962456706661502,
+        "random_avg_corr": 0.6171843772214994,
+        "n_candidates": 11
+      },
+      {
+        "date": "2019-02-28",
+        "symbols": [
+          "FREL",
+          "FSTA",
+          "IYH",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.5805584478579456,
+        "random_avg_corr": 0.6643954868346748,
+        "n_candidates": 11
+      },
+      {
+        "date": "2019-03-29",
+        "symbols": [
+          "FREL",
+          "FSTA",
+          "IYH",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.5854101829318414,
+        "random_avg_corr": 0.6059305056022741,
+        "n_candidates": 11
+      },
+      {
+        "date": "2019-04-30",
+        "symbols": [
+          "FIDU",
+          "FREL",
+          "FSTA",
+          "VGT",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.5466885232206902,
+        "random_avg_corr": 0.6425950827602941,
+        "n_candidates": 11
+      },
+      {
+        "date": "2019-05-31",
+        "symbols": [
+          "FREL",
+          "FSTA",
+          "IYC",
+          "VGT",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.5726314866641654,
+        "random_avg_corr": 0.6407747716886524,
+        "n_candidates": 11
+      },
+      {
+        "date": "2019-06-28",
+        "symbols": [
+          "FREL",
+          "FSTA",
+          "IYC",
+          "VGT",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.4169442025968627,
+        "random_avg_corr": 0.5010538035683332,
+        "n_candidates": 11
+      },
+      {
+        "date": "2019-07-31",
+        "symbols": [
+          "FSTA",
+          "IYC",
+          "VGT",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.40307018451285287,
+        "random_avg_corr": 0.4713979645061855,
+        "n_candidates": 11
+      },
+      {
+        "date": "2019-08-30",
+        "symbols": [
+          "FIDU",
+          "FSTA",
+          "IYC",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7450930290934423,
+        "random_avg_corr": 0.583042503012492,
+        "n_candidates": 11
+      },
+      {
+        "date": "2019-09-30",
+        "symbols": [
+          "FIDU",
+          "FSTA",
+          "IYC",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7261272412758547,
+        "random_avg_corr": 0.5144658575608142,
+        "n_candidates": 11
+      },
+      {
+        "date": "2019-10-31",
+        "symbols": [
+          "FIDU",
+          "FSTA",
+          "IYC",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7436824617538482,
+        "random_avg_corr": 0.5994095277389841,
+        "n_candidates": 11
+      },
+      {
+        "date": "2019-11-29",
+        "symbols": [
+          "FIDU",
+          "FSTA",
+          "IYC",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7209129528715691,
+        "random_avg_corr": 0.5343880996968758,
+        "n_candidates": 11
+      },
+      {
+        "date": "2019-12-31",
+        "symbols": [
+          "FIDU",
+          "FSTA",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.6793779061371885,
+        "random_avg_corr": 0.5458121413710014,
+        "n_candidates": 11
+      },
+      {
+        "date": "2020-01-31",
+        "symbols": [
+          "FIDU",
+          "FSTA",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.6992320012031195,
+        "random_avg_corr": 0.5807569517977913,
+        "n_candidates": 11
+      },
+      {
+        "date": "2020-02-28",
+        "symbols": [
+          "FIDU",
+          "FSTA",
+          "IYH",
+          "VGT",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.5769454622903163,
+        "random_avg_corr": 0.6188587245792756,
+        "n_candidates": 11
+      },
+      {
+        "date": "2020-03-31",
+        "symbols": [
+          "FSTA",
+          "VGT",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.872199429204873,
+        "random_avg_corr": 0.8827731043185119,
+        "n_candidates": 11
+      },
+      {
+        "date": "2020-04-30",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.9187153333935494,
+        "random_avg_corr": 0.8863045820284762,
+        "n_candidates": 11
+      },
+      {
+        "date": "2020-05-29",
+        "symbols": [
+          "IYC",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.9065408539061844,
+        "random_avg_corr": 0.8566531108972106,
+        "n_candidates": 11
+      },
+      {
+        "date": "2020-06-30",
+        "symbols": [
+          "FCOM",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.9020966211756928,
+        "random_avg_corr": 0.855907697363649,
+        "n_candidates": 11
+      },
+      {
+        "date": "2020-07-31",
+        "symbols": [
+          "FCOM",
+          "IYH",
+          "VGT"
+        ],
+        "selected_avg_corr": 0.9181842964216477,
+        "random_avg_corr": 0.846980461119169,
+        "n_candidates": 11
+      },
+      {
+        "date": "2020-08-31",
+        "symbols": [
+          "FCOM",
+          "IYC",
+          "IYH",
+          "VGT"
+        ],
+        "selected_avg_corr": 0.9125593963469955,
+        "random_avg_corr": 0.8539459835497127,
+        "n_candidates": 11
+      },
+      {
+        "date": "2020-09-30",
+        "symbols": [
+          "FSTA",
+          "IYC",
+          "IYH",
+          "VGT"
+        ],
+        "selected_avg_corr": 0.7565975069858525,
+        "random_avg_corr": 0.7167807988711627,
+        "n_candidates": 11
+      },
+      {
+        "date": "2020-10-30",
+        "symbols": [
+          "FSTA",
+          "IYC",
+          "IYH",
+          "VGT"
+        ],
+        "selected_avg_corr": 0.7201424805784131,
+        "random_avg_corr": 0.6886072111537412,
+        "n_candidates": 11
+      },
+      {
+        "date": "2020-11-30",
+        "symbols": [
+          "FIDU",
+          "FSTA",
+          "IYC",
+          "IYH",
+          "VGT"
+        ],
+        "selected_avg_corr": 0.7014896548345011,
+        "random_avg_corr": 0.653838668726461,
+        "n_candidates": 11
+      },
+      {
+        "date": "2020-12-31",
+        "symbols": [
+          "FIDU",
+          "FSTA",
+          "IYC",
+          "IYH",
+          "VGT"
+        ],
+        "selected_avg_corr": 0.6237747909176692,
+        "random_avg_corr": 0.529848722297037,
+        "n_candidates": 11
+      },
+      {
+        "date": "2021-01-29",
+        "symbols": [
+          "FIDU",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.5326988682575751,
+        "random_avg_corr": 0.5419123174627498,
+        "n_candidates": 11
+      },
+      {
+        "date": "2021-02-26",
+        "symbols": [
+          "FIDU",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.5721562376795354,
+        "random_avg_corr": 0.5841533331164968,
+        "n_candidates": 11
+      },
+      {
+        "date": "2021-03-31",
+        "symbols": [
+          "FIDU",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.5227764582834645,
+        "random_avg_corr": 0.5274031950606196,
+        "n_candidates": 11
+      },
+      {
+        "date": "2021-04-30",
+        "symbols": [
+          "FIDU",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.46565340994739984,
+        "random_avg_corr": 0.5133596999038724,
+        "n_candidates": 11
+      },
+      {
+        "date": "2021-05-28",
+        "symbols": [
+          "FIDU",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.5330015446977364,
+        "random_avg_corr": 0.52521510890659,
+        "n_candidates": 11
+      },
+      {
+        "date": "2021-06-30",
+        "symbols": [
+          "FIDU",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.5099900800587802,
+        "random_avg_corr": 0.48846671872063296,
+        "n_candidates": 11
+      },
+      {
+        "date": "2021-07-30",
+        "symbols": [
+          "FIDU",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.5007699223814291,
+        "random_avg_corr": 0.5022772281052067,
+        "n_candidates": 11
+      },
+      {
+        "date": "2021-08-31",
+        "symbols": [
+          "FIDU",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.441136822138209,
+        "random_avg_corr": 0.45126566985739136,
+        "n_candidates": 11
+      },
+      {
+        "date": "2021-09-30",
+        "symbols": [
+          "FIDU",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.4909763076426255,
+        "random_avg_corr": 0.47455935984126557,
+        "n_candidates": 11
+      },
+      {
+        "date": "2021-10-29",
+        "symbols": [
+          "FIDU",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.5238942472592558,
+        "random_avg_corr": 0.4786252646695306,
+        "n_candidates": 11
+      },
+      {
+        "date": "2021-11-30",
+        "symbols": [
+          "FIDU",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.5225416485409745,
+        "random_avg_corr": 0.5116615283295516,
+        "n_candidates": 11
+      },
+      {
+        "date": "2021-12-31",
+        "symbols": [
+          "FIDU",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.5759885246829686,
+        "random_avg_corr": 0.5277931210046358,
+        "n_candidates": 11
+      },
+      {
+        "date": "2022-01-31",
+        "symbols": [
+          "FENY",
+          "FSTA",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.5111895008778827,
+        "random_avg_corr": 0.48873814464244486,
+        "n_candidates": 11
+      },
+      {
+        "date": "2022-02-28",
+        "symbols": [
+          "FENY",
+          "FSTA",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.47885924671177155,
+        "random_avg_corr": 0.5689764289758322,
+        "n_candidates": 11
+      },
+      {
+        "date": "2022-03-31",
+        "symbols": [
+          "FENY",
+          "FSTA",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.3301003471214516,
+        "random_avg_corr": 0.49447056943076423,
+        "n_candidates": 11
+      },
+      {
+        "date": "2022-04-29",
+        "symbols": [
+          "FENY",
+          "FSTA",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.3879286447071306,
+        "random_avg_corr": 0.5262316246015027,
+        "n_candidates": 11
+      },
+      {
+        "date": "2022-05-31",
+        "symbols": [
+          "FENY",
+          "FSTA",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.425493645333514,
+        "random_avg_corr": 0.5749830713588469,
+        "n_candidates": 11
+      },
+      {
+        "date": "2022-06-30",
+        "symbols": [
+          "FENY",
+          "VGT",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.42641337782152006,
+        "random_avg_corr": 0.6360037275434498,
+        "n_candidates": 11
+      },
+      {
+        "date": "2022-07-29",
+        "symbols": [
+          "FENY",
+          "IYH",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.4454907517765525,
+        "random_avg_corr": 0.6417583717810829,
+        "n_candidates": 11
+      },
+      {
+        "date": "2022-08-31",
+        "symbols": [
+          "FENY",
+          "VGT",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.34955841603800136,
+        "random_avg_corr": 0.6498984777801154,
+        "n_candidates": 11
+      },
+      {
+        "date": "2022-09-30",
+        "symbols": [
+          "FENY",
+          "IYC",
+          "VGT",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.5185810956087943,
+        "random_avg_corr": 0.6582515570927143,
+        "n_candidates": 11
+      },
+      {
+        "date": "2022-10-31",
+        "symbols": [
+          "FENY",
+          "FIDU",
+          "IYH",
+          "VGT"
+        ],
+        "selected_avg_corr": 0.643910730998713,
+        "random_avg_corr": 0.723400777381191,
+        "n_candidates": 11
+      },
+      {
+        "date": "2022-11-30",
+        "symbols": [
+          "FENY",
+          "FIDU",
+          "IYH",
+          "VGT"
+        ],
+        "selected_avg_corr": 0.6205783126501744,
+        "random_avg_corr": 0.7013590676678901,
+        "n_candidates": 11
+      },
+      {
+        "date": "2022-12-30",
+        "symbols": [
+          "FENY",
+          "FSTA",
+          "IYH"
+        ],
+        "selected_avg_corr": 0.518815143856374,
+        "random_avg_corr": 0.7058212520268127,
+        "n_candidates": 11
+      },
+      {
+        "date": "2023-01-31",
+        "symbols": [
+          "FENY",
+          "FIDU",
+          "FSTA",
+          "IYH",
+          "VGT"
+        ],
+        "selected_avg_corr": 0.6725008309439622,
+        "random_avg_corr": 0.7043164013325658,
+        "n_candidates": 11
+      },
+      {
+        "date": "2023-02-28",
+        "symbols": [
+          "FENY",
+          "FIDU",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.6993776479151371,
+        "random_avg_corr": 0.7109829807474818,
+        "n_candidates": 11
+      },
+      {
+        "date": "2023-03-31",
+        "symbols": [
+          "FENY",
+          "FIDU",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.6900791804346063,
+        "random_avg_corr": 0.6876239751130648,
+        "n_candidates": 11
+      },
+      {
+        "date": "2023-04-28",
+        "symbols": [
+          "FENY",
+          "FIDU",
+          "VGT"
+        ],
+        "selected_avg_corr": 0.5802698283472867,
+        "random_avg_corr": 0.6611773602727832,
+        "n_candidates": 11
+      },
+      {
+        "date": "2023-05-31",
+        "symbols": [
+          "FCOM",
+          "FIDU",
+          "VGT"
+        ],
+        "selected_avg_corr": 0.742756057074338,
+        "random_avg_corr": 0.5821492164718151,
+        "n_candidates": 11
+      },
+      {
+        "date": "2023-06-30",
+        "symbols": [
+          "FCOM",
+          "FIDU",
+          "FSTA",
+          "VGT"
+        ],
+        "selected_avg_corr": 0.5659710537476099,
+        "random_avg_corr": 0.5528273895380481,
+        "n_candidates": 11
+      },
+      {
+        "date": "2023-07-31",
+        "symbols": [
+          "FIDU",
+          "FSTA",
+          "VGT"
+        ],
+        "selected_avg_corr": 0.46348071565899934,
+        "random_avg_corr": 0.49747094176010115,
+        "n_candidates": 11
+      },
+      {
+        "date": "2023-08-31",
+        "symbols": [
+          "FIDU",
+          "IYC",
+          "VGT"
+        ],
+        "selected_avg_corr": 0.6809731891183021,
+        "random_avg_corr": 0.4940609494739519,
+        "n_candidates": 11
+      },
+      {
+        "date": "2023-09-29",
+        "symbols": [
+          "FENY",
+          "FIDU",
+          "IYC",
+          "VGT"
+        ],
+        "selected_avg_corr": 0.48781588904767653,
+        "random_avg_corr": 0.4489956990546887,
+        "n_candidates": 11
+      },
+      {
+        "date": "2023-10-31",
+        "symbols": [
+          "FCOM",
+          "FENY",
+          "FIDU",
+          "IYC",
+          "VGT"
+        ],
+        "selected_avg_corr": 0.5178129413021257,
+        "random_avg_corr": 0.49215928966711825,
+        "n_candidates": 11
+      },
+      {
+        "date": "2023-11-30",
+        "symbols": [
+          "FCOM",
+          "FIDU",
+          "IYC",
+          "VGT"
+        ],
+        "selected_avg_corr": 0.7286997124623905,
+        "random_avg_corr": 0.5244050417064832,
+        "n_candidates": 11
+      },
+      {
+        "date": "2023-12-29",
+        "symbols": [
+          "FCOM",
+          "FIDU",
+          "IYC",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7267311436509825,
+        "random_avg_corr": 0.5223231800752803,
+        "n_candidates": 11
+      },
+      {
+        "date": "2024-01-31",
+        "symbols": [
+          "FIDU",
+          "IYC",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7424192717722741,
+        "random_avg_corr": 0.5329374376783391,
+        "n_candidates": 11
+      },
+      {
+        "date": "2024-02-29",
+        "symbols": [
+          "FIDU",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.6376500791963521,
+        "random_avg_corr": 0.48069795429771495,
+        "n_candidates": 11
+      },
+      {
+        "date": "2024-03-28",
+        "symbols": [
+          "FIDU",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.6182581706697271,
+        "random_avg_corr": 0.5304993568697436,
+        "n_candidates": 11
+      },
+      {
+        "date": "2024-04-30",
+        "symbols": [
+          "FIDU",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.6008113635147747,
+        "random_avg_corr": 0.5067699240078812,
+        "n_candidates": 11
+      },
+      {
+        "date": "2024-05-31",
+        "symbols": [
+          "FIDU",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.552022435301763,
+        "random_avg_corr": 0.4965916463272347,
+        "n_candidates": 11
+      },
+      {
+        "date": "2024-06-28",
+        "symbols": [
+          "FIDU",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.4839394299797804,
+        "random_avg_corr": 0.436231569519772,
+        "n_candidates": 11
+      },
+      {
+        "date": "2024-07-31",
+        "symbols": [
+          "FIDU",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.4474683756303666,
+        "random_avg_corr": 0.43370823171424233,
+        "n_candidates": 11
+      },
+      {
+        "date": "2024-08-30",
+        "symbols": [
+          "FIDU",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.509934904832143,
+        "random_avg_corr": 0.4714271971934473,
+        "n_candidates": 11
+      },
+      {
+        "date": "2024-09-30",
+        "symbols": [
+          "FIDU",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.5140634210354702,
+        "random_avg_corr": 0.46794811008736387,
+        "n_candidates": 11
+      },
+      {
+        "date": "2024-10-31",
+        "symbols": [
+          "FIDU",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.5090496133201231,
+        "random_avg_corr": 0.4134414754953868,
+        "n_candidates": 11
+      },
+      {
+        "date": "2024-11-29",
+        "symbols": [
+          "FIDU",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.48999543797931033,
+        "random_avg_corr": 0.4365908706791867,
+        "n_candidates": 11
+      },
+      {
+        "date": "2024-12-31",
+        "symbols": [
+          "FIDU",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.6429412124298606,
+        "random_avg_corr": 0.4711549014883344,
+        "n_candidates": 11
+      },
+      {
+        "date": "2025-01-31",
+        "symbols": [
+          "FIDU",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.637512131910935,
+        "random_avg_corr": 0.427710276064848,
+        "n_candidates": 11
+      },
+      {
+        "date": "2025-02-28",
+        "symbols": [
+          "FIDU",
+          "FSTA",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.43744908916555597,
+        "random_avg_corr": 0.3798749730136946,
+        "n_candidates": 11
+      },
+      {
+        "date": "2025-03-31",
+        "symbols": [
+          "FSTA",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.36518937660395623,
+        "random_avg_corr": 0.4294828653077706,
+        "n_candidates": 11
+      },
+      {
+        "date": "2025-04-30",
+        "symbols": [
+          "FSTA",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.5745153317813468,
+        "random_avg_corr": 0.6551227433087878,
+        "n_candidates": 11
+      },
+      {
+        "date": "2025-05-30",
+        "symbols": [
+          "FSTA",
+          "IYC",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.6330671844311312,
+        "random_avg_corr": 0.6965177244611946,
+        "n_candidates": 11
+      },
+      {
+        "date": "2025-06-30",
+        "symbols": [
+          "FSTA",
+          "IYC",
+          "XLF",
+          "XLU"
+        ],
+        "selected_avg_corr": 0.636355077184398,
+        "random_avg_corr": 0.6748277060223696,
+        "n_candidates": 11
+      },
+      {
+        "date": "2025-07-31",
+        "symbols": [
+          "FIDU",
+          "FSTA",
+          "IYC",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7564643182843802,
+        "random_avg_corr": 0.7014462400787891,
+        "n_candidates": 11
+      },
+      {
+        "date": "2025-08-29",
+        "symbols": [
+          "FIDU",
+          "FSTA",
+          "IYC",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.7629588972975904,
+        "random_avg_corr": 0.6917823630082736,
+        "n_candidates": 11
+      },
+      {
+        "date": "2025-09-30",
+        "symbols": [
+          "FIDU",
+          "IYC",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.8935063948247337,
+        "random_avg_corr": 0.7026315445633992,
+        "n_candidates": 11
+      },
+      {
+        "date": "2025-10-31",
+        "symbols": [
+          "FIDU",
+          "IYC",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.6822440907668813,
+        "random_avg_corr": 0.39463899569344346,
+        "n_candidates": 11
+      },
+      {
+        "date": "2025-11-28",
+        "symbols": [
+          "FENY",
+          "FIDU",
+          "IYC",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.4622066797211201,
+        "random_avg_corr": 0.3806721395213959,
+        "n_candidates": 11
+      },
+      {
+        "date": "2025-12-31",
+        "symbols": [
+          "FENY",
+          "FIDU",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.36102042643209015,
+        "random_avg_corr": 0.3658552017077384,
+        "n_candidates": 11
+      },
+      {
+        "date": "2026-01-30",
+        "symbols": [
+          "FENY",
+          "FIDU",
+          "IYH",
+          "VGT",
+          "XLF"
+        ],
+        "selected_avg_corr": 0.32211056377401,
+        "random_avg_corr": 0.35874704578991623,
+        "n_candidates": 11
+      },
+      {
+        "date": "2026-02-27",
+        "symbols": [
+          "FENY",
+          "FIDU",
+          "IYH",
+          "VGT"
+        ],
+        "selected_avg_corr": 0.2567084589255018,
+        "random_avg_corr": 0.26793033965193125,
+        "n_candidates": 11
+      },
+      {
+        "date": "2026-03-31",
+        "symbols": [
+          "FENY",
+          "FIDU",
+          "FSTA"
+        ],
+        "selected_avg_corr": 0.19230273543657705,
+        "random_avg_corr": 0.37194366204558754,
+        "n_candidates": 11
+      },
+      {
+        "date": "2026-04-30",
+        "symbols": [
+          "FENY",
+          "FIDU",
+          "FSTA",
+          "VGT"
+        ],
+        "selected_avg_corr": 0.12556866427237434,
+        "random_avg_corr": 0.28301352636294475,
+        "n_candidates": 11
+      },
+      {
+        "date": "2026-05-29",
+        "symbols": [
+          "FENY",
+          "FIDU",
+          "FSTA",
+          "IYH",
+          "VGT"
+        ],
+        "selected_avg_corr": 0.14304886332781588,
+        "random_avg_corr": 0.30326624545844516,
+        "n_candidates": 11
+      },
+      {
+        "date": "2026-06-30",
+        "symbols": [
+          "FENY",
+          "FIDU",
+          "FSTA",
+          "IYH",
+          "VGT"
+        ],
+        "selected_avg_corr": 0.08127266540988794,
+        "random_avg_corr": 0.27467938717101964,
+        "n_candidates": 11
+      },
+      {
+        "date": "2026-07-02",
+        "symbols": [
+          "FENY",
+          "FIDU",
+          "FSTA",
+          "IYH",
+          "VGT"
+        ],
+        "selected_avg_corr": 0.07903321156219713,
+        "random_avg_corr": 0.23291182628284116,
+        "n_candidates": 11
+      }
+    ]
+  }
+}

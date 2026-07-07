@@ -1,0 +1,23 @@
+# 체크리스트: yoon2_final_fx_credit_gate
+
+- [x] 기존 추세확인형 게이트(`yoon2_final_fx_2`) 실패 원인 진단 — 22개 에피소드 중 8건만 발동, 발동해도 중앙값 +19일(사후)
+- [x] 선행 신호 후보 리드타임 진단 — VIX 텀스트럭처(-37일)·신용스프레드(-48일) 모두 기존 게이트보다 선행 확인
+- [x] 신용스프레드 게이트 point estimate — CAGR 16.23%/MDD -16.40%/Sharpe 1.212 (vs current 16.27%/-17.13%/1.189)
+- [x] 파라미터 그리드 240종 민감도 — MDD 개선 220/240(92%), Sharpe·MDD 동시개선 120/240(50%)
+- [x] 워크포워드(14폴드, 고정 파라미터) — Sharpe 승 8/14, MDD 승 10/14
+- [x] 롤링 3년(16구간) — Sharpe/CAGR/MDD 전부 9/16
+- [x] 페어드 부트스트랩(8000회) — P(Sharpe>) 69.5%, P(MDD 더 얕음) 76.4%, P(CAGR>) 43.4%
+- [x] top-level 리밸런스 비용 민감도 확인 — 게이트가 current보다 비용에 더 민감(추가 회전)
+- [x] 드로다운 에피소드 22건 전체 재현 — 개선분이 2020-02 코로나 크래시 1건에 집중된다는 한계 명시
+- [x] `Yoon1kHandler`에 `risk_gate.source="credit_spread"` 일반화 옵션 추가(기존 전략/`trend` 소스 하위호환 유지)
+- [x] 노이즈(휩쏘) 진단 — 원안 19년간 397거래일/103개 별도 에피소드 발동, 실질 도움은 1~2건뿐
+- [x] `min_consecutive` 파라미터 추가 및 스윕(1/2/3/5/7/10/15) — `min_consecutive=2` 채택(발동일수 -26%·에피소드 -31%, CAGR 16.60%/MDD -16.40%/Sharpe 1.228로 원안보다 개선)
+- [x] config 등록(`yoon2_final_fx_credit_gate.json`, `min_consecutive=2`) + registry 등록(핸들러 `Yoon1kHandler` 공유)
+- [x] 명세 작성 (승격 게이트·표본 집중 한계·노이즈 필터링 근거 명시)
+- [x] 계약/전체 테스트 통과 확인 (`PYTHONPATH=src python -m unittest discover tests -q` — 176 tests OK, skipped=2)
+- [x] CLI 합성 run succeeded 확인 + 실데이터 직접 재현(CAGR 16.6%/MDD -16.4%/Sharpe 1.228, 검증 스크립트와 일치)
+- [x] 2차 개선 4종 실측(`yoon2_final_fx_credit_gate_v2.py`) — IEF 대피(채택, CAGR 16.84%/Sharpe 1.242) vs VIX AND결합·연속형 노출축소(둘 다 기각, Sharpe 악화)
+- [x] `Yoon1kHandler`에 `risk_gate.safe_asset`/`source="credit_and_vix"`/`continuous` 옵션 추가(하위호환 유지) + 전체 테스트 재통과 + 실데이터 재현(CAGR 16.84%/MDD -16.4%/Sharpe 1.242)
+- [ ] off_scale 재그리드 1위 후보(`L10_S30_T-0.01_O0.3`, CAGR 17.08%/MDD -14.96%/Sharpe 1.328) — 워크포워드·부트스트랩 검증 전, 과적합 가능성 있어 보류
+- [ ] 페이퍼 전진검증 (신용경색형이 아닌 구간에서 CAGR 드래그 누적 여부 관찰)
+- [ ] 2020-02 코로나 크래시 표본 집중 이슈 — 추가 대리 에피소드(GFC 등) 또는 장기 관찰로 보강

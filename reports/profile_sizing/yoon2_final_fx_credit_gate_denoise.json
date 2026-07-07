@@ -1,0 +1,357 @@
+{
+  "period": "2007-01-29~2026-07-02",
+  "bars": 4084,
+  "base_params": {
+    "lookback": 10,
+    "sma_lookback": 20,
+    "threshold": -0.02,
+    "off_scale": 0.5
+  },
+  "current_point": {
+    "cagr": 0.1627374649041331,
+    "max_drawdown": -0.17133159179049184,
+    "sharpe": 1.1885913500062553,
+    "total_return": 10.513801805339547,
+    "volatility": 0.13445460870431894
+  },
+  "grid": [
+    {
+      "label": "min_consec_1",
+      "min_consecutive": 1,
+      "cagr": 0.16232284822757448,
+      "max_drawdown": -0.16397793458290677,
+      "sharpe": 1.212286407015098,
+      "total_return": 10.447444005357731,
+      "volatility": 0.13117162067639576,
+      "trigger_days": 397,
+      "trigger_pct": 0.09720861900097943,
+      "episodes": 103
+    },
+    {
+      "label": "min_consec_2",
+      "min_consecutive": 2,
+      "cagr": 0.1659572436129979,
+      "max_drawdown": -0.1639779345829071,
+      "sharpe": 1.2277975617427968,
+      "total_return": 11.04153644698837,
+      "volatility": 0.13216536607498078,
+      "trigger_days": 294,
+      "trigger_pct": 0.07198824681684624,
+      "episodes": 71
+    },
+    {
+      "label": "min_consec_3",
+      "min_consecutive": 3,
+      "cagr": 0.16411740948284814,
+      "max_drawdown": -0.1639779345829071,
+      "sharpe": 1.2134260487736637,
+      "total_return": 10.737265571138757,
+      "volatility": 0.1324608419116687,
+      "trigger_days": 223,
+      "trigger_pct": 0.05460333006856023,
+      "episodes": 52
+    },
+    {
+      "label": "min_consec_5",
+      "min_consecutive": 5,
+      "cagr": 0.16061434773854089,
+      "max_drawdown": -0.17133159179049184,
+      "sharpe": 1.1771258643524454,
+      "total_return": 10.17777248322551,
+      "volatility": 0.1341793044654364,
+      "trigger_days": 129,
+      "trigger_pct": 0.031586679725759056,
+      "episodes": 33
+    },
+    {
+      "label": "min_consec_7",
+      "min_consecutive": 7,
+      "cagr": 0.16123947949646045,
+      "max_drawdown": -0.1713315917904923,
+      "sharpe": 1.180017026631058,
+      "total_return": 10.275744831260893,
+      "volatility": 0.13432354475778832,
+      "trigger_days": 73,
+      "trigger_pct": 0.017874632713026445,
+      "episodes": 18
+    },
+    {
+      "label": "min_consec_10",
+      "min_consecutive": 10,
+      "cagr": 0.1627374649041331,
+      "max_drawdown": -0.17133159179049184,
+      "sharpe": 1.1885913500062557,
+      "total_return": 10.513801805339547,
+      "volatility": 0.13445460870431894,
+      "trigger_days": 29,
+      "trigger_pct": 0.007100881488736533,
+      "episodes": 6
+    },
+    {
+      "label": "min_consec_15",
+      "min_consecutive": 15,
+      "cagr": 0.1627374649041331,
+      "max_drawdown": -0.17133159179049184,
+      "sharpe": 1.1885913500062557,
+      "total_return": 10.513801805339547,
+      "volatility": 0.13445460870431894,
+      "trigger_days": 11,
+      "trigger_pct": 0.0026934378060724778,
+      "episodes": 1
+    }
+  ],
+  "walk_forward": {
+    "min_consec_1": {
+      "folds": 15,
+      "sharpe_wins": 8,
+      "mdd_wins": 5
+    },
+    "min_consec_2": {
+      "folds": 15,
+      "sharpe_wins": 8,
+      "mdd_wins": 5
+    },
+    "min_consec_3": {
+      "folds": 15,
+      "sharpe_wins": 6,
+      "mdd_wins": 4
+    },
+    "min_consec_5": {
+      "folds": 15,
+      "sharpe_wins": 5,
+      "mdd_wins": 3
+    },
+    "min_consec_7": {
+      "folds": 15,
+      "sharpe_wins": 8,
+      "mdd_wins": 5
+    },
+    "min_consec_10": {
+      "folds": 15,
+      "sharpe_wins": 3,
+      "mdd_wins": 0
+    },
+    "min_consec_15": {
+      "folds": 15,
+      "sharpe_wins": 3,
+      "mdd_wins": 0
+    }
+  },
+  "best_label": "min_consec_2",
+  "bootstrap_best_vs_current": {
+    "label_a": "min_consec_2",
+    "label_b": "current",
+    "period": "2007-01-29~2026-07-02",
+    "bars": 4084,
+    "iters": 8000,
+    "block": 20,
+    "ci95": {
+      "excess_sharpe": [
+        -0.019870591567666154,
+        0.0356903735800711,
+        0.13214804157387508
+      ],
+      "excess_cagr": [
+        -0.004711150257316809,
+        0.002567274350507631,
+        0.01460559939040965
+      ],
+      "mdd_diff": [
+        -0.007286846681020161,
+        0.005660548288088707,
+        0.07931276480025436
+      ]
+    },
+    "prob": {
+      "sharpe_a_gt_b": 0.852125,
+      "cagr_a_gt_b": 0.711375,
+      "mdd_a_shallower": 0.729125
+    }
+  },
+  "bootstrap_original_vs_current": {
+    "label_a": "min_consec_1",
+    "label_b": "current",
+    "period": "2007-01-29~2026-07-02",
+    "bars": 4084,
+    "iters": 8000,
+    "block": 20,
+    "ci95": {
+      "excess_sharpe": [
+        -0.04558018410883328,
+        0.020157592822838577,
+        0.12067885074878225
+      ],
+      "excess_cagr": [
+        -0.01015172856018819,
+        -0.0009314189920166527,
+        0.011635449184311574
+      ],
+      "mdd_diff": [
+        -0.010717781903248551,
+        0.006353220002814408,
+        0.07798170517554998
+      ]
+    },
+    "prob": {
+      "sharpe_a_gt_b": 0.699125,
+      "cagr_a_gt_b": 0.4315,
+      "mdd_a_shallower": 0.715375
+    }
+  },
+  "drawdown_episodes": [
+    {
+      "peak": "2011-01-27",
+      "trough": "2011-03-15",
+      "current_mdd": -0.06261000960031637,
+      "original_mdd": -0.06261000960031637,
+      "best_mdd": -0.06261000960031626
+    },
+    {
+      "peak": "2011-05-02",
+      "trough": "2011-08-22",
+      "current_mdd": -0.16397793458290677,
+      "original_mdd": -0.16397793458290677,
+      "best_mdd": -0.1639779345829071
+    },
+    {
+      "peak": "2013-05-30",
+      "trough": "2013-06-24",
+      "current_mdd": -0.058811043410061825,
+      "original_mdd": -0.058811043410061825,
+      "best_mdd": -0.058811043410061936
+    },
+    {
+      "peak": "2014-03-05",
+      "trough": "2014-05-19",
+      "current_mdd": -0.06036614082593483,
+      "original_mdd": -0.06036614082593461,
+      "best_mdd": -0.06036614082593461
+    },
+    {
+      "peak": "2014-09-19",
+      "trough": "2014-10-16",
+      "current_mdd": -0.05761272123263694,
+      "original_mdd": -0.057612721232637054,
+      "best_mdd": -0.057612721232637054
+    },
+    {
+      "peak": "2015-07-21",
+      "trough": "2016-01-20",
+      "current_mdd": -0.0965405528664961,
+      "original_mdd": -0.09262965758529995,
+      "best_mdd": -0.0926296575853004
+    },
+    {
+      "peak": "2017-07-24",
+      "trough": "2017-09-06",
+      "current_mdd": -0.05712438259236463,
+      "original_mdd": -0.057124382592364964,
+      "best_mdd": -0.057124382592365075
+    },
+    {
+      "peak": "2018-01-29",
+      "trough": "2018-12-24",
+      "current_mdd": -0.10418708558104006,
+      "original_mdd": -0.10418708558103973,
+      "best_mdd": -0.10418708558104017
+    },
+    {
+      "peak": "2020-02-14",
+      "trough": "2020-03-19",
+      "current_mdd": -0.17133159179049184,
+      "original_mdd": -0.08844749083353254,
+      "best_mdd": -0.08844749083353243
+    },
+    {
+      "peak": "2020-09-02",
+      "trough": "2020-10-30",
+      "current_mdd": -0.0874949919582042,
+      "original_mdd": -0.0874949919582042,
+      "best_mdd": -0.0874949919582041
+    },
+    {
+      "peak": "2021-01-25",
+      "trough": "2021-01-29",
+      "current_mdd": -0.06288000497828161,
+      "original_mdd": -0.0628800049782815,
+      "best_mdd": -0.06288000497828139
+    },
+    {
+      "peak": "2021-11-09",
+      "trough": "2021-12-01",
+      "current_mdd": -0.055911363107152945,
+      "original_mdd": -0.055911363107152945,
+      "best_mdd": -0.05591136310715317
+    },
+    {
+      "peak": "2022-01-12",
+      "trough": "2022-01-27",
+      "current_mdd": -0.0738615504154313,
+      "original_mdd": -0.07386155041543152,
+      "best_mdd": -0.07386155041543163
+    },
+    {
+      "peak": "2022-04-20",
+      "trough": "2023-01-03",
+      "current_mdd": -0.09525383205967464,
+      "original_mdd": -0.0985671869995266,
+      "best_mdd": -0.09111408889282901
+    },
+    {
+      "peak": "2023-07-28",
+      "trough": "2023-11-09",
+      "current_mdd": -0.11014794731885746,
+      "original_mdd": -0.11014794731885758,
+      "best_mdd": -0.11014794731885791
+    },
+    {
+      "peak": "2024-07-16",
+      "trough": "2024-08-05",
+      "current_mdd": -0.11998637013007274,
+      "original_mdd": -0.11998637013007285,
+      "best_mdd": -0.11998637013007274
+    },
+    {
+      "peak": "2025-02-19",
+      "trough": "2025-04-08",
+      "current_mdd": -0.10321096831807397,
+      "original_mdd": -0.10321096831807408,
+      "best_mdd": -0.10321096831807419
+    },
+    {
+      "peak": "2025-07-15",
+      "trough": "2025-08-01",
+      "current_mdd": -0.05117595155869803,
+      "original_mdd": -0.05117595155869781,
+      "best_mdd": -0.051175951558697585
+    },
+    {
+      "peak": "2025-11-13",
+      "trough": "2025-11-21",
+      "current_mdd": -0.06430347792561653,
+      "original_mdd": -0.06430347792561675,
+      "best_mdd": -0.0643034779256163
+    },
+    {
+      "peak": "2026-02-26",
+      "trough": "2026-03-04",
+      "current_mdd": -0.10573909913375334,
+      "original_mdd": -0.10573909913375334,
+      "best_mdd": -0.10573909913375357
+    },
+    {
+      "peak": "2026-05-14",
+      "trough": "2026-05-20",
+      "current_mdd": -0.06506612730636785,
+      "original_mdd": -0.06506612730636785,
+      "best_mdd": -0.06506612730636763
+    },
+    {
+      "peak": "2026-06-04",
+      "trough": "2026-06-08",
+      "current_mdd": -0.06378001396372934,
+      "original_mdd": -0.06378001396372956,
+      "best_mdd": -0.06378001396372945
+    }
+  ]
+}

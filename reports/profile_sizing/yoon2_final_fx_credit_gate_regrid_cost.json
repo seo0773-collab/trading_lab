@@ -1,0 +1,110 @@
+{
+  "trigger_stats": {
+    "adopted": {
+      "trigger_days": 294,
+      "trigger_pct": 0.07198824681684624,
+      "episodes": 71
+    },
+    "candidate": {
+      "trigger_days": 557,
+      "trigger_pct": 0.1363858961802155,
+      "episodes": 110
+    }
+  },
+  "turnover_per_year": {
+    "adopted": 1.8562178152119884,
+    "candidate": 5.023571879120215
+  },
+  "cost_sensitivity": [
+    {
+      "label": "adopted",
+      "cost_bps": 0,
+      "cagr": 0.16843890579444554,
+      "max_drawdown": -0.1639781604201236,
+      "sharpe": 1.2424947201777663,
+      "total_return": 11.463688777779021,
+      "volatility": 0.13233203743965744
+    },
+    {
+      "label": "adopted",
+      "cost_bps": 5,
+      "cagr": 0.1673548090361563,
+      "max_drawdown": -0.1640823726024876,
+      "sharpe": 1.2354104228668998,
+      "total_return": 11.277594586548476,
+      "volatility": 0.13233990715805916
+    },
+    {
+      "label": "adopted",
+      "cost_bps": 10,
+      "cagr": 0.16627139565312188,
+      "max_drawdown": -0.16418657626044852,
+      "sharpe": 1.2283078404978107,
+      "total_return": 11.094224756673825,
+      "volatility": 0.13234983783347234
+    },
+    {
+      "label": "adopted",
+      "cost_bps": 25,
+      "cagr": 0.16302525244080512,
+      "max_drawdown": -0.16449913609133504,
+      "sharpe": 1.2068937963866764,
+      "total_return": 10.560073107772656,
+      "volatility": 0.13239199048278624
+    },
+    {
+      "label": "adopted",
+      "cost_bps": 50,
+      "cagr": 0.15762865034022044,
+      "max_drawdown": -0.16501989868669353,
+      "sharpe": 1.1708702114101188,
+      "total_return": 9.720763965195827,
+      "volatility": 0.1325034018876707
+    },
+    {
+      "label": "candidate",
+      "cost_bps": 0,
+      "cagr": 0.17076637358045077,
+      "max_drawdown": -0.15260110048132847,
+      "sharpe": 1.317989279298713,
+      "total_return": 11.872195403861918,
+      "volatility": 0.12559937074231461
+    },
+    {
+      "label": "candidate",
+      "cost_bps": 5,
+      "cagr": 0.16782845267772228,
+      "max_drawdown": -0.15382692980790413,
+      "sharpe": 1.2977327055310373,
+      "total_return": 11.358576416584297,
+      "volatility": 0.12562508377354656
+    },
+    {
+      "label": "candidate",
+      "cost_bps": 10,
+      "cagr": 0.16489611400447246,
+      "max_drawdown": -0.1550518214443939,
+      "sharpe": 1.2773624185087198,
+      "total_return": 10.865156048575479,
+      "volatility": 0.12566279800088218
+    },
+    {
+      "label": "candidate",
+      "cost_bps": 25,
+      "cagr": 0.1561325164982048,
+      "max_drawdown": -0.1587208712934064,
+      "sharpe": 1.2156301105596738,
+      "total_return": 9.498407532743768,
+      "volatility": 0.12584782279657689
+    },
+    {
+      "label": "candidate",
+      "cost_bps": 50,
+      "cagr": 0.14163746750916628,
+      "max_drawdown": -0.1758667919699728,
+      "sharpe": 1.111046194202038,
+      "total_return": 7.557015468798223,
+      "volatility": 0.12639454784831503
+    }
+  ]
+}

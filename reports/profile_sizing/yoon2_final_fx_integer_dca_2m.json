@@ -1,0 +1,170 @@
+{
+  "period": "2007-01-29~2026-07-02",
+  "bars": 4084,
+  "initial_krw": 2000000.0,
+  "monthly_krw": 200000.0,
+  "invested_principal": 44000000.0,
+  "cost_kr": 0.000646527,
+  "cost_us": 0.0025103,
+  "min_kr_order": 50000.0,
+  "min_us_order_usd": 50.0,
+  "ideal": {
+    "cagr": 0.164591515087676,
+    "mdd": -0.18457411115037758,
+    "sharpe": 1.1870407871576798,
+    "total_return": 10.814975361972992,
+    "volatility": 0.13618129899855766,
+    "account_mdd": -0.1686605495314104,
+    "final_value": 251143668.34245604,
+    "profit": 207143668.34245604,
+    "return_on_principal": 4.707810644146728
+  },
+  "integer": {
+    "cagr": 0.14799067705229807,
+    "mdd": -0.18096318321950478,
+    "sharpe": 1.1183801997001375,
+    "total_return": 8.362288315690185,
+    "volatility": 0.1311370750798917,
+    "account_mdd": -0.17029396889143478,
+    "final_value": 237805146.01129776,
+    "profit": 193805146.01129776,
+    "return_on_principal": 4.404662409347677,
+    "rebalance_count": 211,
+    "order_count": 1603,
+    "turnover_per_year": 6.0045689061183465,
+    "cost_paid": 6732931.77045844,
+    "cost_on_principal": 0.1530211766013282,
+    "avg_target_fit": 0.9522206019530336,
+    "min_target_fit": 0.5075426523573945,
+    "avg_tracking_error": 0.09555879609393268,
+    "avg_cash_weight": 0.11047590472428291,
+    "max_cash_weight": 0.7200496634616431
+  },
+  "tracking": {
+    "daily_return_corr": 0.9294838225544179,
+    "final_integer_vs_ideal": -0.05311112328330747,
+    "avg_account_diff": -0.05089412475388349,
+    "min_account_diff": -0.1764068320606108,
+    "max_account_diff": -0.0007952794232258809
+  },
+  "sensitivity": {
+    "base": {
+      "cost_kr": 0.000646527,
+      "cost_us": 0.0025103,
+      "min_kr_order": 50000.0,
+      "min_us_order_usd": 50.0,
+      "result": {
+        "final_value": 237805146.01129776,
+        "cagr": 0.14799067705229807,
+        "mdd": -0.18096318321950478,
+        "sharpe": 1.1183801997001375,
+        "account_mdd": -0.17029396889143478,
+        "avg_target_fit": 0.9522206019530336,
+        "avg_cash_weight": 0.11047590472428291,
+        "cost_paid": 6732931.77045844,
+        "final_vs_ideal": -0.05311112328330747
+      }
+    },
+    "no_cost": {
+      "cost_kr": 0.0,
+      "cost_us": 0.0,
+      "min_kr_order": 50000.0,
+      "min_us_order_usd": 50.0,
+      "result": {
+        "final_value": 262034789.17694184,
+        "cagr": 0.15842149614746748,
+        "mdd": -0.1792312587142303,
+        "sharpe": 1.1887014755680856,
+        "account_mdd": -0.16864866494005637,
+        "avg_target_fit": 0.9522392947608336,
+        "avg_cash_weight": 0.11050910056835828,
+        "cost_paid": 0.0,
+        "final_vs_ideal": 0.04336609760607146
+      }
+    },
+    "no_min_order": {
+      "cost_kr": 0.000646527,
+      "cost_us": 0.0025103,
+      "min_kr_order": 0.0,
+      "min_us_order_usd": 0.0,
+      "result": {
+        "final_value": 238179724.23371318,
+        "cagr": 0.14789343801914168,
+        "mdd": -0.18151642641253718,
+        "sharpe": 1.112018540826937,
+        "account_mdd": -0.17079336343409468,
+        "avg_target_fit": 0.9538156122157142,
+        "avg_cash_weight": 0.10669259172330312,
+        "cost_paid": 6756109.837270829,
+        "final_vs_ideal": -0.05161963347236531
+      }
+    },
+    "no_cost_no_min_order": {
+      "cost_kr": 0.0,
+      "cost_us": 0.0,
+      "min_kr_order": 0.0,
+      "min_us_order_usd": 0.0,
+      "result": {
+        "final_value": 262719152.13549396,
+        "cagr": 0.15851224127816632,
+        "mdd": -0.18024262415026682,
+        "sharpe": 1.1832169947103839,
+        "account_mdd": -0.16926601458161106,
+        "avg_target_fit": 0.9538531597061084,
+        "avg_cash_weight": 0.10665672268814352,
+        "cost_paid": 0.0,
+        "final_vs_ideal": 0.04609108351978741
+      }
+    }
+  },
+  "skipped_high_price": [
+    [
+      "IYH",
+      16
+    ],
+    [
+      "VGT",
+      11
+    ],
+    [
+      "XLF",
+      9
+    ],
+    [
+      "091160.KS",
+      7
+    ],
+    [
+      "091170.KS",
+      5
+    ],
+    [
+      "IAU",
+      4
+    ],
+    [
+      "091180.KS",
+      4
+    ],
+    [
+      "117460.KS",
+      4
+    ],
+    [
+      "IYC",
+      3
+    ],
+    [
+      "102970.KS",
+      3
+    ],
+    [
+      "XLU",
+      2
+    ],
+    [
+      "140700.KS",
+      2
+    ]
+  ]
+}
