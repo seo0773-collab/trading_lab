@@ -22,6 +22,7 @@ import pandas as pd
 
 import profile_sizing.portfolio as portfolio_mod  # noqa: E402
 from run_kalman_pipeline import load_yfinance  # noqa: E402
+from profile_sizing.metrics import equity_metrics  # noqa: E402
 from trading_lab.strategies.profile_portfolio import ProfilePortfolioHandler  # noqa: E402
 from trading_lab.strategies.yoon1k import Yoon1kHandler  # noqa: E402
 
@@ -86,17 +87,8 @@ def bars_per_year(bar_minutes: float) -> float:
 
 
 def perf_from_equity(equity: pd.Series, ann: float) -> dict[str, float | None]:
-    eq = equity.dropna()
-    if len(eq) < 10:
-        return {"sharpe": None, "cagr": None, "max_drawdown": None, "total_return": None}
-    ret = eq.pct_change().fillna(0.0).to_numpy()
-    sd = np.nanstd(ret, ddof=0)
-    sharpe = float(np.nanmean(ret) / sd * np.sqrt(ann)) if sd > 0 else None
-    n_years = max(len(eq) / ann, 1e-9)
-    cagr = float(eq.iloc[-1] ** (1.0 / n_years) - 1.0) if eq.iloc[-1] > 0 else None
-    mdd = float((eq / eq.cummax() - 1.0).min())
-    return {"sharpe": sharpe, "cagr": cagr, "max_drawdown": mdd,
-           "total_return": float(eq.iloc[-1] - 1.0)}
+    """공통 유틸 위임 — CAGR은 달력 기준 연환산(개선계획 A1, metrics.py 참고)."""
+    return equity_metrics(equity, ann=ann)
 
 
 def run_variant(panels: dict[str, pd.DataFrame], cfg: dict[str, Any]) -> pd.Series | None:

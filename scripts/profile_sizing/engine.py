@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 
 from .config import ProfileSizingConfig
+from .metrics import years_elapsed
 from .regime import DEFENSE
 
 _ANN = {"1d": 252.0, "1h": 24 * 365.0, "1wk": 52.0, "1mo": 12.0}
@@ -127,7 +128,9 @@ def performance(equity: pd.Series, port_ret: pd.Series, interval: str) -> dict:
         vol = float(np.nanstd(r, ddof=0) * np.sqrt(ann))
     else:
         sharpe, vol = None, None
-    n_years = max(len(equity) / ann, 1e-9)
+    # 달력 기준 연수(metrics.years_elapsed) — 봉 수/ann 기준은 인덱스 결측 구간이
+    # 있으면 CAGR을 부풀린다(final0706에서 실측, 16.84%→13.96%).
+    n_years = years_elapsed(equity.index, ann=ann)
     cagr = float(equity.iloc[-1] ** (1.0 / n_years) - 1.0) if equity.iloc[-1] > 0 else None
     return {
         "total_return": total_return,
