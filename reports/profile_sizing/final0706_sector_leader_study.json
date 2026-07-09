@@ -1,0 +1,98 @@
+{
+  "period": "2007-01-29~2026-07-08",
+  "bars": 4087,
+  "phases": {
+    "all": "2007-01-29~2026-07-08",
+    "test": "2022-12-19~2026-07-08",
+    "recent_3y": "2023-07-10~2026-07-08"
+  },
+  "sleeve_performance": [
+    {
+      "variant": "ETF(원본)",
+      "cagr": 0.10700548040135027,
+      "max_drawdown": -0.21015501765560352,
+      "sharpe": 0.8705023569900223,
+      "total_return": 6.214661243299645,
+      "volatility": 0.12614859041325244,
+      "avg_holdings": 3.980167654876303
+    },
+    {
+      "variant": "섹터 대장주",
+      "cagr": 0.16058207981608597,
+      "max_drawdown": -0.2185816475052137,
+      "sharpe": 1.0988053801653463,
+      "total_return": 17.080784672715474,
+      "volatility": 0.145404089133299,
+      "avg_holdings": 3.708852995297485
+    }
+  ],
+  "performance": [
+    {
+      "phase": "all",
+      "candidate": "ETF(원본)",
+      "cagr": 0.13666125095388293,
+      "max_drawdown": -0.16397800825370945,
+      "sharpe": 1.2236107353770356,
+      "total_return": 11.06139797943593,
+      "volatility": 0.13266288509092922
+    },
+    {
+      "phase": "all",
+      "candidate": "섹터 대장주",
+      "cagr": 0.16436600015268432,
+      "max_drawdown": -0.16513519924278874,
+      "sharpe": 1.3332745162771291,
+      "total_return": 18.26180340144842,
+      "volatility": 0.14455079770010143
+    },
+    {
+      "phase": "test",
+      "candidate": "ETF(원본)",
+      "cagr": 0.3366192129611265,
+      "max_drawdown": -0.1199863491643336,
+      "sharpe": 1.9545208617572454,
+      "total_return": 1.801898458134073,
+      "volatility": 0.16990053218667434
+    },
+    {
+      "phase": "test",
+      "candidate": "섹터 대장주",
+      "cagr": 0.35440942673738407,
+      "max_drawdown": -0.14106634698331932,
+      "sharpe": 1.961247120925266,
+      "total_return": 1.9365888383888938,
+      "volatility": 0.1773692669779988
+    },
+    {
+      "phase": "recent_3y",
+      "candidate": "ETF(원본)",
+      "cagr": 0.36945029816444785,
+      "max_drawdown": -0.1199863491643337,
+      "sharpe": 2.0128071539231134,
+      "total_return": 1.5643930955204408,
+      "volatility": 0.17815682018120424
+    },
+    {
+      "phase": "recent_3y",
+      "candidate": "섹터 대장주",
+      "cagr": 0.3998843528522147,
+      "max_drawdown": -0.1410663469833192,
+      "sharpe": 2.0639896118036942,
+      "total_return": 1.7389021399238178,
+      "volatility": 0.1860578568110224
+    }
+  ],
+  "bootstrap": {
+    "섹터대장주_vs_원본": {
+      "label_a": "sector_leader",
+      "label_b": "원본",
+      "period": "2007-01-29~2026-07-08",
+      "bars": 4087,
+      "prob": {
+        "sharpe_a_gt_b": 0.92375,
+        "cagr_a_gt_b": 0.991875,
+        "mdd_a_shallower": 0.55025
+      }
+    }
+  }
+}

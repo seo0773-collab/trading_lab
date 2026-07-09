@@ -1,0 +1,92 @@
+[
+  {
+    "phase": "all",
+    "candidate": "final0706",
+    "months": 233.2,
+    "total_contributed": 43800000.0,
+    "dca_final_value": 239480476.4888432,
+    "dca_total_return": 4.467590787416511,
+    "dca_annualized_approx": 0.09133490458811844,
+    "dca_account_mdd": -0.12766585552916876
+  },
+  {
+    "phase": "all",
+    "candidate": "final0706_qld(core63.5%+QLD36.5%)",
+    "months": 233.2,
+    "total_contributed": 43800000.0,
+    "dca_final_value": 538265526.6170427,
+    "dca_total_return": 11.289167274361704,
+    "dca_annualized_approx": 0.13776777357093617,
+    "dca_account_mdd": -0.28903312539998616
+  },
+  {
+    "phase": "all",
+    "candidate": "벤치(50/50 SPY원화+KODEX200)",
+    "months": 233.2,
+    "total_contributed": 43800000.0,
+    "dca_final_value": 249569559.8857531,
+    "dca_total_return": 4.697935157208975,
+    "dca_annualized_approx": 0.09365431028180948,
+    "dca_account_mdd": -0.31068818599579684
+  },
+  {
+    "phase": "test",
+    "candidate": "final0706",
+    "months": 42.6,
+    "total_contributed": 10600000.0,
+    "dca_final_value": 23157990.81157666,
+    "dca_total_return": 1.1847161142996852,
+    "dca_annualized_approx": 0.24619314652660873,
+    "dca_account_mdd": -0.097349337607326
+  },
+  {
+    "phase": "test",
+    "candidate": "final0706_qld(core63.5%+QLD36.5%)",
+    "months": 42.6,
+    "total_contributed": 10600000.0,
+    "dca_final_value": 26539712.064376727,
+    "dca_total_return": 1.503746421167616,
+    "dca_annualized_approx": 0.2949613545320855,
+    "dca_account_mdd": -0.1937436067842594
+  },
+  {
+    "phase": "test",
+    "candidate": "벤치(50/50 SPY원화+KODEX200)",
+    "months": 42.6,
+    "total_contributed": 10600000.0,
+    "dca_final_value": 26218947.131468244,
+    "dca_total_return": 1.4734855784404002,
+    "dca_annualized_approx": 0.29053416852872527,
+    "dca_account_mdd": -0.10704640642203422
+  },
+  {
+    "phase": "recent_3y",
+    "candidate": "final0706",
+    "months": 35.9,
+    "total_contributed": 9200000.0,
+    "dca_final_value": 18883946.118979402,
+    "dca_total_return": 1.0526028390195004,
+    "dca_annualized_approx": 0.2713839671477831,
+    "dca_account_mdd": -0.09534597162254954
+  },
+  {
+    "phase": "recent_3y",
+    "candidate": "final0706_qld(core63.5%+QLD36.5%)",
+    "months": 35.9,
+    "total_contributed": 9200000.0,
+    "dca_final_value": 20055025.006392792,
+    "dca_total_return": 1.179894022433999,
+    "dca_annualized_approx": 0.2971838462619414,
+    "dca_account_mdd": -0.18103997038357988
+  },
+  {
+    "phase": "recent_3y",
+    "candidate": "벤치(50/50 SPY원화+KODEX200)",
+    "months": 35.9,
+    "total_contributed": 9200000.0,
+    "dca_final_value": 21168767.796548113,
+    "dca_total_return": 1.3009530213639255,
+    "dca_annualized_approx": 0.3208053365004244,
+    "dca_account_mdd": -0.10552876324096316
+  }
+]

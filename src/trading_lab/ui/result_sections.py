@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import contextlib
+import time
 from pathlib import Path
 from typing import Any
 
@@ -37,7 +37,10 @@ from trading_lab.ui.presentation import (
     forecast_is_portfolio,
     indicator_series,
     resolve_extra_panels,
+    visible_trades_until,
 )
+
+REPLAY_SPEED_OPTIONS = (1, 2, 5, 10, 20)
 
 
 @st.cache_data(ttl=900, show_spinner=False)
@@ -68,6 +71,55 @@ def _cached_integer_dca_simulation(
             min_us_order_usd=min_us_order_usd,
         ),
     )
+
+
+def _render_replay_controls(n_bars: int, run_id: str) -> int:
+    """봉 단위 재생 컨트롤. 반환값은 현재 재생 위치(0-based, 이 인덱스까지 표시).
+
+    session_state에 재생 위치/재생 여부를 유지한다 — 슬라이더를 직접 옮기면 그
+    위치로 이동하고 재생은 멈춘다. 재생 중에는 위젯을 그리기 *전에* 다음 위치로
+    미리 전진시킨 뒤(so the slider reflects the advanced frame), 차트 렌더 이후
+    호출부에서 짧게 sleep하고 st.rerun()해 다음 프레임으로 넘어간다.
+    """
+    idx_key = f"replay_idx_{run_id}"
+    play_key = f"replay_playing_{run_id}"
+    speed_key = f"replay_speed_{run_id}"
+    last_bar = n_bars - 1
+    if idx_key not in st.session_state:
+        st.session_state[idx_key] = last_bar
+    if play_key not in st.session_state:
+        st.session_state[play_key] = False
+
+    if st.session_state[play_key]:
+        speed = int(st.session_state.get(speed_key, REPLAY_SPEED_OPTIONS[0]))
+        nxt = st.session_state[idx_key] + speed
+        if nxt >= last_bar:
+            st.session_state[idx_key] = last_bar
+            st.session_state[play_key] = False
+        else:
+            st.session_state[idx_key] = nxt
+
+    st.markdown("**리플레이 (봉 단위 재생)**")
+    cols = st.columns([1, 1, 2, 3])
+    with cols[0]:
+        if st.button("⏮ 처음", key=f"replay_reset_{run_id}"):
+            st.session_state[idx_key] = 0
+            st.session_state[play_key] = False
+    with cols[1]:
+        playing = st.session_state[play_key]
+        if st.button("⏸ 정지" if playing else "▶ 재생", key=f"replay_toggle_{run_id}"):
+            if st.session_state[idx_key] >= last_bar:
+                st.session_state[idx_key] = 0
+            st.session_state[play_key] = not playing
+    with cols[2]:
+        st.selectbox(
+            "속도(봉/스텝)", REPLAY_SPEED_OPTIONS, key=speed_key,
+        )
+    idx = st.slider("시점", 0, last_bar, key=idx_key) if last_bar > 0 else 0
+    with cols[3]:
+        st.caption(f"{idx + 1}/{n_bars}봉")
+
+    return int(st.session_state[idx_key])
 
 
 def render_backtest_detail(
@@ -102,13 +154,10 @@ def render_backtest_detail(
         if name in indicators
     ] or list(indicators)[:4]
     portfolio_view = forecast_is_portfolio(forecast)
-    # 포트폴리오형(NAV+구성)은 가격·웨이브폼보다 표준 리포트가 메인이므로
-    # 가격/보조지표 차트는 접이식(기본 접힘)으로 둔다. 단일자산 전략은 그대로 노출.
-    price_section = (
-        st.expander("구성 자산 NAV · 보조지표 차트", expanded=False)
-        if portfolio_view else contextlib.nullcontext()
-    )
-    with price_section:
+    # 포트폴리오형(NAV+구성)은 가격·웨이브폼보다 표준 리포트가 메인이므로 기본
+    # 접힘, 단일자산 전략은 기본 펼침 — 그 외 내용(지표선택/리플레이/Cycle
+    # profile)은 이 카테고리 익스팬더 안에서 중첩 없이 나란히 배치한다.
+    with st.expander("📊 차트 · 보조지표", expanded=not portfolio_view):
         selected_indicators = st.multiselect(
             "표시할 보조지표 (스케일이 비슷한 지표는 같은 패널에 겹쳐 표시)",
             list(indicators),
@@ -135,146 +184,166 @@ def render_backtest_detail(
                     showscale=False,
                     overlay=True,
                 )
+        replay_idx = (
+            _render_replay_controls(len(forecast), run["run_id"])
+            if len(forecast) >= 2 else None
+        )
+        series_map = {name: indicators[name] for name in selected_indicators}
+        if replay_idx is not None and replay_idx < len(forecast) - 1:
+            forecast_view = forecast.iloc[: replay_idx + 1]
+            trades_view = visible_trades_until(trades, forecast.index[replay_idx])
+            series_map = {
+                name: series.reindex(forecast_view.index)
+                for name, series in series_map.items()
+            }
+        else:
+            forecast_view, trades_view = forecast, trades
         st.plotly_chart(
             build_price_indicator_figure(
-                forecast,
-                trades,
+                forecast_view,
+                trades_view,
                 symbol=run["symbol"],
                 horizon=horizon,
-                series_map={name: indicators[name] for name in selected_indicators},
+                series_map=series_map,
                 labels=indicator_labels,
                 heatmap_overlay=heatmap_overlay,
             ),
             width="stretch",
             config={"scrollZoom": True, "displaylogo": False},
         )
+        if st.session_state.get(f"replay_playing_{run['run_id']}", False):
+            time.sleep(0.35)
+            st.rerun()
         if forecast_has_cycle_profile(forecast) and bool(
             (dashboard_config.get("cycle_profile") or {}).get("enabled", True)
         ):
-            with st.expander("Cycle multiple · rolling profile anchor", expanded=True):
-                valid = forecast.dropna(
-                    subset=["cm_open", "cm_high", "cm_low", "cm_close"],
-                    how="any",
+            st.markdown("**Cycle multiple · rolling profile anchor**")
+            valid = forecast.dropna(
+                subset=["cm_open", "cm_high", "cm_low", "cm_close"],
+                how="any",
+            )
+            if not valid.empty:
+                anchor_pos = st.slider(
+                    "Anchor",
+                    min_value=0,
+                    max_value=max(0, len(valid) - 1),
+                    value=len(valid) - 1,
+                    format="%d",
+                    key=f"cycle-profile-anchor-{run['run_id']}",
                 )
-                if not valid.empty:
-                    anchor_pos = st.slider(
-                        "Anchor",
-                        min_value=0,
-                        max_value=max(0, len(valid) - 1),
-                        value=len(valid) - 1,
-                        format="%d",
-                        key=f"cycle-profile-anchor-{run['run_id']}",
-                    )
-                    anchor_time = valid.index[int(anchor_pos)]
-                    st.caption(pd.Timestamp(anchor_time).strftime("%Y-%m-%d %H:%M"))
-                    st.plotly_chart(
-                        build_cycle_profile_figure(
-                            forecast,
-                            config,
-                            symbol=run["symbol"],
-                            anchor_time=anchor_time,
-                        ),
-                        width="stretch",
-                        config={"scrollZoom": True, "displaylogo": False},
-                    )
+                anchor_time = valid.index[int(anchor_pos)]
+                st.caption(pd.Timestamp(anchor_time).strftime("%Y-%m-%d %H:%M"))
+                st.plotly_chart(
+                    build_cycle_profile_figure(
+                        forecast,
+                        config,
+                        symbol=run["symbol"],
+                        anchor_time=anchor_time,
+                    ),
+                    width="stretch",
+                    config={"scrollZoom": True, "displaylogo": False},
+                )
+
     currency_sym, currency_dec, currency_step, _ = currency_spec(
         config.get("base_currency"))
-    invest_mode = st.radio(
-        "투자 방식", ["거치식", "적립식"], horizontal=True,
-        key=f"invest-mode-{run['run_id']}",
-        help="거치식=초기 일시금 전액 투입. 적립식=초기 일시금 + 매월 정액 추가 투입.",
-    )
-    monthly_contribution = 0.0
-    if invest_mode == "적립식":
-        monthly_contribution = float(st.number_input(
-            f"월 적립액 ({currency_sym})", min_value=0.0,
-            value=float(currency_step), step=float(currency_step),
-            key=f"monthly-contrib-{run['run_id']}",
-        ))
-    st.plotly_chart(
-        build_account_figure(
+    with st.expander("💰 계좌 · 실행 시뮬레이션", expanded=True):
+        invest_mode = st.radio(
+            "투자 방식", ["거치식", "적립식"], horizontal=True,
+            key=f"invest-mode-{run['run_id']}",
+            help="거치식=초기 일시금 전액 투입. 적립식=초기 일시금 + 매월 정액 추가 투입.",
+        )
+        monthly_contribution = 0.0
+        if invest_mode == "적립식":
+            monthly_contribution = float(st.number_input(
+                f"월 적립액 ({currency_sym})", min_value=0.0,
+                value=float(currency_step), step=float(currency_step),
+                key=f"monthly-contrib-{run['run_id']}",
+            ))
+        st.plotly_chart(
+            build_account_figure(
+                equity,
+                initial_capital=initial_capital,
+                symbol=run["symbol"],
+                benchmark_price=(None if portfolio_view else forecast["close"]),
+                benchmark_equity=benchmark_equity,
+                monthly_contribution=monthly_contribution,
+                currency_symbol=currency_sym,
+            ),
+            width="stretch",
+            config={"scrollZoom": True, "displaylogo": False},
+        )
+        render_integer_dca_execution_option(
+            run,
+            config,
             equity,
             initial_capital=initial_capital,
-            symbol=run["symbol"],
-            benchmark_price=(None if portfolio_view else forecast["close"]),
-            benchmark_equity=benchmark_equity,
             monthly_contribution=monthly_contribution,
             currency_symbol=currency_sym,
-        ),
-        width="stretch",
-        config={"scrollZoom": True, "displaylogo": False},
-    )
-    render_integer_dca_execution_option(
-        run,
-        config,
-        equity,
-        initial_capital=initial_capital,
-        monthly_contribution=monthly_contribution,
-        currency_symbol=currency_sym,
-    )
-
-    # 포트폴리오형(NAV 기반) 전략은 가격·웨이브폼이 의미없으므로 표준 포트폴리오
-    # 리포트로 대체 보강한다. config dashboard.portfolio_report 로 강제할 수도 있다.
-    if portfolio_view or dashboard_config.get("portfolio_report"):
-        render_portfolio_report(run, equity, benchmark_equity)
-
-    st.subheader("트레이드 리포트")
-    overview = build_trade_overview(trades)
-    overview_values = [
-        ("롱 횟수", str(overview["long_trades"])),
-        ("숏 횟수", str(overview["short_trades"])),
-        ("롱 평균 수익률", metric_text(overview["long_avg_return"], percent=True)),
-        ("숏 평균 수익률", metric_text(overview["short_avg_return"], percent=True)),
-        ("롱 청산율", metric_text(overview["long_close_rate"], percent=True)),
-        ("숏 청산율", metric_text(overview["short_close_rate"], percent=True)),
-    ]
-    for column, (label, value) in zip(st.columns(6), overview_values):
-        column.metric(label, value)
-    st.caption("청산율은 해당 방향의 진입 거래 중 청산 시각이 기록된 거래 비율입니다.")
-
-    report = build_trade_report(
-        trades,
-        equity,
-        initial_capital=initial_capital,
-        horizon=horizon,
-        execution=str(config.get("execution", "next_open")),
-    )
-    if report.empty:
-        st.info("선택한 구간에서 체결된 거래가 없습니다.")
-    else:
-        display = report.rename(columns={
-            "trade_number": "번호",
-            "symbol": "종목",
-            "side": "방향",
-            "entry_time": "진입 시각",
-            "entry_price": "진입가",
-            "exit_time": "청산 시각",
-            "exit_price": "청산가",
-            "stop_loss_price": "손절가",
-            "take_profit_price": "익절가",
-            "exit_reason": "청산 사유",
-            "net_return_pct": "결과 손익 %",
-            "account_value_after": "거래 후 계좌 금액",
-            "entry_reason": "진입 근거",
-        })
-        for column in ("손절가", "익절가"):
-            display[column] = display[column].map(
-                lambda value: "미사용" if pd.isna(value) else f"{value:,.4f}"
-            )
-        display["결과 손익 %"] = display["결과 손익 %"].map(
-            lambda value: f"{value:+.2f}%"
         )
-        display["거래 후 계좌 금액"] = display["거래 후 계좌 금액"].map(
-            lambda value: money_text(value, currency_sym, currency_dec)
-        )
-        st.dataframe(display, width="stretch", hide_index=True, height=520)
-        if report[["stop_loss_price", "take_profit_price"]].isna().all().all():
-            st.caption(
-                "이 전략은 고정 손절/익절 주문을 사용하지 않습니다. "
-                "해당 가격은 임의 추정하지 않고 '미사용'으로 표시합니다."
-            )
 
-    render_extra_panels(run, dashboard_config)
+    with st.expander("📈 성과 리포트", expanded=True):
+        # 포트폴리오형(NAV 기반) 전략은 가격·웨이브폼이 의미없으므로 표준 포트폴리오
+        # 리포트로 대체 보강한다. config dashboard.portfolio_report 로 강제할 수도 있다.
+        if portfolio_view or dashboard_config.get("portfolio_report"):
+            render_portfolio_report(run, equity, benchmark_equity)
+
+        st.subheader("트레이드 리포트")
+        overview = build_trade_overview(trades)
+        overview_values = [
+            ("롱 횟수", str(overview["long_trades"])),
+            ("숏 횟수", str(overview["short_trades"])),
+            ("롱 평균 수익률", metric_text(overview["long_avg_return"], percent=True)),
+            ("숏 평균 수익률", metric_text(overview["short_avg_return"], percent=True)),
+            ("롱 청산율", metric_text(overview["long_close_rate"], percent=True)),
+            ("숏 청산율", metric_text(overview["short_close_rate"], percent=True)),
+        ]
+        for column, (label, value) in zip(st.columns(6), overview_values):
+            column.metric(label, value)
+        st.caption("청산율은 해당 방향의 진입 거래 중 청산 시각이 기록된 거래 비율입니다.")
+
+        report = build_trade_report(
+            trades,
+            equity,
+            initial_capital=initial_capital,
+            horizon=horizon,
+            execution=str(config.get("execution", "next_open")),
+        )
+        if report.empty:
+            st.info("선택한 구간에서 체결된 거래가 없습니다.")
+        else:
+            display = report.rename(columns={
+                "trade_number": "번호",
+                "symbol": "종목",
+                "side": "방향",
+                "entry_time": "진입 시각",
+                "entry_price": "진입가",
+                "exit_time": "청산 시각",
+                "exit_price": "청산가",
+                "stop_loss_price": "손절가",
+                "take_profit_price": "익절가",
+                "exit_reason": "청산 사유",
+                "net_return_pct": "결과 손익 %",
+                "account_value_after": "거래 후 계좌 금액",
+                "entry_reason": "진입 근거",
+            })
+            for column in ("손절가", "익절가"):
+                display[column] = display[column].map(
+                    lambda value: "미사용" if pd.isna(value) else f"{value:,.4f}"
+                )
+            display["결과 손익 %"] = display["결과 손익 %"].map(
+                lambda value: f"{value:+.2f}%"
+            )
+            display["거래 후 계좌 금액"] = display["거래 후 계좌 금액"].map(
+                lambda value: money_text(value, currency_sym, currency_dec)
+            )
+            st.dataframe(display, width="stretch", hide_index=True, height=520)
+            if report[["stop_loss_price", "take_profit_price"]].isna().all().all():
+                st.caption(
+                    "이 전략은 고정 손절/익절 주문을 사용하지 않습니다. "
+                    "해당 가격은 임의 추정하지 않고 '미사용'으로 표시합니다."
+                )
+
+        render_extra_panels(run, dashboard_config)
 
 
 def render_integer_dca_execution_option(

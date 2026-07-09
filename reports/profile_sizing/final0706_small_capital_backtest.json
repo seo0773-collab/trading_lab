@@ -1,0 +1,1087 @@
+{
+  "seed_krw": 2500000.0,
+  "window": [
+    "2007-01-29",
+    "2026-07-07"
+  ],
+  "n_rebalances": 211,
+  "n_orders": 1809,
+  "total_cost_paid_krw": 860868.0,
+  "total_cost_pct_of_seed": 0.3443,
+  "corr_daily_returns": 0.9227247660463895,
+  "target_fit_mean": 0.9842819194312797,
+  "target_fit_min": 0.947118,
+  "integer_lot": {
+    "total_return": 8.755178471733707,
+    "sharpe": 1.1620873896784558,
+    "max_drawdown": -0.16495641781962267,
+    "cagr": 0.12433841882139829,
+    "volatility": 0.12797587030542285
+  },
+  "continuous_official": {
+    "total_return": 11.433139874776007,
+    "sharpe": 1.239687807742936,
+    "max_drawdown": -0.16397819403328107,
+    "cagr": 0.13845843102900135,
+    "volatility": 0.13246193735011239
+  },
+  "final_nav_krw": 24357212.67829736,
+  "final_nav_if_continuous_krw": 31082849.686940018,
+  "fit_by_rebalance": [
+    {
+      "date": "2007-01-29",
+      "target_fit": 0.996152,
+      "tracking_error_abs": 0.007696
+    },
+    {
+      "date": "2007-01-31",
+      "target_fit": 0.994205,
+      "tracking_error_abs": 0.011591
+    },
+    {
+      "date": "2007-02-07",
+      "target_fit": 0.992653,
+      "tracking_error_abs": 0.014694
+    },
+    {
+      "date": "2009-04-30",
+      "target_fit": 0.995778,
+      "tracking_error_abs": 0.008444
+    },
+    {
+      "date": "2009-05-29",
+      "target_fit": 0.987526,
+      "tracking_error_abs": 0.024948
+    },
+    {
+      "date": "2009-06-30",
+      "target_fit": 0.994191,
+      "tracking_error_abs": 0.011618
+    },
+    {
+      "date": "2009-07-31",
+      "target_fit": 0.992598,
+      "tracking_error_abs": 0.014804
+    },
+    {
+      "date": "2009-08-31",
+      "target_fit": 0.993386,
+      "tracking_error_abs": 0.013228
+    },
+    {
+      "date": "2009-09-30",
+      "target_fit": 0.996751,
+      "tracking_error_abs": 0.006498
+    },
+    {
+      "date": "2009-10-30",
+      "target_fit": 0.995897,
+      "tracking_error_abs": 0.008206
+    },
+    {
+      "date": "2009-11-30",
+      "target_fit": 0.997269,
+      "tracking_error_abs": 0.005462
+    },
+    {
+      "date": "2009-12-30",
+      "target_fit": 0.996334,
+      "tracking_error_abs": 0.007332
+    },
+    {
+      "date": "2010-01-29",
+      "target_fit": 0.989293,
+      "tracking_error_abs": 0.021414
+    },
+    {
+      "date": "2010-02-26",
+      "target_fit": 0.993419,
+      "tracking_error_abs": 0.013162
+    },
+    {
+      "date": "2010-03-31",
+      "target_fit": 0.990152,
+      "tracking_error_abs": 0.019695
+    },
+    {
+      "date": "2010-04-30",
+      "target_fit": 0.99039,
+      "tracking_error_abs": 0.019219
+    },
+    {
+      "date": "2010-05-28",
+      "target_fit": 0.988084,
+      "tracking_error_abs": 0.023832
+    },
+    {
+      "date": "2010-06-30",
+      "target_fit": 0.994418,
+      "tracking_error_abs": 0.011163
+    },
+    {
+      "date": "2010-07-30",
+      "target_fit": 0.990216,
+      "tracking_error_abs": 0.019569
+    },
+    {
+      "date": "2010-08-31",
+      "target_fit": 0.982016,
+      "tracking_error_abs": 0.035969
+    },
+    {
+      "date": "2010-09-30",
+      "target_fit": 0.967125,
+      "tracking_error_abs": 0.065749
+    },
+    {
+      "date": "2010-10-29",
+      "target_fit": 0.993027,
+      "tracking_error_abs": 0.013947
+    },
+    {
+      "date": "2010-11-30",
+      "target_fit": 0.992588,
+      "tracking_error_abs": 0.014823
+    },
+    {
+      "date": "2010-12-30",
+      "target_fit": 0.990383,
+      "tracking_error_abs": 0.019235
+    },
+    {
+      "date": "2011-01-31",
+      "target_fit": 0.988509,
+      "tracking_error_abs": 0.022982
+    },
+    {
+      "date": "2011-02-28",
+      "target_fit": 0.976708,
+      "tracking_error_abs": 0.046584
+    },
+    {
+      "date": "2011-03-31",
+      "target_fit": 0.989413,
+      "tracking_error_abs": 0.021175
+    },
+    {
+      "date": "2011-04-29",
+      "target_fit": 0.987021,
+      "tracking_error_abs": 0.025958
+    },
+    {
+      "date": "2011-05-31",
+      "target_fit": 0.986579,
+      "tracking_error_abs": 0.026843
+    },
+    {
+      "date": "2011-06-30",
+      "target_fit": 0.97737,
+      "tracking_error_abs": 0.04526
+    },
+    {
+      "date": "2011-07-29",
+      "target_fit": 0.994356,
+      "tracking_error_abs": 0.011288
+    },
+    {
+      "date": "2011-08-31",
+      "target_fit": 0.980277,
+      "tracking_error_abs": 0.039446
+    },
+    {
+      "date": "2011-09-30",
+      "target_fit": 0.97529,
+      "tracking_error_abs": 0.049421
+    },
+    {
+      "date": "2011-10-31",
+      "target_fit": 0.977753,
+      "tracking_error_abs": 0.044494
+    },
+    {
+      "date": "2011-11-30",
+      "target_fit": 0.973224,
+      "tracking_error_abs": 0.053553
+    },
+    {
+      "date": "2011-12-29",
+      "target_fit": 0.99038,
+      "tracking_error_abs": 0.01924
+    },
+    {
+      "date": "2012-01-31",
+      "target_fit": 0.971181,
+      "tracking_error_abs": 0.057639
+    },
+    {
+      "date": "2012-02-29",
+      "target_fit": 0.990875,
+      "tracking_error_abs": 0.01825
+    },
+    {
+      "date": "2012-03-30",
+      "target_fit": 0.988197,
+      "tracking_error_abs": 0.023607
+    },
+    {
+      "date": "2012-04-30",
+      "target_fit": 0.974914,
+      "tracking_error_abs": 0.050172
+    },
+    {
+      "date": "2012-05-31",
+      "target_fit": 0.981517,
+      "tracking_error_abs": 0.036966
+    },
+    {
+      "date": "2012-06-29",
+      "target_fit": 0.971538,
+      "tracking_error_abs": 0.056924
+    },
+    {
+      "date": "2012-07-31",
+      "target_fit": 0.979322,
+      "tracking_error_abs": 0.041355
+    },
+    {
+      "date": "2012-08-31",
+      "target_fit": 0.969813,
+      "tracking_error_abs": 0.060374
+    },
+    {
+      "date": "2012-09-28",
+      "target_fit": 0.969086,
+      "tracking_error_abs": 0.061829
+    },
+    {
+      "date": "2012-10-31",
+      "target_fit": 0.981506,
+      "tracking_error_abs": 0.036987
+    },
+    {
+      "date": "2012-11-30",
+      "target_fit": 0.972622,
+      "tracking_error_abs": 0.054756
+    },
+    {
+      "date": "2012-12-28",
+      "target_fit": 0.991199,
+      "tracking_error_abs": 0.017602
+    },
+    {
+      "date": "2013-01-31",
+      "target_fit": 0.986011,
+      "tracking_error_abs": 0.027979
+    },
+    {
+      "date": "2013-02-28",
+      "target_fit": 0.994448,
+      "tracking_error_abs": 0.011104
+    },
+    {
+      "date": "2013-03-28",
+      "target_fit": 0.988417,
+      "tracking_error_abs": 0.023167
+    },
+    {
+      "date": "2013-04-30",
+      "target_fit": 0.987042,
+      "tracking_error_abs": 0.025917
+    },
+    {
+      "date": "2013-05-31",
+      "target_fit": 0.991927,
+      "tracking_error_abs": 0.016147
+    },
+    {
+      "date": "2013-06-28",
+      "target_fit": 0.989537,
+      "tracking_error_abs": 0.020926
+    },
+    {
+      "date": "2013-07-31",
+      "target_fit": 0.992047,
+      "tracking_error_abs": 0.015907
+    },
+    {
+      "date": "2013-08-30",
+      "target_fit": 0.988868,
+      "tracking_error_abs": 0.022264
+    },
+    {
+      "date": "2013-09-30",
+      "target_fit": 0.991661,
+      "tracking_error_abs": 0.016677
+    },
+    {
+      "date": "2013-10-31",
+      "target_fit": 0.993372,
+      "tracking_error_abs": 0.013256
+    },
+    {
+      "date": "2013-11-29",
+      "target_fit": 0.99191,
+      "tracking_error_abs": 0.01618
+    },
+    {
+      "date": "2013-12-30",
+      "target_fit": 0.98342,
+      "tracking_error_abs": 0.03316
+    },
+    {
+      "date": "2014-01-29",
+      "target_fit": 0.978572,
+      "tracking_error_abs": 0.042856
+    },
+    {
+      "date": "2014-02-28",
+      "target_fit": 0.984128,
+      "tracking_error_abs": 0.031744
+    },
+    {
+      "date": "2014-03-31",
+      "target_fit": 0.989067,
+      "tracking_error_abs": 0.021866
+    },
+    {
+      "date": "2014-04-30",
+      "target_fit": 0.964838,
+      "tracking_error_abs": 0.070325
+    },
+    {
+      "date": "2014-05-30",
+      "target_fit": 0.96984,
+      "tracking_error_abs": 0.06032
+    },
+    {
+      "date": "2014-06-30",
+      "target_fit": 0.976654,
+      "tracking_error_abs": 0.046692
+    },
+    {
+      "date": "2014-07-31",
+      "target_fit": 0.993572,
+      "tracking_error_abs": 0.012857
+    },
+    {
+      "date": "2014-08-29",
+      "target_fit": 0.99504,
+      "tracking_error_abs": 0.00992
+    },
+    {
+      "date": "2014-09-30",
+      "target_fit": 0.994305,
+      "tracking_error_abs": 0.01139
+    },
+    {
+      "date": "2014-10-31",
+      "target_fit": 0.979253,
+      "tracking_error_abs": 0.041493
+    },
+    {
+      "date": "2014-11-28",
+      "target_fit": 0.981569,
+      "tracking_error_abs": 0.036862
+    },
+    {
+      "date": "2014-12-30",
+      "target_fit": 0.983356,
+      "tracking_error_abs": 0.033287
+    },
+    {
+      "date": "2015-01-30",
+      "target_fit": 0.98358,
+      "tracking_error_abs": 0.03284
+    },
+    {
+      "date": "2015-02-27",
+      "target_fit": 0.988388,
+      "tracking_error_abs": 0.023224
+    },
+    {
+      "date": "2015-03-31",
+      "target_fit": 0.975579,
+      "tracking_error_abs": 0.048842
+    },
+    {
+      "date": "2015-04-30",
+      "target_fit": 0.997355,
+      "tracking_error_abs": 0.005291
+    },
+    {
+      "date": "2015-05-29",
+      "target_fit": 0.990379,
+      "tracking_error_abs": 0.019243
+    },
+    {
+      "date": "2015-06-30",
+      "target_fit": 0.986558,
+      "tracking_error_abs": 0.026884
+    },
+    {
+      "date": "2015-07-31",
+      "target_fit": 0.988405,
+      "tracking_error_abs": 0.02319
+    },
+    {
+      "date": "2015-08-31",
+      "target_fit": 0.966078,
+      "tracking_error_abs": 0.067845
+    },
+    {
+      "date": "2015-09-30",
+      "target_fit": 0.961388,
+      "tracking_error_abs": 0.077223
+    },
+    {
+      "date": "2015-10-30",
+      "target_fit": 0.962216,
+      "tracking_error_abs": 0.075569
+    },
+    {
+      "date": "2015-11-30",
+      "target_fit": 0.977078,
+      "tracking_error_abs": 0.045844
+    },
+    {
+      "date": "2015-12-30",
+      "target_fit": 0.990721,
+      "tracking_error_abs": 0.018559
+    },
+    {
+      "date": "2016-01-29",
+      "target_fit": 0.973347,
+      "tracking_error_abs": 0.053307
+    },
+    {
+      "date": "2016-02-29",
+      "target_fit": 0.96219,
+      "tracking_error_abs": 0.075621
+    },
+    {
+      "date": "2016-03-31",
+      "target_fit": 0.995896,
+      "tracking_error_abs": 0.008207
+    },
+    {
+      "date": "2016-04-29",
+      "target_fit": 0.996807,
+      "tracking_error_abs": 0.006386
+    },
+    {
+      "date": "2016-05-31",
+      "target_fit": 0.971066,
+      "tracking_error_abs": 0.057869
+    },
+    {
+      "date": "2016-06-30",
+      "target_fit": 0.978438,
+      "tracking_error_abs": 0.043123
+    },
+    {
+      "date": "2016-07-29",
+      "target_fit": 0.987858,
+      "tracking_error_abs": 0.024285
+    },
+    {
+      "date": "2016-08-31",
+      "target_fit": 0.986441,
+      "tracking_error_abs": 0.027118
+    },
+    {
+      "date": "2016-09-30",
+      "target_fit": 0.986456,
+      "tracking_error_abs": 0.027088
+    },
+    {
+      "date": "2016-10-31",
+      "target_fit": 0.992749,
+      "tracking_error_abs": 0.014502
+    },
+    {
+      "date": "2016-11-30",
+      "target_fit": 0.997074,
+      "tracking_error_abs": 0.005852
+    },
+    {
+      "date": "2016-12-29",
+      "target_fit": 0.99176,
+      "tracking_error_abs": 0.016481
+    },
+    {
+      "date": "2017-01-31",
+      "target_fit": 0.980114,
+      "tracking_error_abs": 0.039772
+    },
+    {
+      "date": "2017-02-28",
+      "target_fit": 0.985788,
+      "tracking_error_abs": 0.028425
+    },
+    {
+      "date": "2017-03-31",
+      "target_fit": 0.996218,
+      "tracking_error_abs": 0.007564
+    },
+    {
+      "date": "2017-04-28",
+      "target_fit": 0.981443,
+      "tracking_error_abs": 0.037114
+    },
+    {
+      "date": "2017-05-31",
+      "target_fit": 0.990445,
+      "tracking_error_abs": 0.01911
+    },
+    {
+      "date": "2017-06-30",
+      "target_fit": 0.992753,
+      "tracking_error_abs": 0.014493
+    },
+    {
+      "date": "2017-07-31",
+      "target_fit": 0.987268,
+      "tracking_error_abs": 0.025463
+    },
+    {
+      "date": "2017-08-31",
+      "target_fit": 0.989741,
+      "tracking_error_abs": 0.020519
+    },
+    {
+      "date": "2017-09-29",
+      "target_fit": 0.990234,
+      "tracking_error_abs": 0.019532
+    },
+    {
+      "date": "2017-10-31",
+      "target_fit": 0.995344,
+      "tracking_error_abs": 0.009312
+    },
+    {
+      "date": "2017-11-30",
+      "target_fit": 0.986287,
+      "tracking_error_abs": 0.027426
+    },
+    {
+      "date": "2017-12-28",
+      "target_fit": 0.993528,
+      "tracking_error_abs": 0.012944
+    },
+    {
+      "date": "2018-01-31",
+      "target_fit": 0.990453,
+      "tracking_error_abs": 0.019093
+    },
+    {
+      "date": "2018-02-28",
+      "target_fit": 0.994098,
+      "tracking_error_abs": 0.011804
+    },
+    {
+      "date": "2018-03-29",
+      "target_fit": 0.985779,
+      "tracking_error_abs": 0.028443
+    },
+    {
+      "date": "2018-04-30",
+      "target_fit": 0.972466,
+      "tracking_error_abs": 0.055068
+    },
+    {
+      "date": "2018-05-31",
+      "target_fit": 0.990726,
+      "tracking_error_abs": 0.018548
+    },
+    {
+      "date": "2018-06-29",
+      "target_fit": 0.978441,
+      "tracking_error_abs": 0.043118
+    },
+    {
+      "date": "2018-07-31",
+      "target_fit": 0.978751,
+      "tracking_error_abs": 0.042498
+    },
+    {
+      "date": "2018-08-31",
+      "target_fit": 0.973757,
+      "tracking_error_abs": 0.052487
+    },
+    {
+      "date": "2018-09-28",
+      "target_fit": 0.99532,
+      "tracking_error_abs": 0.00936
+    },
+    {
+      "date": "2018-10-31",
+      "target_fit": 0.973822,
+      "tracking_error_abs": 0.052357
+    },
+    {
+      "date": "2018-11-30",
+      "target_fit": 0.966085,
+      "tracking_error_abs": 0.06783
+    },
+    {
+      "date": "2018-12-28",
+      "target_fit": 0.963408,
+      "tracking_error_abs": 0.073184
+    },
+    {
+      "date": "2019-01-31",
+      "target_fit": 0.983772,
+      "tracking_error_abs": 0.032456
+    },
+    {
+      "date": "2019-02-28",
+      "target_fit": 0.980961,
+      "tracking_error_abs": 0.038078
+    },
+    {
+      "date": "2019-03-29",
+      "target_fit": 0.973661,
+      "tracking_error_abs": 0.052678
+    },
+    {
+      "date": "2019-04-30",
+      "target_fit": 0.976338,
+      "tracking_error_abs": 0.047323
+    },
+    {
+      "date": "2019-05-31",
+      "target_fit": 0.984756,
+      "tracking_error_abs": 0.030488
+    },
+    {
+      "date": "2019-06-28",
+      "target_fit": 0.967237,
+      "tracking_error_abs": 0.065526
+    },
+    {
+      "date": "2019-07-31",
+      "target_fit": 0.978754,
+      "tracking_error_abs": 0.042491
+    },
+    {
+      "date": "2019-08-30",
+      "target_fit": 0.983993,
+      "tracking_error_abs": 0.032014
+    },
+    {
+      "date": "2019-09-30",
+      "target_fit": 0.968432,
+      "tracking_error_abs": 0.063137
+    },
+    {
+      "date": "2019-10-31",
+      "target_fit": 0.973306,
+      "tracking_error_abs": 0.053387
+    },
+    {
+      "date": "2019-11-29",
+      "target_fit": 0.984089,
+      "tracking_error_abs": 0.031823
+    },
+    {
+      "date": "2019-12-30",
+      "target_fit": 0.982784,
+      "tracking_error_abs": 0.034433
+    },
+    {
+      "date": "2020-01-31",
+      "target_fit": 0.974447,
+      "tracking_error_abs": 0.051106
+    },
+    {
+      "date": "2020-02-28",
+      "target_fit": 0.947118,
+      "tracking_error_abs": 0.105763
+    },
+    {
+      "date": "2020-03-31",
+      "target_fit": 0.970764,
+      "tracking_error_abs": 0.058472
+    },
+    {
+      "date": "2020-04-29",
+      "target_fit": 0.968372,
+      "tracking_error_abs": 0.063256
+    },
+    {
+      "date": "2020-05-29",
+      "target_fit": 0.948809,
+      "tracking_error_abs": 0.102382
+    },
+    {
+      "date": "2020-06-30",
+      "target_fit": 0.949755,
+      "tracking_error_abs": 0.10049
+    },
+    {
+      "date": "2020-07-31",
+      "target_fit": 0.983818,
+      "tracking_error_abs": 0.032364
+    },
+    {
+      "date": "2020-08-31",
+      "target_fit": 0.982225,
+      "tracking_error_abs": 0.03555
+    },
+    {
+      "date": "2020-09-29",
+      "target_fit": 0.996499,
+      "tracking_error_abs": 0.007001
+    },
+    {
+      "date": "2020-10-30",
+      "target_fit": 0.971259,
+      "tracking_error_abs": 0.057482
+    },
+    {
+      "date": "2020-11-30",
+      "target_fit": 0.977831,
+      "tracking_error_abs": 0.044339
+    },
+    {
+      "date": "2020-12-30",
+      "target_fit": 0.981248,
+      "tracking_error_abs": 0.037504
+    },
+    {
+      "date": "2021-01-29",
+      "target_fit": 0.984148,
+      "tracking_error_abs": 0.031703
+    },
+    {
+      "date": "2021-02-26",
+      "target_fit": 0.987846,
+      "tracking_error_abs": 0.024309
+    },
+    {
+      "date": "2021-03-31",
+      "target_fit": 0.988252,
+      "tracking_error_abs": 0.023496
+    },
+    {
+      "date": "2021-04-30",
+      "target_fit": 0.990309,
+      "tracking_error_abs": 0.019382
+    },
+    {
+      "date": "2021-05-28",
+      "target_fit": 0.986637,
+      "tracking_error_abs": 0.026725
+    },
+    {
+      "date": "2021-06-30",
+      "target_fit": 0.992055,
+      "tracking_error_abs": 0.01589
+    },
+    {
+      "date": "2021-07-30",
+      "target_fit": 0.990908,
+      "tracking_error_abs": 0.018184
+    },
+    {
+      "date": "2021-08-31",
+      "target_fit": 0.99238,
+      "tracking_error_abs": 0.01524
+    },
+    {
+      "date": "2021-09-30",
+      "target_fit": 0.992166,
+      "tracking_error_abs": 0.015668
+    },
+    {
+      "date": "2021-10-29",
+      "target_fit": 0.997716,
+      "tracking_error_abs": 0.004568
+    },
+    {
+      "date": "2021-11-30",
+      "target_fit": 0.988603,
+      "tracking_error_abs": 0.022794
+    },
+    {
+      "date": "2021-12-30",
+      "target_fit": 0.975988,
+      "tracking_error_abs": 0.048024
+    },
+    {
+      "date": "2022-01-28",
+      "target_fit": 0.991017,
+      "tracking_error_abs": 0.017965
+    },
+    {
+      "date": "2022-02-28",
+      "target_fit": 0.991569,
+      "tracking_error_abs": 0.016861
+    },
+    {
+      "date": "2022-03-31",
+      "target_fit": 0.99607,
+      "tracking_error_abs": 0.007861
+    },
+    {
+      "date": "2022-04-29",
+      "target_fit": 0.988768,
+      "tracking_error_abs": 0.022465
+    },
+    {
+      "date": "2022-05-31",
+      "target_fit": 0.987573,
+      "tracking_error_abs": 0.024853
+    },
+    {
+      "date": "2022-06-30",
+      "target_fit": 0.994135,
+      "tracking_error_abs": 0.011729
+    },
+    {
+      "date": "2022-07-29",
+      "target_fit": 0.987758,
+      "tracking_error_abs": 0.024484
+    },
+    {
+      "date": "2022-08-31",
+      "target_fit": 0.98916,
+      "tracking_error_abs": 0.021679
+    },
+    {
+      "date": "2022-09-30",
+      "target_fit": 0.989348,
+      "tracking_error_abs": 0.021305
+    },
+    {
+      "date": "2022-10-31",
+      "target_fit": 0.981509,
+      "tracking_error_abs": 0.036983
+    },
+    {
+      "date": "2022-11-30",
+      "target_fit": 0.976486,
+      "tracking_error_abs": 0.047029
+    },
+    {
+      "date": "2022-12-29",
+      "target_fit": 0.970492,
+      "tracking_error_abs": 0.059015
+    },
+    {
+      "date": "2023-01-31",
+      "target_fit": 0.961317,
+      "tracking_error_abs": 0.077367
+    },
+    {
+      "date": "2023-02-28",
+      "target_fit": 0.971443,
+      "tracking_error_abs": 0.057114
+    },
+    {
+      "date": "2023-03-31",
+      "target_fit": 0.990455,
+      "tracking_error_abs": 0.019091
+    },
+    {
+      "date": "2023-04-28",
+      "target_fit": 0.993737,
+      "tracking_error_abs": 0.012526
+    },
+    {
+      "date": "2023-05-31",
+      "target_fit": 0.989453,
+      "tracking_error_abs": 0.021094
+    },
+    {
+      "date": "2023-06-30",
+      "target_fit": 0.985258,
+      "tracking_error_abs": 0.029484
+    },
+    {
+      "date": "2023-07-28",
+      "target_fit": 0.986272,
+      "tracking_error_abs": 0.027456
+    },
+    {
+      "date": "2023-08-31",
+      "target_fit": 0.990958,
+      "tracking_error_abs": 0.018085
+    },
+    {
+      "date": "2023-09-27",
+      "target_fit": 0.990767,
+      "tracking_error_abs": 0.018466
+    },
+    {
+      "date": "2023-10-31",
+      "target_fit": 0.966947,
+      "tracking_error_abs": 0.066105
+    },
+    {
+      "date": "2023-11-30",
+      "target_fit": 0.980975,
+      "tracking_error_abs": 0.03805
+    },
+    {
+      "date": "2023-12-28",
+      "target_fit": 0.986592,
+      "tracking_error_abs": 0.026816
+    },
+    {
+      "date": "2024-01-31",
+      "target_fit": 0.990378,
+      "tracking_error_abs": 0.019244
+    },
+    {
+      "date": "2024-02-29",
+      "target_fit": 0.979916,
+      "tracking_error_abs": 0.040167
+    },
+    {
+      "date": "2024-03-28",
+      "target_fit": 0.984702,
+      "tracking_error_abs": 0.030596
+    },
+    {
+      "date": "2024-04-30",
+      "target_fit": 0.986316,
+      "tracking_error_abs": 0.027369
+    },
+    {
+      "date": "2024-05-31",
+      "target_fit": 0.993623,
+      "tracking_error_abs": 0.012753
+    },
+    {
+      "date": "2024-06-28",
+      "target_fit": 0.988294,
+      "tracking_error_abs": 0.023411
+    },
+    {
+      "date": "2024-07-31",
+      "target_fit": 0.986716,
+      "tracking_error_abs": 0.026567
+    },
+    {
+      "date": "2024-08-30",
+      "target_fit": 0.97939,
+      "tracking_error_abs": 0.04122
+    },
+    {
+      "date": "2024-09-30",
+      "target_fit": 0.980661,
+      "tracking_error_abs": 0.038679
+    },
+    {
+      "date": "2024-10-31",
+      "target_fit": 0.98387,
+      "tracking_error_abs": 0.032259
+    },
+    {
+      "date": "2024-11-29",
+      "target_fit": 0.976029,
+      "tracking_error_abs": 0.047942
+    },
+    {
+      "date": "2024-12-30",
+      "target_fit": 0.977135,
+      "tracking_error_abs": 0.045731
+    },
+    {
+      "date": "2025-01-31",
+      "target_fit": 0.987533,
+      "tracking_error_abs": 0.024933
+    },
+    {
+      "date": "2025-02-28",
+      "target_fit": 0.982313,
+      "tracking_error_abs": 0.035375
+    },
+    {
+      "date": "2025-03-31",
+      "target_fit": 0.985085,
+      "tracking_error_abs": 0.02983
+    },
+    {
+      "date": "2025-04-30",
+      "target_fit": 0.981619,
+      "tracking_error_abs": 0.036761
+    },
+    {
+      "date": "2025-05-30",
+      "target_fit": 0.990407,
+      "tracking_error_abs": 0.019185
+    },
+    {
+      "date": "2025-06-30",
+      "target_fit": 0.992917,
+      "tracking_error_abs": 0.014166
+    },
+    {
+      "date": "2025-07-31",
+      "target_fit": 0.985418,
+      "tracking_error_abs": 0.029163
+    },
+    {
+      "date": "2025-08-29",
+      "target_fit": 0.983939,
+      "tracking_error_abs": 0.032122
+    },
+    {
+      "date": "2025-09-30",
+      "target_fit": 0.989298,
+      "tracking_error_abs": 0.021404
+    },
+    {
+      "date": "2025-10-31",
+      "target_fit": 0.988816,
+      "tracking_error_abs": 0.022367
+    },
+    {
+      "date": "2025-11-28",
+      "target_fit": 0.98685,
+      "tracking_error_abs": 0.026301
+    },
+    {
+      "date": "2025-12-30",
+      "target_fit": 0.984446,
+      "tracking_error_abs": 0.031108
+    },
+    {
+      "date": "2026-01-30",
+      "target_fit": 0.985482,
+      "tracking_error_abs": 0.029036
+    },
+    {
+      "date": "2026-02-27",
+      "target_fit": 0.987737,
+      "tracking_error_abs": 0.024527
+    },
+    {
+      "date": "2026-03-31",
+      "target_fit": 0.997979,
+      "tracking_error_abs": 0.004042
+    },
+    {
+      "date": "2026-04-30",
+      "target_fit": 0.991831,
+      "tracking_error_abs": 0.016337
+    },
+    {
+      "date": "2026-05-29",
+      "target_fit": 0.983333,
+      "tracking_error_abs": 0.033333
+    },
+    {
+      "date": "2026-06-30",
+      "target_fit": 0.983815,
+      "tracking_error_abs": 0.032369
+    },
+    {
+      "date": "2026-07-07",
+      "target_fit": 0.990911,
+      "tracking_error_abs": 0.018177
+    }
+  ]
+}

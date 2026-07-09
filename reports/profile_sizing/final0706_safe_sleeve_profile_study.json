@@ -1,0 +1,120 @@
+{
+  "period": "2007-01-29~2026-07-08",
+  "bars": 4087,
+  "phases": {
+    "all": "2007-01-29~2026-07-08",
+    "test": "2022-12-19~2026-07-08",
+    "recent_3y": "2023-07-10~2026-07-08"
+  },
+  "sleeve_performance": [
+    {
+      "sleeve": "US(yoon1j_lp)",
+      "variant": "원본(균등 배분)",
+      "cagr": 0.08334298494863623,
+      "max_drawdown": -0.2101548020296894,
+      "sharpe": 0.7493355724425637,
+      "total_return": 8.068836574494625,
+      "volatility": 0.11608580871515015,
+      "avg_safe_exposure": 0.0808252148878727
+    },
+    {
+      "sleeve": "KR(yoon1j_kr)",
+      "variant": "원본(균등 배분)",
+      "cagr": 0.09878281168094061,
+      "max_drawdown": -0.3755398566798731,
+      "sharpe": 0.7059097858868223,
+      "total_return": 5.24129883703033,
+      "volatility": 0.17745828042874842,
+      "avg_safe_exposure": 0.13535671786514025
+    },
+    {
+      "sleeve": "US(yoon1j_lp)",
+      "variant": "profile_scored(점수 비례)",
+      "cagr": 0.08405295710147898,
+      "max_drawdown": -0.21015501154404892,
+      "sharpe": 0.7547902557099428,
+      "total_return": 8.233962996585548,
+      "volatility": 0.1161224786060969,
+      "avg_safe_exposure": 0.08085717696915679
+    },
+    {
+      "sleeve": "KR(yoon1j_kr)",
+      "variant": "profile_scored(점수 비례)",
+      "cagr": 0.09928996405765989,
+      "max_drawdown": -0.37578502720427454,
+      "sharpe": 0.7083672234574884,
+      "total_return": 5.2975354011407045,
+      "volatility": 0.17764662576447207,
+      "avg_safe_exposure": 0.13536184922916897
+    }
+  ],
+  "performance": [
+    {
+      "phase": "all",
+      "candidate": "원본(균등 배분)",
+      "cagr": 0.1366174354257792,
+      "max_drawdown": -0.16397806246942936,
+      "sharpe": 1.2231766578712189,
+      "total_return": 11.05236338975811,
+      "volatility": 0.13267333593365663
+    },
+    {
+      "phase": "all",
+      "candidate": "profile_scored(점수 비례)",
+      "cagr": 0.13741521295606507,
+      "max_drawdown": -0.16152714527888734,
+      "sharpe": 1.2272045260994033,
+      "total_return": 11.217871965687289,
+      "volatility": 0.1329501820506014
+    },
+    {
+      "phase": "test",
+      "candidate": "원본(균등 배분)",
+      "cagr": 0.3363370206814009,
+      "max_drawdown": -0.11998635495146504,
+      "sharpe": 1.9527234270394047,
+      "total_return": 1.799798442059275,
+      "volatility": 0.16994221880011048
+    },
+    {
+      "phase": "test",
+      "candidate": "profile_scored(점수 비례)",
+      "cagr": 0.33952886083141687,
+      "max_drawdown": -0.11998637463060768,
+      "sharpe": 1.9674786930391985,
+      "total_return": 1.8236174877924234,
+      "volatility": 0.17000083881166403
+    },
+    {
+      "phase": "recent_3y",
+      "candidate": "원본(균등 배분)",
+      "cagr": 0.3691074637887144,
+      "max_drawdown": -0.11998635495146504,
+      "sharpe": 2.010791555611113,
+      "total_return": 1.5624707063295888,
+      "volatility": 0.178203892712361
+    },
+    {
+      "phase": "recent_3y",
+      "candidate": "profile_scored(점수 비례)",
+      "cagr": 0.3719878073064977,
+      "max_drawdown": -0.1199863746306078,
+      "sharpe": 2.022959690597309,
+      "total_return": 1.5786516527218608,
+      "volatility": 0.17827082743117167
+    }
+  ],
+  "bootstrap": {
+    "profile_scored_vs_원본": {
+      "label_a": "scored",
+      "label_b": "원본",
+      "period": "2007-01-29~2026-07-08",
+      "bars": 4087,
+      "prob": {
+        "sharpe_a_gt_b": 0.829375,
+        "cagr_a_gt_b": 0.884875,
+        "mdd_a_shallower": 0.6005
+      }
+    }
+  }
+}

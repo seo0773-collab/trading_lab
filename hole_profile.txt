@@ -1,0 +1,546 @@
+//@version=6
+indicator("Multiscale Market Structure - Level 0~2 + Time/Price Profiles", overlay=true, max_lines_count=500, max_labels_count=100, max_bars_back=5000)
+
+//━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Inputs
+//━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+atrLen      = input.int(48, "ATR Lookback Bars", minval=2)
+atrMult     = input.float(1.0, "ATR Multiplier", minval=0.1, step=0.1)
+
+showL0      = input.bool(false, "Show Level 0")
+showL1      = input.bool(true, "Show Level 1")
+showL2      = input.bool(true, "Show Level 2")
+
+maxSegEach  = input.int(120, "Max ZigZag Segments per Level", minval=10, maxval=160)
+
+colL0       = input.color(color.gray, "Level 0 Color")
+colL1       = input.color(color.aqua, "Level 1 Color")
+colL2       = input.color(color.orange, "Level 2 Color")
+
+//━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Profile Inputs
+//━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+showProfile     = input.bool(true, "Show Extremum Profiles")
+profileLevel    = input.string("Level 1", "Profile Source Level", options=["Level 0", "Level 1", "Level 2"])
+profileBins     = input.int(20, "Profile Bins", minval=5, maxval=40)
+profileSamples  = input.int(300, "Max Profile Samples", minval=30, maxval=1000)
+
+timeUnit        = input.string("Bars", "Time Profile Unit", options=["Bars", "Days"])
+timeMaxInput    = input.float(0.0, "Time Profile Max, 0 = Auto", minval=0.0)
+priceAbsInput   = input.float(0.0, "Price % Abs Range, 0 = Auto", minval=0.0)
+
+histWidth       = input.int(12, "Histogram Text Width", minval=5, maxval=25)
+
+//━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Utility functions
+//━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+f_cmp(float x, float y, int extType) =>
+    extType == 1 ? x > y : x < y
+
+f_append_ext(
+     array<int> tArr,
+     array<int> iArr,
+     array<int> msArr,
+     array<float> pArr,
+     int t,
+     int idx,
+     int ms,
+     float price
+ ) =>
+    array.push(tArr, t)
+    array.push(iArr, idx)
+    array.push(msArr, ms)
+    array.push(pArr, price)
+
+f_draw_latest_segment(array<int> iArr, array<float> pArr, color col, int width, array<line> store, int maxSeg) =>
+    int sz = array.size(iArr)
+
+    if sz >= 2
+        int x1 = array.get(iArr, sz - 2)
+        int x2 = array.get(iArr, sz - 1)
+        float y1 = array.get(pArr, sz - 2)
+        float y2 = array.get(pArr, sz - 1)
+
+        line ln = line.new(
+             x1=x1,
+             y1=y1,
+             x2=x2,
+             y2=y2,
+             xloc=xloc.bar_index,
+             extend=extend.none,
+             color=col,
+             width=width
+        )
+
+        array.push(store, ln)
+
+        while array.size(store) > maxSeg
+            line old = array.shift(store)
+            line.delete(old)
+
+f_push_sample(array<float> arr, float v, int maxN) =>
+    if not na(v)
+        array.push(arr, v)
+
+        while array.size(arr) > maxN
+            array.shift(arr)
+
+f_record_profile(
+     array<int> iArr,
+     array<int> msArr,
+     array<float> pArr,
+     array<float> timeBarsArr,
+     array<float> timeDaysArr,
+     array<float> pctArr,
+     int maxN
+ ) =>
+    int sz = array.size(iArr)
+
+    if sz >= 2
+        int prevIdx = array.get(iArr, sz - 2)
+        int currIdx = array.get(iArr, sz - 1)
+
+        int prevMs = array.get(msArr, sz - 2)
+        int currMs = array.get(msArr, sz - 1)
+
+        float prevPrice = array.get(pArr, sz - 2)
+        float currPrice = array.get(pArr, sz - 1)
+
+        if currIdx > prevIdx and prevPrice != 0
+            float dtBars = currIdx - prevIdx
+            float dtDays = (currMs - prevMs) / 86400000.0
+            float pctMove = (currPrice / prevPrice - 1.0) * 100.0
+
+            f_push_sample(timeBarsArr, dtBars, maxN)
+            f_push_sample(timeDaysArr, dtDays, maxN)
+            f_push_sample(pctArr, pctMove, maxN)
+
+f_next_candidate(
+     array<int> srcT,
+     array<int> srcI,
+     array<int> srcMs,
+     array<float> srcP,
+     array<int> dstT,
+     array<int> dstI,
+     array<int> dstMs,
+     array<float> dstP,
+     int extType
+ ) =>
+    int cnt = 0
+
+    int t1 = na
+    int i1 = na
+    int ms1 = na
+    float p1 = na
+
+    int t2 = na
+    int i2 = na
+    int ms2 = na
+    float p2 = na
+
+    int extPos = array.size(srcT) - 1
+
+    if extPos >= 4
+        int newPos = extPos
+        int prevPos = extPos - 2
+
+        float newPrice = array.get(srcP, newPos)
+        float prevPrice = array.get(srcP, prevPos)
+
+        bool ok = true
+
+        if not f_cmp(prevPrice, newPrice, extType)
+            ok := false
+
+        bool hasPrevNext = array.size(dstT) > 0
+        int prevNextType = na
+        int prevNextIdx = na
+        float prevNextPrice = na
+
+        if hasPrevNext
+            int lastDst = array.size(dstT) - 1
+            prevNextType := array.get(dstT, lastDst)
+            prevNextIdx := array.get(dstI, lastDst)
+            prevNextPrice := array.get(dstP, lastDst)
+
+            if prevNextType != extType and not f_cmp(prevPrice, prevNextPrice, extType)
+                ok := false
+
+        int adjPrevPos = prevPos
+
+        int priorPos = extPos - 4
+        while priorPos >= 0 and ok
+            float priorPrice = array.get(srcP, priorPos)
+            int priorIdx = array.get(srcI, priorPos)
+
+            if f_cmp(priorPrice, prevPrice, extType)
+                ok := false
+            else if hasPrevNext and priorIdx <= prevNextIdx
+                break
+            else if priorPrice == prevPrice
+                adjPrevPos := priorPos
+            else if f_cmp(priorPrice, prevPrice, -extType)
+                break
+
+            priorPos -= 2
+
+        if ok
+            int candType = extType
+            int candIdx = array.get(srcI, adjPrevPos)
+            int candMs = array.get(srcMs, adjPrevPos)
+            float candPrice = array.get(srcP, adjPrevPos)
+
+            bool needUpgrade = hasPrevNext and prevNextType == extType
+
+            if needUpgrade
+                bool foundUpgrade = false
+                int upPos = na
+                float upPrice = na
+
+                int j = extPos - 1
+                while j >= 0
+                    int jIdx = array.get(srcI, j)
+                    float jPrice = array.get(srcP, j)
+
+                    if jIdx >= candIdx
+                        j -= 2
+                        continue
+
+                    if jIdx <= prevNextIdx
+                        break
+
+                    if not foundUpgrade or not f_cmp(jPrice, upPrice, extType)
+                        foundUpgrade := true
+                        upPos := j
+                        upPrice := jPrice
+
+                    j -= 2
+
+                if foundUpgrade
+                    cnt := 2
+
+                    t1 := -extType
+                    i1 := array.get(srcI, upPos)
+                    ms1 := array.get(srcMs, upPos)
+                    p1 := array.get(srcP, upPos)
+
+                    t2 := candType
+                    i2 := candIdx
+                    ms2 := candMs
+                    p2 := candPrice
+            else
+                cnt := 1
+
+                t1 := candType
+                i1 := candIdx
+                ms1 := candMs
+                p1 := candPrice
+
+    [cnt, t1, i1, ms1, p1, t2, i2, ms2, p2]
+
+//━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Histogram helper functions
+//━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+f_array_max(array<float> arr) =>
+    float mx = na
+    int sz = array.size(arr)
+
+    if sz > 0
+        for k = 0 to sz - 1
+            float v = array.get(arr, k)
+
+            if not na(v)
+                mx := na(mx) ? v : math.max(mx, v)
+
+    mx
+
+f_array_abs_max(array<float> arr) =>
+    float mx = na
+    int sz = array.size(arr)
+
+    if sz > 0
+        for k = 0 to sz - 1
+            float v = math.abs(array.get(arr, k))
+
+            if not na(v)
+                mx := na(mx) ? v : math.max(mx, v)
+
+    mx
+
+f_rebuild_hist(array<float> samples, array<int> counts, int bins, float mn, float mx) =>
+    array.clear(counts)
+
+    for b = 0 to bins - 1
+        array.push(counts, 0)
+
+    int sz = array.size(samples)
+
+    if sz > 0 and mx > mn
+        for k = 0 to sz - 1
+            float v = array.get(samples, k)
+
+            if not na(v)
+                int bi = int(math.floor((v - mn) / (mx - mn) * bins))
+                bi := bi < 0 ? 0 : bi >= bins ? bins - 1 : bi
+
+                array.set(counts, bi, array.get(counts, bi) + 1)
+
+f_hist_max(array<int> counts) =>
+    int mx = 0
+    int sz = array.size(counts)
+
+    if sz > 0
+        for k = 0 to sz - 1
+            mx := math.max(mx, array.get(counts, k))
+
+    mx
+
+f_bar(int count, int mx, int width) =>
+    int filled = mx > 0 ? int(math.round(count * width * 1.0 / mx)) : 0
+    string s = ""
+
+    if filled > 0
+        for k = 0 to filled - 1
+            s += "█"
+
+    s
+
+f_range_label(float lo, float hi, string suffix) =>
+    str.tostring(lo, "#.##") + " ~ " + str.tostring(hi, "#.##") + suffix
+
+//━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Arrays for each structure level
+// type: 1 = high, -1 = low
+//━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+var array<int> l0T = array.new_int()
+var array<int> l0I = array.new_int()
+var array<int> l0Ms = array.new_int()
+var array<float> l0P = array.new_float()
+
+var array<int> l1T = array.new_int()
+var array<int> l1I = array.new_int()
+var array<int> l1Ms = array.new_int()
+var array<float> l1P = array.new_float()
+
+var array<int> l2T = array.new_int()
+var array<int> l2I = array.new_int()
+var array<int> l2Ms = array.new_int()
+var array<float> l2P = array.new_float()
+
+var array<line> l0Lines = array.new_line()
+var array<line> l1Lines = array.new_line()
+var array<line> l2Lines = array.new_line()
+
+//━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Profile sample arrays
+//━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+var array<float> profTimeBars = array.new_float()
+var array<float> profTimeDays = array.new_float()
+var array<float> profPctMove = array.new_float()
+
+var array<int> timeHist = array.new_int()
+var array<int> pctHist = array.new_int()
+
+//━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ATR Directional Change base detector
+//━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+tr  = ta.tr(true)
+atr = ta.sma(tr, atrLen) * atrMult
+
+var bool upMove = true
+
+var float pendMax = na
+var float pendMin = na
+
+var int pendMaxI = na
+var int pendMinI = na
+
+bool newBase = false
+int baseType = na
+int baseIdx = na
+int baseMs = na
+float basePrice = na
+
+if not na(atr)
+    if na(pendMax)
+        pendMax := high
+        pendMin := low
+        pendMaxI := bar_index
+        pendMinI := bar_index
+
+    if upMove
+        if high > pendMax
+            pendMax := high
+            pendMaxI := bar_index
+        else if low < pendMax - atr
+            newBase := true
+            baseType := 1
+            baseIdx := pendMaxI
+            baseMs := time[bar_index - baseIdx]
+            basePrice := pendMax
+
+            upMove := false
+            pendMin := low
+            pendMinI := bar_index
+    else
+        if low < pendMin
+            pendMin := low
+            pendMinI := bar_index
+        else if high > pendMin + atr
+            newBase := true
+            baseType := -1
+            baseIdx := pendMinI
+            baseMs := time[bar_index - baseIdx]
+            basePrice := pendMin
+
+            upMove := true
+            pendMax := high
+            pendMaxI := bar_index
+
+//━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Hierarchical expansion: L0 -> L1 -> L2
+//━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+if newBase
+    f_append_ext(l0T, l0I, l0Ms, l0P, baseType, baseIdx, baseMs, basePrice)
+
+    if profileLevel == "Level 0"
+        f_record_profile(l0I, l0Ms, l0P, profTimeBars, profTimeDays, profPctMove, profileSamples)
+
+    if showL0
+        f_draw_latest_segment(l0I, l0P, colL0, 1, l0Lines, maxSegEach)
+
+    [cnt01, aT01, aI01, aMs01, aP01, bT01, bI01, bMs01, bP01] = f_next_candidate(l0T, l0I, l0Ms, l0P, l1T, l1I, l1Ms, l1P, baseType)
+
+    if cnt01 >= 1
+        f_append_ext(l1T, l1I, l1Ms, l1P, aT01, aI01, aMs01, aP01)
+
+        if profileLevel == "Level 1"
+            f_record_profile(l1I, l1Ms, l1P, profTimeBars, profTimeDays, profPctMove, profileSamples)
+
+        if showL1
+            f_draw_latest_segment(l1I, l1P, colL1, 2, l1Lines, maxSegEach)
+
+        [cnt12a, aT12a, aI12a, aMs12a, aP12a, bT12a, bI12a, bMs12a, bP12a] = f_next_candidate(l1T, l1I, l1Ms, l1P, l2T, l2I, l2Ms, l2P, aT01)
+
+        if cnt12a >= 1
+            f_append_ext(l2T, l2I, l2Ms, l2P, aT12a, aI12a, aMs12a, aP12a)
+
+            if profileLevel == "Level 2"
+                f_record_profile(l2I, l2Ms, l2P, profTimeBars, profTimeDays, profPctMove, profileSamples)
+
+            if showL2
+                f_draw_latest_segment(l2I, l2P, colL2, 3, l2Lines, maxSegEach)
+
+        if cnt12a == 2
+            f_append_ext(l2T, l2I, l2Ms, l2P, bT12a, bI12a, bMs12a, bP12a)
+
+            if profileLevel == "Level 2"
+                f_record_profile(l2I, l2Ms, l2P, profTimeBars, profTimeDays, profPctMove, profileSamples)
+
+            if showL2
+                f_draw_latest_segment(l2I, l2P, colL2, 3, l2Lines, maxSegEach)
+
+    if cnt01 == 2
+        f_append_ext(l1T, l1I, l1Ms, l1P, bT01, bI01, bMs01, bP01)
+
+        if profileLevel == "Level 1"
+            f_record_profile(l1I, l1Ms, l1P, profTimeBars, profTimeDays, profPctMove, profileSamples)
+
+        if showL1
+            f_draw_latest_segment(l1I, l1P, colL1, 2, l1Lines, maxSegEach)
+
+        [cnt12b, aT12b, aI12b, aMs12b, aP12b, bT12b, bI12b, bMs12b, bP12b] = f_next_candidate(l1T, l1I, l1Ms, l1P, l2T, l2I, l2Ms, l2P, bT01)
+
+        if cnt12b >= 1
+            f_append_ext(l2T, l2I, l2Ms, l2P, aT12b, aI12b, aMs12b, aP12b)
+
+            if profileLevel == "Level 2"
+                f_record_profile(l2I, l2Ms, l2P, profTimeBars, profTimeDays, profPctMove, profileSamples)
+
+            if showL2
+                f_draw_latest_segment(l2I, l2P, colL2, 3, l2Lines, maxSegEach)
+
+        if cnt12b == 2
+            f_append_ext(l2T, l2I, l2Ms, l2P, bT12b, bI12b, bMs12b, bP12b)
+
+            if profileLevel == "Level 2"
+                f_record_profile(l2I, l2Ms, l2P, profTimeBars, profTimeDays, profPctMove, profileSamples)
+
+            if showL2
+                f_draw_latest_segment(l2I, l2P, colL2, 3, l2Lines, maxSegEach)
+
+//━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Profile table rendering
+//━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+var table profTable = table.new(position.top_right, 6, profileBins + 3, border_width=1)
+
+if barstate.islast
+    if showProfile
+        int sampleN = array.size(profPctMove)
+
+        float tAutoMax = timeUnit == "Bars" ? f_array_max(profTimeBars) : f_array_max(profTimeDays)
+        float tMax = timeMaxInput > 0 ? timeMaxInput : tAutoMax
+        tMax := na(tMax) or tMax <= 0 ? 1.0 : tMax
+
+        float pAutoAbs = f_array_abs_max(profPctMove)
+        float pAbs = priceAbsInput > 0 ? priceAbsInput : pAutoAbs
+        pAbs := na(pAbs) or pAbs <= 0 ? 1.0 : pAbs
+
+        if timeUnit == "Bars"
+            f_rebuild_hist(profTimeBars, timeHist, profileBins, 0.0, tMax)
+        else
+            f_rebuild_hist(profTimeDays, timeHist, profileBins, 0.0, tMax)
+
+        f_rebuild_hist(profPctMove, pctHist, profileBins, -pAbs, pAbs)
+
+        int timeMaxCount = f_hist_max(timeHist)
+        int pctMaxCount = f_hist_max(pctHist)
+
+        table.cell(profTable, 0, 0, "Ext Profile")
+        table.cell(profTable, 1, 0, profileLevel)
+        table.cell(profTable, 2, 0, "N=" + str.tostring(sampleN))
+        table.cell(profTable, 3, 0, "Price Move")
+        table.cell(profTable, 4, 0, "Signed %")
+        table.cell(profTable, 5, 0, "")
+
+        table.cell(profTable, 0, 1, "Time Bin")
+        table.cell(profTable, 1, 1, "N")
+        table.cell(profTable, 2, 1, "Profile")
+        table.cell(profTable, 3, 1, "% Bin")
+        table.cell(profTable, 4, 1, "N")
+        table.cell(profTable, 5, 1, "Profile")
+
+        table.cell(profTable, 0, 2, "0 ~ next")
+        table.cell(profTable, 1, 2, timeUnit)
+        table.cell(profTable, 2, 2, "")
+        table.cell(profTable, 3, 2, "down / up")
+        table.cell(profTable, 4, 2, "%")
+        table.cell(profTable, 5, 2, "")
+
+        for b = 0 to profileBins - 1
+            int row = b + 3
+
+            float tLo = 0.0 + tMax * b / profileBins
+            float tHi = 0.0 + tMax * (b + 1) / profileBins
+
+            float pLo = -pAbs + 2.0 * pAbs * b / profileBins
+            float pHi = -pAbs + 2.0 * pAbs * (b + 1) / profileBins
+
+            int tc = array.get(timeHist, b)
+            int pc = array.get(pctHist, b)
+
+            string tSuffix = timeUnit == "Bars" ? " bars" : " d"
+            string tLabel = f_range_label(tLo, tHi, tSuffix)
+            string pLabel = f_range_label(pLo, pHi, "%")
+
+            table.cell(profTable, 0, row, tLabel)
+            table.cell(profTable, 1, row, str.tostring(tc))
+            table.cell(profTable, 2, row, f_bar(tc, timeMaxCount, histWidth))
+
+            table.cell(profTable, 3, row, pLabel)
+            table.cell(profTable, 4, row, str.tostring(pc))
+            table.cell(profTable, 5, row, f_bar(pc, pctMaxCount, histWidth))
+    else
+        for r = 0 to profileBins + 2
+            for c = 0 to 5
+                table.cell(profTable, c, r, "")

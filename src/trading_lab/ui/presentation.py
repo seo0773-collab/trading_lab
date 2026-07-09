@@ -23,6 +23,12 @@ EXIT_REASON_LABELS = {
     "poc_target": "POC 도달",
     "va_stop": "VA 경계 손절",
     "squeeze_guard": "스퀴즈 가드 청산",
+    "stop_atr": "ATR 배수 손절",
+    "take_profit_atr": "ATR 배수 익절",
+    "structure_confirmed": "구조 확정 청산",
+    "percentile_fade": "모멘텀 소진(percentile)",
+    "flip": "밴드 플립 청산",
+    "ruin": "파산(마진콜)",
 }
 
 PRICE_COLUMNS = ("open", "high", "low", "close")
@@ -132,6 +138,27 @@ def build_trade_overview(trades: pd.DataFrame) -> dict[str, float | int]:
             float(closed.mean()) if count else np.nan
         )
     return overview
+
+
+def visible_trades_until(trades: pd.DataFrame, cutoff: Any) -> pd.DataFrame:
+    """리플레이용: cutoff 이후에 발생한 거래/청산을 숨긴다(미래 정보 누출 방지).
+
+    entry_time이 cutoff를 넘는 거래는 통째로 제외한다. entry는 cutoff 이전이지만
+    exit_time이 cutoff를 넘는(아직 청산 안 된 시점) 거래는 진입 마커만 남기고
+    exit_time/exit_price를 결측 처리한다 — build_price_figure의 청산 트레이스는
+    NaN 좌표를 자동으로 그리지 않으므로 미래 청산가가 보이지 않는다.
+    """
+    if trades.empty:
+        return trades
+    entries = pd.to_datetime(trades["entry_time"])
+    visible = trades[entries <= cutoff].copy()
+    if visible.empty:
+        return visible
+    still_open = pd.to_datetime(visible["exit_time"]) > cutoff
+    if still_open.any():
+        visible.loc[still_open, "exit_time"] = pd.NaT
+        visible.loc[still_open, "exit_price"] = np.nan
+    return visible
 
 
 def build_trade_report(
@@ -269,37 +296,54 @@ def build_price_figure(
                 customdata=customdata,
                 hovertemplate=hovertemplate,
             ))
-        exit_y = (
-            _values_at_times(forecast["close"], numbered["exit_time"])
-            if portfolio_view else numbered["exit_price"]
-        )
-        if portfolio_view:
-            exit_customdata = np.column_stack([
-                numbered["trade_number"],
-                numbered.get("symbol", pd.Series("", index=numbered.index)).astype(str),
-                numbered["exit_price"].astype(float),
-                numbered["net_return"] * 100.0,
-            ])
-            exit_hovertemplate = (
-                "청산 #%{customdata[0]}<br>%{x|%Y-%m-%d %H:%M}"
-                "<br>%{customdata[1]} 청산가 %{customdata[2]:,.4f}"
-                "<br>NAV %{y:,.2f}<br>손익 %{customdata[3]:+.2f}%<extra></extra>"
+        # exit_time이 결측(NaT)인 행(아직 청산 안 됨 — 리플레이 중 미래로 잘린 거래 등)은
+        # plotly 직렬화 경로에서 NaT가 그대로 살아남지 못하고 엉뚱한 최소날짜(1677-09-21,
+        # pandas datetime64 sentinel)로 새어나가는 문제가 있어 트레이스에서 아예 제외한다.
+        closed = numbered[numbered["exit_time"].notna()]
+        if not closed.empty:
+            exit_y = (
+                _values_at_times(forecast["close"], closed["exit_time"])
+                if portfolio_view else closed["exit_price"]
             )
-        else:
-            exit_customdata = np.column_stack([
-                numbered["trade_number"], numbered["net_return"] * 100.0,
-            ])
-            exit_hovertemplate = (
-                "청산 #%{customdata[0]}<br>%{x|%Y-%m-%d %H:%M}"
-                "<br>%{y:,.4f}<br>손익 %{customdata[1]:+.2f}%<extra></extra>"
-            )
-        figure.add_trace(go.Scatter(
-            x=numbered["exit_time"], y=exit_y,
-            mode="markers", name="청산",
-            marker={"color": "#ef5350", "size": 9, "symbol": "x"},
-            customdata=exit_customdata,
-            hovertemplate=exit_hovertemplate,
-        ))
+            if portfolio_view:
+                exit_customdata = np.column_stack([
+                    closed["trade_number"],
+                    closed.get("symbol", pd.Series("", index=closed.index)).astype(str),
+                    closed["exit_price"].astype(float),
+                    closed["net_return"] * 100.0,
+                ])
+                exit_hovertemplate = (
+                    "청산 #%{customdata[0]}<br>%{x|%Y-%m-%d %H:%M}"
+                    "<br>%{customdata[1]} 청산가 %{customdata[2]:,.4f}"
+                    "<br>NAV %{y:,.2f}<br>손익 %{customdata[3]:+.2f}%<extra></extra>"
+                )
+            else:
+                exit_customdata = np.column_stack([
+                    closed["trade_number"], closed["net_return"] * 100.0,
+                ])
+                exit_hovertemplate = (
+                    "청산 #%{customdata[0]}<br>%{x|%Y-%m-%d %H:%M}"
+                    "<br>%{y:,.4f}<br>손익 %{customdata[1]:+.2f}%<extra></extra>"
+                )
+            figure.add_trace(go.Scatter(
+                x=closed["exit_time"], y=exit_y,
+                mode="markers", name="청산",
+                marker={"color": "#ef5350", "size": 9, "symbol": "x"},
+                customdata=exit_customdata,
+                hovertemplate=exit_hovertemplate,
+            ))
+        if not portfolio_view:
+            for column, label, color in [
+                ("stop_loss_price", "손절선", "#ef5350"),
+                ("take_profit_price", "익절선", "#26c6da"),
+            ]:
+                xs, ys = _trade_level_segments(numbered, column)
+                if xs:
+                    figure.add_trace(go.Scatter(
+                        x=xs, y=ys, mode="lines", name=label,
+                        line={"color": color, "width": 1.2, "dash": "dot"},
+                        connectgaps=False, hoverinfo="skip",
+                    ))
 
     figure.update_layout(
         title=f"{symbol} {'포트폴리오' if portfolio_view else '테스트 가격'} 및 예측 파형",
@@ -786,6 +830,33 @@ def forecast_is_portfolio(forecast: pd.DataFrame) -> bool:
     """포트폴리오 전략은 close에 종목 가격 대신 NAV를 담아 공통 계약을 맞춘다."""
     portfolio_columns = {"stock_exposure", "cash_ratio", "n_holdings"}
     return portfolio_columns.issubset(set(forecast.columns))
+
+
+def _trade_level_segments(
+    trades: pd.DataFrame, column: str,
+) -> tuple[list[Any], list[float | None]]:
+    """거래별 손절/익절가를 진입~청산 구간에만 그리는 끊어진 선분 좌표.
+
+    ``stop_loss_price``/``take_profit_price``는 거래마다 진입 시점에 고정된
+    한 값(트레일링 아님)이라 각 거래는 (entry_time, level)→(exit_time, level)
+    수평 선분 하나다. 거래 사이는 ``None``으로 끊어 포지션 정리 이후로는
+    선이 이어지지 않게 한다(다음 거래의 손절/익절가와 시각적으로 섞이지 않음).
+    """
+    if column not in trades or trades.empty:
+        return [], []
+    xs: list[Any] = []
+    ys: list[float | None] = []
+    for _, trade in trades.iterrows():
+        level = trade.get(column)
+        exit_time = trade.get("exit_time")
+        if level is None or not np.isfinite(float(level)) or pd.isna(exit_time):
+            continue
+        if xs:
+            xs.append(None)
+            ys.append(None)
+        xs.extend([trade["entry_time"], exit_time])
+        ys.extend([float(level), float(level)])
+    return xs, ys
 
 
 def _values_at_times(series: pd.Series, times: pd.Series) -> np.ndarray:

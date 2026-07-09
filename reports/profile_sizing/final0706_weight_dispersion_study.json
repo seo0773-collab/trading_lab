@@ -1,0 +1,172 @@
+{
+  "period": "2007-01-29~2026-07-08",
+  "bars": 4087,
+  "phases": {
+    "all": "2007-01-29~2026-07-08",
+    "test": "2022-12-19~2026-07-08",
+    "recent_3y": "2023-07-10~2026-07-08"
+  },
+  "dispersion": [
+    {
+      "sleeve": "US(yoon1j_lp)",
+      "weight_power": 1.0,
+      "mean_hhi": 0.26558383431934,
+      "mean_hhi_if_equal": 0.25435851586946806,
+      "mean_top_holding_share": 0.289209953781374,
+      "mean_active_n": 4.066607063030845,
+      "days": 6711
+    },
+    {
+      "sleeve": "KR(yoon1j_kr)",
+      "weight_power": 1.0,
+      "mean_hhi": 0.27604022711460785,
+      "mean_hhi_if_equal": 0.2619789071582794,
+      "mean_top_holding_share": 0.3100044129486208,
+      "mean_active_n": 3.9698555057299454,
+      "days": 4014
+    },
+    {
+      "sleeve": "US(yoon1j_lp)",
+      "weight_power": 2.0,
+      "mean_hhi": 0.2888650550762401,
+      "mean_hhi_if_equal": 0.25435851586946806,
+      "mean_top_holding_share": 0.32062758146612114,
+      "mean_active_n": 4.066607063030845,
+      "days": 6711
+    },
+    {
+      "sleeve": "KR(yoon1j_kr)",
+      "weight_power": 2.0,
+      "mean_hhi": 0.3092170377636312,
+      "mean_hhi_if_equal": 0.2619789071582794,
+      "mean_top_holding_share": 0.35449165441237995,
+      "mean_active_n": 3.9698555057299454,
+      "days": 4014
+    },
+    {
+      "sleeve": "US(yoon1j_lp)",
+      "weight_power": 4.0,
+      "mean_hhi": 0.3379429659063475,
+      "mean_hhi_if_equal": 0.25435851586946806,
+      "mean_top_holding_share": 0.3640669490539222,
+      "mean_active_n": 4.066607063030845,
+      "days": 6711
+    },
+    {
+      "sleeve": "KR(yoon1j_kr)",
+      "weight_power": 4.0,
+      "mean_hhi": 0.37860902776214633,
+      "mean_hhi_if_equal": 0.2619789071582794,
+      "mean_top_holding_share": 0.41480712651756785,
+      "mean_active_n": 3.9698555057299454,
+      "days": 4014
+    }
+  ],
+  "performance": [
+    {
+      "phase": "all",
+      "candidate": "weight_power=1.0(원본)",
+      "cagr": 0.1365730069987321,
+      "max_drawdown": -0.16397796062932113,
+      "sharpe": 1.2227349028708983,
+      "total_return": 11.043208977498297,
+      "volatility": 0.1326841374237407
+    },
+    {
+      "phase": "all",
+      "candidate": "weight_power=2.0",
+      "cagr": 0.13568541598126949,
+      "max_drawdown": -0.16703222081006552,
+      "sharpe": 1.2114833935251437,
+      "total_return": 10.861698357291239,
+      "volatility": 0.13319801770055656
+    },
+    {
+      "phase": "all",
+      "candidate": "weight_power=4.0",
+      "cagr": 0.1339722645521102,
+      "max_drawdown": -0.17040165415382236,
+      "sharpe": 1.188871155392388,
+      "total_return": 10.518674856239022,
+      "volatility": 0.1343320118944257
+    },
+    {
+      "phase": "test",
+      "candidate": "weight_power=1.0(원본)",
+      "cagr": 0.3360509441300181,
+      "max_drawdown": -0.11998640389418336,
+      "sharpe": 1.9508924203713922,
+      "total_return": 1.7976706744526618,
+      "volatility": 0.16998538709263192
+    },
+    {
+      "phase": "test",
+      "candidate": "weight_power=2.0",
+      "cagr": 0.33496660657237043,
+      "max_drawdown": -0.11998634572378097,
+      "sharpe": 1.9433607259706591,
+      "total_return": 1.7896161815669176,
+      "volatility": 0.17020561112910404
+    },
+    {
+      "phase": "test",
+      "candidate": "weight_power=4.0",
+      "cagr": 0.33292830911320936,
+      "max_drawdown": -0.11998634246759698,
+      "sharpe": 1.9293545741980802,
+      "total_return": 1.7745207538201457,
+      "volatility": 0.1706091480473385
+    },
+    {
+      "phase": "recent_3y",
+      "candidate": "weight_power=1.0(원본)",
+      "cagr": 0.36876002171060396,
+      "max_drawdown": -0.11998640389418336,
+      "sharpe": 2.008738974610742,
+      "total_return": 1.5605234598385929,
+      "volatility": 0.17825263723823598
+    },
+    {
+      "phase": "recent_3y",
+      "candidate": "weight_power=2.0",
+      "cagr": 0.3705129277219523,
+      "max_drawdown": -0.11998634572378108,
+      "sharpe": 2.0149988487050807,
+      "total_return": 1.570357724779568,
+      "volatility": 0.17840484396958892
+    },
+    {
+      "phase": "recent_3y",
+      "candidate": "weight_power=4.0",
+      "cagr": 0.3726743921585596,
+      "max_drawdown": -0.11998634246759687,
+      "sharpe": 2.0224840884826842,
+      "total_return": 1.5825187093895248,
+      "volatility": 0.17861242038500003
+    }
+  ],
+  "bootstrap": {
+    "power2.0_vs_원본": {
+      "label_a": "power2.0",
+      "label_b": "원본",
+      "period": "2007-01-29~2026-07-08",
+      "bars": 4087,
+      "prob": {
+        "sharpe_a_gt_b": 0.140375,
+        "cagr_a_gt_b": 0.233625,
+        "mdd_a_shallower": 0.329125
+      }
+    },
+    "power4.0_vs_원본": {
+      "label_a": "power4.0",
+      "label_b": "원본",
+      "period": "2007-01-29~2026-07-08",
+      "bars": 4087,
+      "prob": {
+        "sharpe_a_gt_b": 0.091125,
+        "cagr_a_gt_b": 0.1905,
+        "mdd_a_shallower": 0.28325
+      }
+    }
+  }
+}

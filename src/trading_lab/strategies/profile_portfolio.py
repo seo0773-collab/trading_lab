@@ -27,7 +27,7 @@ from profile_sizing.engine import performance  # noqa: E402
 from profile_sizing.portfolio import (  # noqa: E402
     compute_universe, simulate_portfolio,
 )
-from profile_sizing.run import slice_window  # noqa: E402
+from profile_sizing.run import run_pipeline, slice_window  # noqa: E402
 from profile_sizing.synthetic import make_synthetic_ohlcv  # noqa: E402
 
 class ProfilePortfolioHandler:
@@ -93,9 +93,12 @@ class ProfilePortfolioHandler:
         mom_gate = config.get("mom_gate") or None
         # yoon1i SR 게이트: heatmap2 HVN 지지/저항 기대값 × 점수(블렌드).
         sr_gate = config.get("sr_gate") or None
+        # 섹터 대장주 로테이션: {심볼: [[start,end],...]} — 그 구간 밖에서 점수 0.
+        era_gate = config.get("era_gate") or None
         scores, prices = compute_universe(
             panels, cfg, leveraged_symbols=lev_syms, leverage_regimes=lev_regimes,
             market_ok=market_ok_ser, mom_gate=mom_gate, sr_gate=sr_gate,
+            era_gate=era_gate,
         )
         if prices.empty:
             raise RuntimeError("유효한 종목 점수/가격이 없습니다")
@@ -116,6 +119,7 @@ class ProfilePortfolioHandler:
         # 안전자산 슬리브(yoon1j): 현금 완충분을 추세 ON 안전자산으로 연속 회전.
         ss = config.get("safe_sleeve") or {}
         safe_close = None
+        safe_scores = None
         if ss.get("enabled") and not synth:
             sc = {}
             for s in ss.get("symbols", []):
@@ -123,6 +127,23 @@ class ProfilePortfolioHandler:
                 if c is not None:
                     sc[s] = c
             safe_close = sc or None
+            # profile_scored: 안전자산도 메인 유니버스와 같은 profile-sizing 엔진
+            # (자기 cycle_multiple percentile → buckets → regime_cap)으로 스코어링해,
+            # 추세 ON인 안전자산들 사이의 배분을 균등이 아니라 점수 비례로 바꾼다
+            # (추세 게이트 자체는 불변 — 방어 효과 보존). 기본 off.
+            if ss.get("profile_scored"):
+                sco = {}
+                for s in ss.get("symbols", []):
+                    raw_s = self._load_panel(s, cfg, panels)
+                    if raw_s is None or raw_s.empty or "close" not in raw_s:
+                        continue
+                    idx_s = pd.DatetimeIndex(pd.to_datetime(raw_s.index))
+                    if idx_s.tz is not None:
+                        idx_s = idx_s.tz_localize(None)
+                    out_s = run_pipeline(raw_s, cfg)
+                    sco[s] = pd.Series(
+                        out_s["forecast"]["final_target_weight"].to_numpy(), index=idx_s)
+                safe_scores = pd.DataFrame(sco) if sco else None
         # dollar_volume 가중용 거래량 패널(종목→volume, prices 인덱스 정렬). 다른 스킴은 None.
         volumes = None
         if str(config.get("weight_scheme", "score")) == "dollar_volume":
@@ -152,6 +173,7 @@ class ProfilePortfolioHandler:
             max_exposure=float(config.get("max_exposure", 1.0)),
             borrow_rate_annual=float(config.get("borrow_rate_annual", 0.0)),
             weight_scheme=str(config.get("weight_scheme", "score")),
+            weight_power=float(config.get("weight_power", 1.0)),
             vol_lookback=int(config.get("vol_lookback", 63)),
             hold_buffer=int(config.get("hold_buffer", 0)),
             volumes=volumes,
@@ -175,6 +197,7 @@ class ProfilePortfolioHandler:
             safe_ratio=float(ss.get("ratio", 0.0)),
             safe_max=float(ss.get("max", 0.0)),
             safe_ma_len=int(ss.get("ma_len", 100)),
+            safe_scores=safe_scores,
         )
 
         window = slice_window(prices.index, phase, cfg)
@@ -222,6 +245,7 @@ class ProfilePortfolioHandler:
             ),
             "safe_sleeve_ratio": float(ss.get("ratio", 0.0)),
             "safe_sleeve_max": float(ss.get("max", 0.0)),
+            "safe_sleeve_profile_scored": bool(ss.get("profile_scored")),
             "avg_safe_exposure": float(forecast["safe_exposure"].mean())
             if len(forecast) and "safe_exposure" in forecast else 0.0,
             "short_hedge": hedge_close is not None,
@@ -280,6 +304,17 @@ class ProfilePortfolioHandler:
         try:
             from run_kalman_pipeline import load_yfinance  # noqa: E402
             return load_yfinance(symbol, cfg.interval, cfg.period)["close"]
+        except Exception:  # noqa: BLE001
+            return None
+
+    @staticmethod
+    def _load_panel(symbol, cfg, panels) -> pd.DataFrame | None:
+        """심볼 전체 OHLCV 로드(run_pipeline 입력용). 유니버스에 있으면 재사용."""
+        if symbol in panels:
+            return panels[symbol]
+        try:
+            from run_kalman_pipeline import load_yfinance  # noqa: E402
+            return load_yfinance(symbol, cfg.interval, cfg.period)
         except Exception:  # noqa: BLE001
             return None
 

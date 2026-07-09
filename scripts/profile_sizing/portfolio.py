@@ -28,6 +28,7 @@ def compute_universe(
     market_ok: pd.Series | None = None,
     mom_gate: dict | None = None,
     sr_gate: dict | None = None,
+    era_gate: dict[str, list] | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """종목별 run_pipeline → (점수 패널, 종가 패널). 공통 마스터 인덱스로 정렬.
 
@@ -42,6 +43,13 @@ def compute_universe(
     OFF인 바(SPY<200MA)* 에서 추가로 0으로 죽인다. RECOVERY는 자기 국면 기준이라
     2008류 위기 바닥의 false 반등에 물릴 수 있으므로, 시장 추세까지 ON일 때만
     레버리지를 태워 위기 바닥을 차단한다(additive·기본 off).
+
+    era_gate({심볼: [[start,end], ...]} 딕셔너리, start/end는 "YYYY-MM-DD" 또는
+    None=경계없음)가 주어지면, 해당 심볼의 점수를 지정 구간 밖에서 0으로 죽인다.
+    "섹터 ETF 대신 시기별 대장주 개별종목"처럼, 한 섹터 슬롯에 여러 종목(예:
+    MSFT→AAPL→NVDA)을 유니버스에 나란히 넣고 각자 자기 재임 구간에서만 점수가
+    살게 만들어 top-K 선정이 그 시점의 "대장주"만 자연히 고르게 한다(무누수 —
+    구간은 사전 확정된 달력 경계라 미래참조 없음). 심볼이 매핑에 없으면 항상 정상.
 
     mom_gate(yoon3 모멘텀 게이트 config)가 주어지고 enabled면, 종목별 칼만 히스토그램
     누적프로파일 백분위를 [g_min,1.0] 게이트로 만들어 *그 종목 점수에 곱한다*(블렌드:
@@ -77,6 +85,13 @@ def compute_universe(
             reg = np.asarray(out["regime"])
             allowed = np.array([str(r) in leverage_regimes for r in reg])
             score = np.where(allowed, score, 0.0)
+        if era_gate and sym in era_gate:
+            in_era = np.zeros(len(idx), dtype=bool)
+            for start, end in era_gate[sym]:
+                lo = pd.Timestamp(start) if start else pd.Timestamp.min
+                hi = pd.Timestamp(end) if end else pd.Timestamp.max
+                in_era |= (idx >= lo) & (idx <= hi)
+            score = np.where(in_era, score, 0.0)
         score_cols[sym] = pd.Series(score, index=idx)
         price_cols[sym] = pd.Series(fc["close"].to_numpy(), index=idx)
 
@@ -153,6 +168,7 @@ def simulate_portfolio(
     max_exposure: float = 1.0,
     borrow_rate_annual: float = 0.0,
     weight_scheme: str = "score",
+    weight_power: float = 1.0,
     vol_lookback: int = 63,
     hold_buffer: int = 0,
     volumes: pd.DataFrame | None = None,
@@ -175,6 +191,7 @@ def simulate_portfolio(
     safe_ratio: float = 0.0,
     safe_max: float = 0.0,
     safe_ma_len: int = 100,
+    safe_scores: pd.DataFrame | None = None,
 ) -> dict:
     """월간(기본) 리밸런스 다종목 시뮬레이션 → NAV·노출·trades·벤치마크.
 
@@ -205,9 +222,17 @@ def simulate_portfolio(
     (TLT/GLD 등)으로 돌린다. 이진 전환이 아니라 버퍼만 회전하므로 손실 상한이 버퍼로
     제한된다. 각 안전자산은 *자기 추세(전봉 종가>MA safe_ma_len)가 ON일 때만* 매수
     (2022류 채권 동반하락 시엔 사지 않고 현금 유지). 슬리브 목표비중 =
-    min(safe_max, safe_spare, safe_spare*safe_ratio)을 추세 ON 안전자산에 균등 배분
+    min(safe_max, safe_spare, safe_spare*safe_ratio)을 추세 ON 안전자산에 배분
     (safe_spare 상한으로 무레버 보장: 주식+안전+현금 ≤ 1), 리밸런스 주기에 맞춰
     회전한다. 셋 중 하나라도 0/None이면 비활성.
+
+    safe_scores(안전자산 심볼→profile-sizing 점수 DataFrame, 전봉 기준으로 이 함수가
+    직접 shift(1))가 주어지면, ON 자산 간 배분을 균등이 아니라 **점수 비례**로
+    나눈다 — 안전자산도 자기 사이클(cycle_multiple) 상의 percentile·regime으로
+    스코어링해(메인 유니버스와 동일 엔진) "추세는 살아있지만 그중 더 저가권/유리한
+    쪽에 더 배정"하는 효과. ON/OFF 판정(추세 게이트)은 그대로 유지해 기존 방어
+    효과(2022류 안전자산 동반 하락 시 완전 회피)는 보존한다. 점수 합이 0이면(웜업
+    등) 균등 배분으로 폴백. None(기본)이면 완전히 기존 균등 배분과 동일.
     """
     fee = (cfg.costs.fee_bps_per_side + cfg.costs.slippage_bps) / 10_000.0
     idx = prices.index
@@ -353,6 +378,12 @@ def simulate_portfolio(
         # 새던 엣지를 막기 위해 False로 채운다(무누수·warmup은 미보유).
         safe_gate = (safe_px_df > sma).shift(1, fill_value=False)
         safe_syms = list(safe_px_df.columns)
+    safe_score_sig = None
+    if safe_enabled and safe_scores is not None:
+        safe_score_sig = (
+            safe_scores.reindex(columns=safe_syms).reindex(idx)
+            .shift(1).fillna(0.0)
+        )
     safe_shares = {s: 0.0 for s in safe_syms}
     prev_safe_w = {s: 0.0 for s in safe_syms}
 
@@ -435,6 +466,7 @@ def simulate_portfolio(
                 scheme=weight_scheme, vol_row=vol_row,
                 max_exposure=max_exposure,
                 held_syms=held_syms, hold_buffer=hold_buffer,
+                weight_power=weight_power,
             )
             if market_flag[i] < 1.0:  # 약세 시장: 전체 노출 축소
                 target_w = {s: w * market_flag[i] for s, w in target_w.items()}
@@ -457,9 +489,10 @@ def simulate_portfolio(
                     float(short_hedge_max),
                     spare * float(short_hedge_ratio),
                 )
-            # 안전자산 슬리브 목표비중(추세 ON 자산에 균등). spare에서 숏 배정분 제외.
+            # 안전자산 슬리브 목표비중(추세 ON 자산에 배분). spare에서 숏 배정분 제외.
+            # safe_score_sig가 있으면 ON 자산 간 배분을 점수 비례로(없으면 균등).
             safe_on: list[str] = []
-            safe_w_each = 0.0
+            safe_w_map: dict[str, float] = {}
             if safe_enabled:
                 safe_on = [
                     s for s in safe_syms
@@ -473,7 +506,16 @@ def simulate_portfolio(
                     min(float(safe_max), safe_spare, safe_spare * float(safe_ratio))
                     if safe_on else 0.0
                 )
-                safe_w_each = safe_budget / len(safe_on) if safe_on else 0.0
+                if safe_on and safe_score_sig is not None:
+                    srow = safe_score_sig.loc[t]
+                    sc = {s: max(0.0, float(srow.get(s, 0.0))) for s in safe_on}
+                    ssum = sum(sc.values())
+                    if ssum > 0:
+                        safe_w_map = {s: safe_budget * (sc[s] / ssum) for s in safe_on}
+                    else:  # 점수 전부 0(웜업 등) → 균등 폴백
+                        safe_w_map = {s: safe_budget / len(safe_on) for s in safe_on}
+                elif safe_on:
+                    safe_w_map = {s: safe_budget / len(safe_on) for s in safe_on}
             account = cash + sum(
                 shares[s] * px[s] for s in syms if pd.notna(px[s])
             )
@@ -520,7 +562,7 @@ def simulate_portfolio(
                     for s in safe_syms:
                         if pd.isna(spx[s]):
                             continue
-                        tw = safe_w_each if s in safe_on else 0.0
+                        tw = safe_w_map.get(s, 0.0)
                         target_val = tw * account
                         trade_val = target_val - safe_shares[s] * spx[s]
                         if abs(trade_val) > 1e-9:
@@ -637,13 +679,21 @@ def _target_weights(score_row: pd.Series, px: pd.Series, top_k: int,
                     vol_row: pd.Series | None = None,
                     max_exposure: float = 1.0,
                     held_syms: set | None = None,
-                    hold_buffer: int = 0) -> dict:
+                    hold_buffer: int = 0,
+                    weight_power: float = 1.0) -> dict:
     """top-K 선택 + 노출=mean(top-K 점수)*게인(클립 1.0) + top-K 내부 비중 배분.
 
     선택·노출 레벨은 스킴과 무관(점수 기준). 배분만 분기한다:
       - score(기본): 점수 비례(저가권↑ = 컨트래리언 틸트).
       - inv_vol: 1/변동성 비례(risk-parity). 변동성 결측은 평균치로 대체, 전부
         결측이면 점수 비례로 폴백.
+
+    weight_power(기본 1.0=불변)는 score 스킴의 비중 편차를 조절한다: 각 종목 점수를
+    score**weight_power 로 지수화한 뒤 재정규화한다. top-K 내 점수는 regime_cap
+    등으로 서로 비슷하게 압축돼 있어 기본(1.0)은 거의 균등 배분처럼 보이는데,
+    weight_power>1이면 점수가 높은 종목에 더 쏠리게(편차 확대) 하고 <1이면 더
+    균등해진다(편차 축소). inv_vol/dollar_volume 배분에는 적용하지 않는다(그
+    스킴은 이미 별도 로직으로 폴백 시에만 score 비례를 쓰므로 영향 없음).
 
     hold_buffer>0이면 순위 컷오프 히스테리시스를 켠다: 신규 편입은 여전히 엄격한
     top_k만 가능하지만, 이미 보유 중인 종목(held_syms)은 순위가 top_k+hold_buffer
@@ -694,10 +744,11 @@ def _target_weights(score_row: pd.Series, px: pd.Series, top_k: int,
                 return out
         # 전부 결측(warmup) → 점수 비례로 폴백
 
-    ssum = float(topk.sum())
+    weighted = topk.pow(weight_power) if weight_power != 1.0 else topk
+    ssum = float(weighted.sum())
     if ssum <= 0:
         return out
-    for s, sc in topk.items():
+    for s, sc in weighted.items():
         out[s] = exposure * (sc / ssum)    # 합 = exposure, 나머지 현금
     return out
 

@@ -1,0 +1,121 @@
+{
+  "version": "final0706_sector_leader",
+  "_comment": "final0706 파생(2026-07-08): 미국 슬리브(yoon1j_lp)의 11개 섹터 ETF(VGT/XLF/IYH/FENY/FIDU/FSTA/IYC/XLU/XLB/FREL/FCOM)를, 각 섹터를 대표하는 '시기별 시가총액 1위 개별종목'으로 치환한 실험. 사용자 아이디어 = ETF 대신 그 섹터의 실제 대장주를 담자는 것. 과거 시점별 시가총액 랭킹 데이터가 없어(yfinance는 현재값만 제공) 사용자 확인 하에 수기로 리더십 시대를 지정(웹검색으로 일부 크로스오버 날짜 확인, 나머지는 근사): 기술=MSFT(~2010-05-25)→AAPL(~2024-06-18)→NVDA, 금융=BRK-B(전체, XLF 최대 편입비중 가정), 헬스케어=JNJ(~2012)→UNH(~2023-07-04)→LLY, 에너지=XOM(전체), 산업재=GE(~2017)→CAT(2018~, 단순화), 필수소비재=WMT(전체), 임의소비재=AMZN(전체, 2007~2015 실제 1위는 불확실해 단순화), 유틸리티=SO(~2014)→NEE(2015~), 소재=APD(~2018-08, PX는 yfinance 데이터 없어 대체)→LIN(2018-09~), 리츠=AMT(~2021)→PLD(2022~), 커뮤니케이션=T(~2018-08, GICS 섹터 신설 전)→GOOGL(2018-09~). 구현은 opt-in `era_gate`(scripts/profile_sizing/portfolio.py `compute_universe`): 섹터당 여러 종목을 유니버스에 나란히 두고 각자 자기 재임구간 밖에서는 점수를 0으로 죽여, top_k 선정이 그 시점의 '대장주'만 자연히 고르게 함(무누수, 사전확정 달력 경계). KR 슬리브(yoon1j_kr)는 변경하지 않음(질문이 미국 ETF 대상이라 미국 슬리브에만 적용). 한국 슬리브·통화틸트·신용게이트는 final0706과 동일. live_eligible=false(final0706 상속 게이트 + 이 실험 자체가 리더십 시대 정확도에 크게 의존하는 1차 컷).",
+  "interval": "1d",
+  "period": "max",
+  "base_currency": "KRW",
+  "fx_symbol": "KRW=X",
+  "rebalance_freq": "monthly",
+  "currency_allocation": {
+    "kind": "relative_momentum_fx2_overlay",
+    "lookback": 63,
+    "signal_lag": 1,
+    "neutral": 0.5,
+    "tilt": 0.125,
+    "scale": 0.1,
+    "band": [0.4, 0.6],
+    "risk_gate": {
+      "enabled": true,
+      "source": "credit_spread",
+      "symbols": ["HYG", "IEF"],
+      "lookback": 10,
+      "sma_lookback": 20,
+      "threshold": -0.02,
+      "off_scale": 0.5,
+      "min_consecutive": 2,
+      "safe_asset": "IEF"
+    }
+  },
+  "sub_strategies": [
+    {
+      "config": "yoon1j_lp",
+      "currency": "USD",
+      "weight": 0.5,
+      "overrides": {
+        "top_k": 3,
+        "hold_buffer": 2,
+        "universe": [
+          "MSFT", "AAPL", "NVDA",
+          "BRK-B",
+          "JNJ", "UNH", "LLY",
+          "XOM",
+          "GE", "CAT",
+          "WMT",
+          "AMZN",
+          "SO", "NEE",
+          "APD", "LIN",
+          "AMT", "PLD",
+          "T", "GOOGL"
+        ],
+        "era_gate": {
+          "MSFT": [[null, "2010-05-25"]],
+          "AAPL": [["2010-05-26", "2024-06-18"]],
+          "NVDA": [["2024-06-19", null]],
+          "JNJ": [[null, "2012-12-31"]],
+          "UNH": [["2013-01-01", "2023-07-04"]],
+          "LLY": [["2023-07-05", null]],
+          "GE": [[null, "2017-12-31"]],
+          "CAT": [["2018-01-01", null]],
+          "SO": [[null, "2014-12-31"]],
+          "NEE": [["2015-01-01", null]],
+          "APD": [[null, "2018-08-31"]],
+          "LIN": [["2018-09-01", null]],
+          "AMT": [[null, "2021-12-31"]],
+          "PLD": [["2022-01-01", null]],
+          "T": [[null, "2018-08-31"]],
+          "GOOGL": [["2018-09-01", null]]
+        }
+      }
+    },
+    {
+      "config": "yoon1j_kr",
+      "currency": "KRW",
+      "weight": 0.5,
+      "overrides": {
+        "top_k": 3,
+        "hold_buffer": 2
+      }
+    }
+  ],
+  "benchmark_symbols": {
+    "USD": "SPY",
+    "KRW": "069500.KS"
+  },
+  "benchmark_label": "50/50 SPY원화+KODEX200",
+  "train_frac": 0.6,
+  "validation_frac": 0.2,
+  "synthetic_symbols": 6,
+  "synthetic_bars": 2000,
+  "seed": 7,
+  "dashboard": {
+    "default_indicators": [
+      "sleeve_yoon1j_lp",
+      "sleeve_yoon1j_kr",
+      "target_w_yoon1j_lp",
+      "target_w_yoon1j_kr",
+      "target_w___CASH__"
+    ],
+    "indicator_labels": {
+      "sleeve_yoon1j_lp": "미국 슬리브(원화환산, 섹터 대장주 top3)",
+      "sleeve_yoon1j_kr": "한국 슬리브(원화, top3)",
+      "target_w_yoon1j_lp": "목표 USD 슬리브 비중",
+      "target_w_yoon1j_kr": "목표 KRW 슬리브 비중",
+      "target_w___CASH__": "목표 현금 비중(신용스프레드 게이트)"
+    },
+    "panels": [
+      {
+        "kind": "sleeve_weights",
+        "type": "stacked_area",
+        "x": "time",
+        "label": "2단계 슬리브 평가금액 비중",
+        "default": true
+      },
+      {
+        "kind": "perf_vs_bnh",
+        "type": "table",
+        "label": "벤치(50/50 패시브) 대비 성과",
+        "default": true
+      }
+    ]
+  }
+}

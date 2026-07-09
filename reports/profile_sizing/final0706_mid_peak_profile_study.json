@@ -1,0 +1,116 @@
+{
+  "period": "2007-01-29~2026-07-08",
+  "bars": 4087,
+  "phases": {
+    "all": "2007-01-29~2026-07-08",
+    "test": "2022-12-19~2026-07-08",
+    "recent_3y": "2023-07-10~2026-07-08"
+  },
+  "sleeve_performance": [
+    {
+      "sleeve": "US(yoon1j_lp)",
+      "variant": "원본(저가권 우위)",
+      "cagr": 0.08330368635086849,
+      "max_drawdown": -0.21015484759474856,
+      "sharpe": 0.749018589457138,
+      "total_return": 8.05978005460231,
+      "volatility": 0.11608649023979889
+    },
+    {
+      "sleeve": "KR(yoon1j_kr)",
+      "variant": "원본(저가권 우위)",
+      "cagr": 0.0987827872463487,
+      "max_drawdown": -0.375539751870435,
+      "sharpe": 0.7059096187071363,
+      "total_return": 5.241296139065719,
+      "volatility": 0.1774582877198454
+    },
+    {
+      "sleeve": "US(yoon1j_lp)",
+      "variant": "mid_peak(중간 우위)",
+      "cagr": 0.08179078793906513,
+      "max_drawdown": -0.2151884460295801,
+      "sharpe": 0.7390924051076929,
+      "total_return": 7.7176771462243945,
+      "volatility": 0.11568805112873802
+    },
+    {
+      "sleeve": "KR(yoon1j_kr)",
+      "variant": "mid_peak(중간 우위)",
+      "cagr": 0.08870324301109922,
+      "max_drawdown": -0.3946678259982963,
+      "sharpe": 0.6434762728748259,
+      "total_return": 4.217644894094537,
+      "volatility": 0.17825101089392067
+    }
+  ],
+  "performance": [
+    {
+      "phase": "all",
+      "candidate": "원본(저가권 우위)",
+      "cagr": 0.13656513233003031,
+      "max_drawdown": -0.1639779021501524,
+      "sharpe": 1.2226561904006774,
+      "total_return": 11.041587101825137,
+      "volatility": 0.13268610327236097
+    },
+    {
+      "phase": "all",
+      "candidate": "mid_peak(중간 우위)",
+      "cagr": 0.12972842148149288,
+      "max_drawdown": -0.17254216031672953,
+      "sharpe": 1.1692129004919776,
+      "total_return": 9.708999762241147,
+      "volatility": 0.13255464692668378
+    },
+    {
+      "phase": "test",
+      "candidate": "원본(저가권 우위)",
+      "cagr": 0.33600033727915557,
+      "max_drawdown": -0.11998638457854671,
+      "sharpe": 1.9505675747756719,
+      "total_return": 1.7972943940027726,
+      "volatility": 0.1699931204354179
+    },
+    {
+      "phase": "test",
+      "candidate": "mid_peak(중간 우위)",
+      "cagr": 0.32245332303100094,
+      "max_drawdown": -0.11998643348474036,
+      "sharpe": 1.8829967859729793,
+      "total_return": 1.6978681241907845,
+      "volatility": 0.17018241309158633
+    },
+    {
+      "phase": "recent_3y",
+      "candidate": "원본(저가권 우위)",
+      "cagr": 0.36869855090089265,
+      "max_drawdown": -0.11998638457854671,
+      "sharpe": 2.008374617718625,
+      "total_return": 1.5601790480398572,
+      "volatility": 0.17826138704007757
+    },
+    {
+      "phase": "recent_3y",
+      "candidate": "mid_peak(중간 우위)",
+      "cagr": 0.3616695389432374,
+      "max_drawdown": -0.11998643348474025,
+      "sharpe": 1.9762962758818334,
+      "total_return": 1.5209997178814945,
+      "volatility": 0.17831905622256697
+    }
+  ],
+  "bootstrap": {
+    "mid_peak_vs_원본": {
+      "label_a": "mid_peak",
+      "label_b": "원본",
+      "period": "2007-01-29~2026-07-08",
+      "bars": 4087,
+      "prob": {
+        "sharpe_a_gt_b": 0.0285,
+        "cagr_a_gt_b": 0.02975,
+        "mdd_a_shallower": 0.23125
+      }
+    }
+  }
+}

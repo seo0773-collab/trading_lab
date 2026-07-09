@@ -407,6 +407,16 @@ _STRATEGIES = {
         handler_factory="trading_lab.strategies.yoon1k:Yoon1kHandler",
         category=CATEGORY_HIERARCHICAL,
     ),
+    "final0706_safe_scored": StrategyDefinition(
+        strategy_id="final0706_safe_scored",
+        version="1",
+        description="final0706 파생(2026-07-08): 구조는 final0706과 동일하고 안전자산 슬리브(TLT/IAU, 148070.KS/132030.KS)에 safe_sleeve.profile_scored=true만 추가. 원래 안전자산은 추세 게이트(종가>MA100) ON/OFF만 판정해 ON 자산끼리 균등 배분했는데, profile_scored는 안전자산도 메인 유니버스와 같은 profile-sizing 엔진(자기 cycle percentile→buckets→regime_cap)으로 스코어링해 ON 자산 간 배분을 점수 비례로 바꾼다(추세 게이트·방어 효과는 불변, opt-in이라 다른 전략 영향 없음). 실측(2007-01-29~2026-07-08, 원화기준): CAGR 13.74%(원본 13.66%)/MDD -16.15%(원본 -16.40%, 개선)/Sharpe 1.227(원본 1.223), test·recent_3y 구간도 동일 방향. 부트스트랩(8000회): P(Sharpe 우위) 82.9%·P(CAGR 우위) 88.5%·P(MDD 더 얕음) 60.1% — 소폭이지만 일관된 개선(안전자산 평균비중 US 8%/KR 13.5%로 작아 절대 개선폭도 작음). mid_peak buckets와의 결합은 별도 실측에서 기각(mid_peak 손실이 압도)했으므로 미반영. Yoon1kHandler 재사용(신규 핸들러 없음). live_eligible=false(final0706 상속 게이트)",
+        config_path=ROOT / "configs" / "strategies" / "final0706_safe_scored.json",
+        enabled=True,
+        live_eligible=False,
+        handler_factory="trading_lab.strategies.yoon1k:Yoon1kHandler",
+        category=CATEGORY_HIERARCHICAL,
+    ),
     "yoon2c": StrategyDefinition(
         strategy_id="yoon2c",
         version="1",
@@ -444,6 +454,38 @@ _STRATEGIES = {
         enabled=True,
         live_eligible=False,
         handler_factory="trading_lab.strategies.heatmap2:Heatmap2Handler",
+    ),
+    "hole_profile": StrategyDefinition(
+        strategy_id="hole_profile",
+        version="1",
+        description="단일종목(BTC) 계층적 지그재그(ATR 방향전환 L0→재귀압축 L1/L2) 진행-스윙 프로파일 돌파/지속 모멘텀 롱숏. hole_profile.txt(Pine 'Multiscale Market Structure') 이식 — 선택레벨(L1) 완결 스윙 |%변동| 분포에서 진행중 스윙이 상위 percentile('hole', 희소구간)에 도달하면 그 방향 진입. hole_profile_study.json: L1·threshold 0.55~0.70 게이트가 h=5/10/20 전부 NW t=+2.3~+3.5(L0·L2는 무의미/불안정). hole_profile_exit_sweep.json(2026-07-08): entry_percentile 0.70→0.60·exit_percentile 0.30→0.50 채택(train Sharpe 기준 선택+val/test 확인). hole_profile_risk_sweep.json(2026-07-08, 손절/익절 보수화 요청 반영): take_profit_atr_mult 신설 + stop_atr_mult 3.0→2.0 — train/val/test/all 4구간 동시 개선(all Sharpe 0.640→0.805·CAGR 20.2%→24.9%·거래수 42→84·MDD -40.7%→-41.8%로 거의 유지). 대시보드에 손절/익절선(거래별 구간 표시, 범용)과 원본 Pine 두 프로파일(Time Bin/Price % Bin, 40구간) 노출. live_eligible=False, 페이퍼/타자산 이식검증 전 보류",
+        config_path=ROOT / "configs" / "strategies" / "hole_profile.json",
+        enabled=True,
+        live_eligible=False,
+        handler_factory="trading_lab.strategies.hole_profile:HoleProfileHandler",
+    ),
+    "new0707": StrategyDefinition(
+        strategy_id="new0707",
+        version="1",
+        description="단일종목(BTC) SMA10 기울기 가속도 × 거래량 서지 2D 상태 가중치 사이징(long-only). 최근 10봉 프렉탈(유사패턴 투영/자기연장) 축은 스터디에서 기각(analog IC 부호 불일치, self는 이상치 구동)하고 accel×vol 그리드만 채택. new0707_study.json: 27칸 전부 fwd return 방향 양수·부호 일관이나 FDR 유의 셀 0/27 — 방향성 tilt만 근거, live_eligible=False, 추가 검증 전 보류",
+        config_path=ROOT / "configs" / "strategies" / "new0707.json",
+        enabled=True,
+        live_eligible=False,
+        handler_factory="trading_lab.strategies.new0707:New0707Handler",
+    ),
+    "bb-martingale-v1": StrategyDefinition(
+        strategy_id="bb-martingale-v1",
+        version="1",
+        description="단일종목 볼린저밴드(SMA20/±2.5SD, bb_crossing_sweep 스윕 최적치) 항상 롱/숏 유지 "
+        "평균회귀 — 밴드이탈 즉시 반대 플립, 역행 시 물타기(마틴게일, 최대 5단계, 손절 없음), "
+        "ADX(14) 추세가속 레짐게이트로 신규진입/물타기/플립만 정지. reports/bb_martingale_sweep.md: "
+        "물타기 배수 커질수록 파산율 급증(mult 3.0=25%+), 게이트 적용해도 Sharpe 개선은 불명확"
+        "(reports/bb_martingale_regime_sweep.md). 손절 없이 파산 가능한 구조라 live_eligible=False, "
+        "페이퍼 검증 전 보류",
+        config_path=ROOT / "configs" / "strategies" / "bb_martingale_v1.json",
+        enabled=True,
+        live_eligible=False,
+        handler_factory="trading_lab.strategies.bb_martingale:BbMartingaleV1Handler",
     ),
 }
 

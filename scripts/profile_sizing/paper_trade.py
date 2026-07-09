@@ -277,12 +277,20 @@ def _dynamic_alloc_state(strategy: str, raw: dict) -> dict:
 
 
 def _hierarchical_journal(strategy: str, raw: dict) -> int:
-    """계층 전략(sub_strategies) 페이퍼 저널: 슬리브별 목표 × 통화 가중 합산."""
+    """계층 전략(sub_strategies) 페이퍼 저널: 슬리브별 목표 × 통화 가중 합산.
+
+    슬리브별 실제 목표(override 적용분)는 `{strategy}__{sid}_journal.jsonl`에도
+    별도 적립한다 — 같은 sub config(yoon1j_lp/yoon1j_kr 등)를 top_k·universe가
+    다른 여러 계층 전략(yoon1k/yoon2/yoon2m/final0706 등)이 공유하므로, prefix 없이
+    `{sid}_journal.jsonl` 하나에 다 같이 쓰면 라이브 실행기(yoon1k_kis_rebalance.py)가
+    엉뚱한 전략의(override 다른) 목표를 읽는 사고가 난다."""
     subs = raw["sub_strategies"]
     combined: dict[str, float] = {}
     sleeves: dict[str, dict] = {}
     expo = cash = 0.0
     data_through, last_rebal, regimes = [], [], []
+    jdir = ROOT / "var" / "paper_trading"
+    jdir.mkdir(parents=True, exist_ok=True)
     for sub in subs:
         sid = sub["config"]
         scfg = json.loads((ROOT / "configs" / "strategies" / f"{sid}.json").read_text())
@@ -291,7 +299,8 @@ def _hierarchical_journal(strategy: str, raw: dict) -> int:
         w = float(sub.get("weight", 1.0 / len(subs)))
         print(f"[{strategy}] 슬리브 {sid} (w={w:g}) 계산 ...", flush=True)
         t = _portfolio_target(scfg)
-        for s, v in {**t["targets"], **t["safe_targets"]}.items():
+        sub_targets = {**t["targets"], **t["safe_targets"]}
+        for s, v in sub_targets.items():
             combined[s] = combined.get(s, 0.0) + v * w
         regime = "정상" if t["market_ok"] >= 1.0 else f"약세(x{t['market_ok']:g})"
         sleeves[sid] = {
@@ -306,6 +315,22 @@ def _hierarchical_journal(strategy: str, raw: dict) -> int:
         data_through.append(t["data_through"])
         last_rebal.append(t["last_rebal_date"])
         regimes.append(f"{sid}:{regime}")
+
+        sub_snap = {
+            "run_at": dt.datetime.now().isoformat(timespec="seconds"),
+            "strategy": sid,
+            "parent_strategy": strategy,
+            "data_through": t["data_through"],
+            "last_rebal_date": t["last_rebal_date"],
+            "exposure": round(t["exposure"], 4),
+            "cash": round(t["cash"], 4),
+            "market_regime": regime,
+            "n_holdings": len(sub_targets),
+            "targets": {s: round(v, 4) for s, v in
+                        sorted(sub_targets.items(), key=lambda kv: -kv[1])},
+        }
+        with (jdir / f"{strategy}__{sid}_journal.jsonl").open("a") as fh:
+            fh.write(json.dumps(sub_snap, ensure_ascii=False) + "\n")
 
     snap = {
         "run_at": dt.datetime.now().isoformat(timespec="seconds"),
@@ -322,8 +347,6 @@ def _hierarchical_journal(strategy: str, raw: dict) -> int:
     }
     snap.update(_dynamic_alloc_state(strategy, raw))
 
-    jdir = ROOT / "var" / "paper_trading"
-    jdir.mkdir(parents=True, exist_ok=True)
     jpath = jdir / f"{strategy}_journal.jsonl"
     prev = None
     if jpath.exists():

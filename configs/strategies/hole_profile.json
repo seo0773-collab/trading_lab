@@ -1,0 +1,75 @@
+{
+  "version": "hole_profile-v1",
+  "interval": "1d",
+  "period": "max",
+  "asset_class": "crypto",
+  "exchange": "binance",
+  "since": "2017-08-17",
+  "structure": {
+    "atr_len": 48,
+    "atr_mult": 1.0,
+    "level": "L1",
+    "min_profile_samples": 30,
+    "profile_bins": 200
+  },
+  "signal": {
+    "entry_percentile": 0.60,
+    "exit_percentile": 0.50,
+    "min_hold_bars": 1,
+    "max_hold_bars": 60,
+    "stop_atr_mult": 2.0,
+    "take_profit_atr_mult": 2.0,
+    "long_only": false
+  },
+  "costs": {
+    "fee_bps_per_side": 5.0,
+    "slippage_bps": 5.0
+  },
+  "train_frac": 0.6,
+  "validation_frac": 0.2,
+  "synthetic_bars": 3000,
+  "seed": 7,
+  "dashboard": {
+    "default_indicators": [
+      "profile_rank",
+      "duration_bars",
+      "pct_move",
+      "l1_count"
+    ],
+    "indicator_labels": {
+      "atr": "ATR(방향전환 임계폭)",
+      "l0_count": "L0 누적 확정 피벗수",
+      "l1_count": "L1 누적 확정 피벗수",
+      "l2_count": "L2 누적 확정 피벗수",
+      "pivot_idx": "선택레벨 마지막 확정 피벗 봉인덱스",
+      "pivot_price": "선택레벨 마지막 확정 피벗 가격",
+      "pivot_type": "피벗 타입(1=고점/-1=저점)",
+      "duration_bars": "피벗 이후 경과봉수",
+      "pct_move": "피벗 대비 진행중 스윙 변동%(부호=방향)",
+      "direction": "진행중 스윙 방향(±1)",
+      "profile_n": "선택레벨 완결 스윙 표본수",
+      "profile_rank": "진행중 스윙 |변동%| expanding 백분위(0~1)",
+      "position": "포지션(±1/0)"
+    },
+    "panels": [
+      {
+        "kind": "duration_profile",
+        "type": "bar",
+        "x": "bin_label",
+        "y": "count",
+        "label": "L1 스윙 지속시간 프로파일 (봉, 200구간, 전체 히스토리 누적)",
+        "default": true
+      },
+      {
+        "kind": "pct_move_profile",
+        "type": "bar",
+        "x": "bin_label",
+        "y": "count",
+        "label": "L1 스윙 가격변동 프로파일 (%, 200구간·부호 보존·전체 히스토리 누적)",
+        "default": true
+      }
+    ]
+  },
+  "_comment": "hole_profile.txt(Pine 'Multiscale Market Structure') 이식: ATR 방향전환 L0 지그재그 → 재귀 압축 L1/L2 → 선택 레벨(L1)의 완결 스윙 |%변동| 분포에서 진행중 스윙이 상위 percentile('hole', 희소구간)에 도달하면 그 방향 돌파/지속으로 해석해 진입. hole_profile_study.py(2026-07-08, BTC/USDT 일봉 2017-08~2026-07) 근거: L0/L1/L2 중 L1만 유의 — threshold>=0.55~0.70 게이트가 h=5/10/20 전부 Newey-West t=+2.3~+3.5(L0·L2는 무의미/불안정). train_60/val_20/test_20 3분할 전부 edge 부호는 양(+)으로 일관. 프로파일 표시 bin은 20→40으로 세분화(2026-07-08, 사용자 요청).",
+  "_comment_exit": "청산 우선순위: (1) stop_atr_mult×ATR 손절, (2) take_profit_atr_mult×ATR 익절(고정 R배수 — Pine에 없는 확장), (3) 구조적 확정 — 진입 근거 피벗이 다음 확정 피벗으로 갱신되면(레벨 스윙 공식 종료) 다음봉 시가 청산, (4) percentile_fade — profile_rank가 exit_percentile 밑으로 후퇴, (5) horizon — max_hold_bars 시간청산. hole_profile_exit_sweep.py(2026-07-08) 1차 스윕: entry_percentile=0.60/exit_percentile=0.50 채택(기존 0.70/0.30) — 당시 stop_atr_mult·max_hold_bars는 거의 발동하지 않음(구조적 확정이 선점). hole_profile_risk_sweep.py(2026-07-08, 사용자 요청 '더 보수적으로'): 실제 익절가(take_profit_atr_mult)를 신설하고 stop_atr_mult를 3.0→2.0으로 조여 재스윕(고정 entry=0.60/exit=0.50/hold=60) — stop=2.0/take_profit=2.0이 train/val/test/all 4구간 전부 개선(all Sharpe 0.640→0.805, CAGR 20.2%→24.9%, 거래수 42→84, MDD -40.7%→-41.8%로 거의 유지). 청산 사유 분포도 건전화: take_profit_atr 43%(평균+8.6%)·stop_atr 13%(평균-9.3%)·structure_confirmed 37%·percentile_fade 7% — 이전에는 익절 없이 구조확정(28/31)에만 의존해 큰 수익이 되돌림 후 청산되는 경우가 있었다(예: 2021-02 거래에서 $58k 고점 대비 $46k로 되돌린 뒤 청산). reports/profile_sizing/hole_profile_risk_sweep.json 참조. live_eligible=false, 페이퍼/추가 검증(타 자산 이식 확인) 전 보류."
+}

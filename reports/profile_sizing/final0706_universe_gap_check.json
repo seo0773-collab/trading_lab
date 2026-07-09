@@ -1,0 +1,75 @@
+{
+  "gap_cutoff": "2013-10-24",
+  "A_pre_post_split": {
+    "pre_2013_10": {
+      "bars": 1698,
+      "avg_holdings": 4.03886925795053,
+      "cagr": 0.10027393280558439,
+      "max_drawdown": -0.18926408756058455,
+      "sharpe": 0.8492197985928771,
+      "total_return": 0.9028261594822624,
+      "volatility": 0.12109641191685501
+    },
+    "post_2013_10": {
+      "bars": 3193,
+      "avg_holdings": 3.948950829940495,
+      "cagr": 0.1104334329898986,
+      "max_drawdown": -0.21015492347932263,
+      "sharpe": 0.8804589725152973,
+      "total_return": 2.7837301034780397,
+      "volatility": 0.1287491183628284
+    }
+  },
+  "B_us_sleeve_6_vs_11": {
+    "universe_11_original": {
+      "avg_holdings": 3.980167654876303,
+      "cagr": 0.10709810765359684,
+      "max_drawdown": -0.21015492347932263,
+      "sharpe": 0.8711734250860778,
+      "total_return": 6.2264050294688325,
+      "volatility": 0.12614749202862563
+    },
+    "universe_6_consistent": {
+      "avg_holdings": 4.051114291555919,
+      "cagr": 0.10850801597274828,
+      "max_drawdown": -0.21754556663828517,
+      "sharpe": 0.9012304844202155,
+      "total_return": 6.407414814596563,
+      "volatility": 0.12290564516210883
+    },
+    "bootstrap": {
+      "period": "2007-01-29~2026-07-08",
+      "bars": 4891,
+      "prob": {
+        "sharpe_a_gt_b": 0.724125,
+        "cagr_a_gt_b": 0.598375,
+        "mdd_a_shallower": 0.52925
+      }
+    }
+  },
+  "C_full_pipeline_6_vs_11": {
+    "final0706_original": {
+      "cagr": 0.13684546661395958,
+      "max_drawdown": -0.16397827434392176,
+      "sharpe": 1.2254145793375797,
+      "total_return": 11.09945285400353,
+      "volatility": 0.1326216093271545
+    },
+    "final0706_us6_variant": {
+      "cagr": 0.13768843405670728,
+      "max_drawdown": -0.1639782925053378,
+      "sharpe": 1.23670721202531,
+      "total_return": 11.275048913286554,
+      "volatility": 0.1320700294431369
+    },
+    "bootstrap": {
+      "period": "2007-01-29~2026-07-08",
+      "bars": 4087,
+      "prob": {
+        "sharpe_a_gt_b": 0.65625,
+        "cagr_a_gt_b": 0.590625,
+        "mdd_a_shallower": 0.493
+      }
+    }
+  }
+}

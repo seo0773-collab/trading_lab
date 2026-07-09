@@ -1,0 +1,1 @@
+{"run_at": "2026-07-08T09:54:25", "strategy": "yoon1j_kr", "parent_strategy": "final0706", "data_through": "2026-07-08", "last_rebal_date": "2026-07-08", "exposure": 1.0001, "cash": -0.0001, "market_regime": "정상", "n_holdings": 3, "targets": {"091160.KS": 0.3333, "091170.KS": 0.3333, "091180.KS": 0.3333}}

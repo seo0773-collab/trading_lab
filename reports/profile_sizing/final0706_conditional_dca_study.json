@@ -1,0 +1,290 @@
+[
+  {
+    "phase": "all",
+    "candidate": "final0706",
+    "schedule": "정기(매달 즉시투입)",
+    "total_return": 4.467589418546057,
+    "account_mdd": -0.1276660110798391,
+    "n_deploys": null
+  },
+  {
+    "phase": "all",
+    "candidate": "final0706",
+    "schedule": "조건부(고점대비 -5% 낙폭 시 투입)",
+    "total_return": 4.254616541984996,
+    "account_mdd": -0.12503113662152265,
+    "n_deploys": 100
+  },
+  {
+    "phase": "all",
+    "candidate": "final0706",
+    "schedule": "조건부(고점대비 -10% 낙폭 시 투입)",
+    "total_return": 3.762491376981317,
+    "account_mdd": -0.11586404791590521,
+    "n_deploys": 17
+  },
+  {
+    "phase": "all",
+    "candidate": "final0706",
+    "schedule": "조건부(고점대비 -15% 낙폭 시 투입)",
+    "total_return": 1.5123410894522977,
+    "account_mdd": -0.07020124087882407,
+    "n_deploys": 1
+  },
+  {
+    "phase": "all",
+    "candidate": "final0706_qld",
+    "schedule": "정기(매달 즉시투입)",
+    "total_return": 11.289166065306432,
+    "account_mdd": -0.2890331906520184,
+    "n_deploys": null
+  },
+  {
+    "phase": "all",
+    "candidate": "final0706_qld",
+    "schedule": "조건부(고점대비 -5% 낙폭 시 투입)",
+    "total_return": 11.18505657020924,
+    "account_mdd": -0.288836838270936,
+    "n_deploys": 123
+  },
+  {
+    "phase": "all",
+    "candidate": "final0706_qld",
+    "schedule": "조건부(고점대비 -10% 낙폭 시 투입)",
+    "total_return": 10.247795525387065,
+    "account_mdd": -0.286462482440765,
+    "n_deploys": 54
+  },
+  {
+    "phase": "all",
+    "candidate": "final0706_qld",
+    "schedule": "조건부(고점대비 -15% 낙폭 시 투입)",
+    "total_return": 8.680325592795965,
+    "account_mdd": -0.28285286560303646,
+    "n_deploys": 22
+  },
+  {
+    "phase": "all",
+    "candidate": "벤치(50/50)",
+    "schedule": "정기(매달 즉시투입)",
+    "total_return": 4.697935437527624,
+    "account_mdd": -0.3106880370889278,
+    "n_deploys": null
+  },
+  {
+    "phase": "all",
+    "candidate": "벤치(50/50)",
+    "schedule": "조건부(고점대비 -5% 낙폭 시 투입)",
+    "total_return": 4.627573409486385,
+    "account_mdd": -0.3097585319496883,
+    "n_deploys": 95
+  },
+  {
+    "phase": "all",
+    "candidate": "벤치(50/50)",
+    "schedule": "조건부(고점대비 -10% 낙폭 시 투입)",
+    "total_return": 4.411570457986463,
+    "account_mdd": -0.30617339746014105,
+    "n_deploys": 35
+  },
+  {
+    "phase": "all",
+    "candidate": "벤치(50/50)",
+    "schedule": "조건부(고점대비 -15% 낙폭 시 투입)",
+    "total_return": 4.020209060902291,
+    "account_mdd": -0.30315767361930457,
+    "n_deploys": 13
+  },
+  {
+    "phase": "test",
+    "candidate": "final0706",
+    "schedule": "정기(매달 즉시투입)",
+    "total_return": 1.1847160898132896,
+    "account_mdd": -0.0973493490138464,
+    "n_deploys": null
+  },
+  {
+    "phase": "test",
+    "candidate": "final0706",
+    "schedule": "조건부(고점대비 -5% 낙폭 시 투입)",
+    "total_return": 1.147133076937267,
+    "account_mdd": -0.09360687164417303,
+    "n_deploys": 16
+  },
+  {
+    "phase": "test",
+    "candidate": "final0706",
+    "schedule": "조건부(고점대비 -10% 낙폭 시 투입)",
+    "total_return": 1.1445223769248165,
+    "account_mdd": -0.08660990943488289,
+    "n_deploys": 5
+  },
+  {
+    "phase": "test",
+    "candidate": "final0706",
+    "schedule": "조건부(고점대비 -15% 낙폭 시 투입)",
+    "total_return": 0.3416478638227063,
+    "account_mdd": -0.03905138705993183,
+    "n_deploys": 0
+  },
+  {
+    "phase": "test",
+    "candidate": "final0706_qld",
+    "schedule": "정기(매달 즉시투입)",
+    "total_return": 1.5037461600102588,
+    "account_mdd": -0.19374363035899145,
+    "n_deploys": null
+  },
+  {
+    "phase": "test",
+    "candidate": "final0706_qld",
+    "schedule": "조건부(고점대비 -5% 낙폭 시 투입)",
+    "total_return": 1.4142749302929212,
+    "account_mdd": -0.1918854922617943,
+    "n_deploys": 21
+  },
+  {
+    "phase": "test",
+    "candidate": "final0706_qld",
+    "schedule": "조건부(고점대비 -10% 낙폭 시 투입)",
+    "total_return": 1.3564109750095357,
+    "account_mdd": -0.18326195337285134,
+    "n_deploys": 6
+  },
+  {
+    "phase": "test",
+    "candidate": "final0706_qld",
+    "schedule": "조건부(고점대비 -15% 낙폭 시 투입)",
+    "total_return": 1.282136866136324,
+    "account_mdd": -0.16576886977019534,
+    "n_deploys": 2
+  },
+  {
+    "phase": "test",
+    "candidate": "벤치(50/50)",
+    "schedule": "정기(매달 즉시투입)",
+    "total_return": 1.473485676442467,
+    "account_mdd": -0.10704640667365517,
+    "n_deploys": null
+  },
+  {
+    "phase": "test",
+    "candidate": "벤치(50/50)",
+    "schedule": "조건부(고점대비 -5% 낙폭 시 투입)",
+    "total_return": 1.3967880774595542,
+    "account_mdd": -0.10657116662791144,
+    "n_deploys": 17
+  },
+  {
+    "phase": "test",
+    "candidate": "벤치(50/50)",
+    "schedule": "조건부(고점대비 -10% 낙폭 시 투입)",
+    "total_return": 1.3136789193788232,
+    "account_mdd": -0.10355582807600883,
+    "n_deploys": 5
+  },
+  {
+    "phase": "test",
+    "candidate": "벤치(50/50)",
+    "schedule": "조건부(고점대비 -15% 낙폭 시 투입)",
+    "total_return": 0.4293241342518739,
+    "account_mdd": -0.04037684651905682,
+    "n_deploys": 0
+  },
+  {
+    "phase": "recent_3y",
+    "candidate": "final0706",
+    "schedule": "정기(매달 즉시투입)",
+    "total_return": 1.0526027955174326,
+    "account_mdd": -0.09534598293183583,
+    "n_deploys": null
+  },
+  {
+    "phase": "recent_3y",
+    "candidate": "final0706",
+    "schedule": "조건부(고점대비 -5% 낙폭 시 투입)",
+    "total_return": 1.0270199827498439,
+    "account_mdd": -0.0907673814475467,
+    "n_deploys": 16
+  },
+  {
+    "phase": "recent_3y",
+    "candidate": "final0706",
+    "schedule": "조건부(고점대비 -10% 낙폭 시 투입)",
+    "total_return": 1.0015323921289552,
+    "account_mdd": -0.08336706155737017,
+    "n_deploys": 5
+  },
+  {
+    "phase": "recent_3y",
+    "candidate": "final0706",
+    "schedule": "조건부(고점대비 -15% 낙폭 시 투입)",
+    "total_return": 0.34184329973297434,
+    "account_mdd": -0.05885704253305324,
+    "n_deploys": 0
+  },
+  {
+    "phase": "recent_3y",
+    "candidate": "final0706_qld",
+    "schedule": "정기(매달 즉시투입)",
+    "total_return": 1.1798938324863104,
+    "account_mdd": -0.18103999383509417,
+    "n_deploys": null
+  },
+  {
+    "phase": "recent_3y",
+    "candidate": "final0706_qld",
+    "schedule": "조건부(고점대비 -5% 낙폭 시 투입)",
+    "total_return": 1.145073071006136,
+    "account_mdd": -0.17963787068182346,
+    "n_deploys": 21
+  },
+  {
+    "phase": "recent_3y",
+    "candidate": "final0706_qld",
+    "schedule": "조건부(고점대비 -10% 낙폭 시 투입)",
+    "total_return": 1.049879143104746,
+    "account_mdd": -0.1667100043871068,
+    "n_deploys": 6
+  },
+  {
+    "phase": "recent_3y",
+    "candidate": "final0706_qld",
+    "schedule": "조건부(고점대비 -15% 낙폭 시 투입)",
+    "total_return": 1.0590339031495515,
+    "account_mdd": -0.1449423868967462,
+    "n_deploys": 2
+  },
+  {
+    "phase": "recent_3y",
+    "candidate": "벤치(50/50)",
+    "schedule": "정기(매달 즉시투입)",
+    "total_return": 1.3009530332548591,
+    "account_mdd": -0.10552876328175054,
+    "n_deploys": null
+  },
+  {
+    "phase": "recent_3y",
+    "candidate": "벤치(50/50)",
+    "schedule": "조건부(고점대비 -5% 낙폭 시 투입)",
+    "total_return": 1.2324732963018525,
+    "account_mdd": -0.10494898011708487,
+    "n_deploys": 17
+  },
+  {
+    "phase": "recent_3y",
+    "candidate": "벤치(50/50)",
+    "schedule": "조건부(고점대비 -10% 낙폭 시 투입)",
+    "total_return": 1.1949679708339858,
+    "account_mdd": -0.10142635865621896,
+    "n_deploys": 5
+  },
+  {
+    "phase": "recent_3y",
+    "candidate": "벤치(50/50)",
+    "schedule": "조건부(고점대비 -15% 낙폭 시 투입)",
+    "total_return": 0.4131614779450161,
+    "account_mdd": -0.045061025654904885,
+    "n_deploys": 0
+  }
+]

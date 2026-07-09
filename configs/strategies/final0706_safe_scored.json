@@ -1,0 +1,107 @@
+{
+  "version": "final0706_safe_scored",
+  "_comment": "final0706 파생(2026-07-08): 구조는 final0706과 완전히 동일(US yoon1j_lp+KR yoon1j_kr 50/50, 63일 상대모멘텀 통화틸트, 신용스프레드 위험게이트)하되, 안전자산 슬리브(TLT/IAU, 148070.KS/132030.KS)에 safe_sleeve.profile_scored=true만 추가했다. 원래 안전자산은 추세 게이트(종가>MA100) ON/OFF만 판정해 ON인 자산끼리 균등 배분했는데, profile_scored는 안전자산도 메인 유니버스와 같은 profile-sizing 엔진(자기 cycle_multiple percentile→buckets→regime_cap=final_target_weight)으로 스코어링해 ON 자산 간 배분을 균등 대신 점수 비례로 바꾼다(추세 게이트 자체·방어 효과는 불변, opt-in 신규 파라미터라 다른 전략 영향 없음 — scripts/profile_sizing/portfolio.py의 simulate_portfolio(safe_scores)·src/trading_lab/strategies/profile_portfolio.py 참조). 실측(scripts/profile_sizing/final0706_safe_sleeve_profile_study.py, 2007-01-29~2026-07-08 원화기준): CAGR 13.74%(원본 13.66%) / MDD -16.15%(원본 -16.40%, 개선) / Sharpe 1.227(원본 1.223). test(2022-12~)·recent_3y 구간도 같은 방향. 부트스트랩(8000회, block=20): P(Sharpe 우위) 82.9%, P(CAGR 우위) 88.5%, P(MDD 더 얕음) 60.1% — 전 구간·전 지표 일관된 방향의 소폭 개선. 단 안전자산 평균 비중이 US 8%/KR 13.5%로 작아 개선폭 자체는 작다(CAGR +0.08%p). mid_peak buckets(프로파일 중간지점 고점수)와의 결합은 별도 실측(final0706_mid_peak_plus_safe_scored_study.py)에서 기각(mid_peak의 손실이 압도, P(Sharpe 우위) 3.2%) — 이 config에는 반영하지 않았다. live_eligible=false(final0706 상속 게이트: 페이퍼 전진검증 + KIS 실수수료 확정 후 승격 판단).",
+  "interval": "1d",
+  "period": "max",
+  "base_currency": "KRW",
+  "fx_symbol": "KRW=X",
+  "rebalance_freq": "monthly",
+  "currency_allocation": {
+    "kind": "relative_momentum_fx2_overlay",
+    "lookback": 63,
+    "signal_lag": 1,
+    "neutral": 0.5,
+    "tilt": 0.125,
+    "scale": 0.1,
+    "band": [0.4, 0.6],
+    "risk_gate": {
+      "enabled": true,
+      "source": "credit_spread",
+      "symbols": ["HYG", "IEF"],
+      "lookback": 10,
+      "sma_lookback": 20,
+      "threshold": -0.02,
+      "off_scale": 0.5,
+      "min_consecutive": 2,
+      "safe_asset": "IEF"
+    }
+  },
+  "sub_strategies": [
+    {
+      "config": "yoon1j_lp",
+      "currency": "USD",
+      "weight": 0.5,
+      "overrides": {
+        "top_k": 3,
+        "hold_buffer": 2,
+        "universe": ["VGT", "XLF", "IYH", "FENY", "FIDU", "FSTA", "IYC", "XLU", "XLB", "FREL", "FCOM"],
+        "safe_sleeve": {
+          "enabled": true,
+          "symbols": ["TLT", "IAU"],
+          "ratio": 1.0,
+          "max": 0.4,
+          "ma_len": 100,
+          "profile_scored": true
+        }
+      }
+    },
+    {
+      "config": "yoon1j_kr",
+      "currency": "KRW",
+      "weight": 0.5,
+      "overrides": {
+        "top_k": 3,
+        "hold_buffer": 2,
+        "safe_sleeve": {
+          "enabled": true,
+          "symbols": ["148070.KS", "132030.KS"],
+          "ratio": 1.0,
+          "max": 0.4,
+          "ma_len": 100,
+          "profile_scored": true
+        }
+      }
+    }
+  ],
+  "benchmark_symbols": {
+    "USD": "SPY",
+    "KRW": "069500.KS"
+  },
+  "benchmark_label": "50/50 SPY원화+KODEX200",
+  "train_frac": 0.6,
+  "validation_frac": 0.2,
+  "synthetic_symbols": 6,
+  "synthetic_bars": 2000,
+  "seed": 7,
+  "dashboard": {
+    "default_indicators": [
+      "sleeve_yoon1j_lp",
+      "sleeve_yoon1j_kr",
+      "target_w_yoon1j_lp",
+      "target_w_yoon1j_kr",
+      "target_w___CASH__"
+    ],
+    "indicator_labels": {
+      "sleeve_yoon1j_lp": "미국 슬리브 저가(원화환산, top3)",
+      "sleeve_yoon1j_kr": "한국 슬리브(원화, top3)",
+      "target_w_yoon1j_lp": "목표 USD 슬리브 비중",
+      "target_w_yoon1j_kr": "목표 KRW 슬리브 비중",
+      "target_w___CASH__": "목표 현금 비중(신용스프레드 게이트)"
+    },
+    "panels": [
+      {
+        "kind": "sleeve_weights",
+        "type": "stacked_area",
+        "x": "time",
+        "label": "2단계 슬리브 평가금액 비중",
+        "default": true
+      },
+      {
+        "kind": "perf_vs_bnh",
+        "type": "table",
+        "label": "벤치(50/50 패시브) 대비 성과",
+        "default": true
+      }
+    ]
+  }
+}

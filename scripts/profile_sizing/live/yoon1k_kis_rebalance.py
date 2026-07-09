@@ -17,16 +17,22 @@
   3) 슬리브별 rebalance_plan(주문표) → 기본 출력만. --execute 시에만 모의 제출.
 
 안전:
-  - 기본 **dry-run**(제출 안 함). --execute 라야 모의 주문 제출.
-  - 실계좌(real)는 이 스크립트에서 막아둠(모의 전용). 실매매는 별도 검증 후.
-  - ⚠️ 주문/잔고 TR_ID·필드명은 실서버로 검증된 적 없음 → 소량으로 먼저 확인.
+  - 기본 **dry-run**(제출 안 함). --execute 라야 주문 제출.
+  - 기본은 모의계좌. --live 를 줘야 실계좌(KIS_APP_KEY/SECRET/ACCOUNT)로 주문.
+    --live --execute 를 함께 줘야 실제로 실계좌에 주문이 나간다(dry-run만으로는
+    실계좌 잔고/시세 조회까지만 하고 주문 제출 안 함 — 실서버 필드 검증용으로 먼저 써볼 것).
+  - ⚠️ 주문/잔고 TR_ID·필드명은 실서버로 검증된 적 없다(2026-07-08 기준). --live
+    --execute 최초 실행은 반드시 소액/1종목만으로 먼저 확인할 것.
 
-env: 시세 KIS_APP_KEY/SECRET/ACCOUNT(실), 주문 KIS_MOCK_APP_KEY/SECRET/ACCOUNT(모의).
+env: 모의 KIS_MOCK_APP_KEY/SECRET/ACCOUNT, 실계좌 KIS_APP_KEY/SECRET/ACCOUNT.
+     시세는 항상 실키(KIS_APP_KEY) 도메인 사용(모의 시세는 지연/누락이 잦음).
 
 Usage:
   PYTHONPATH=src .venv/bin/python scripts/profile_sizing/live/yoon1k_kis_rebalance.py
-  PYTHONPATH=src .venv/bin/python .../yoon1k_kis_rebalance.py --execute      # 모의 제출
-  PYTHONPATH=src .venv/bin/python .../yoon1k_kis_rebalance.py --per-sleeve   # 통화독립(드리프트)
+  PYTHONPATH=src .venv/bin/python .../yoon1k_kis_rebalance.py --execute            # 모의 제출
+  PYTHONPATH=src .venv/bin/python .../yoon1k_kis_rebalance.py --live               # 실계좌 조회만(dry-run)
+  PYTHONPATH=src .venv/bin/python .../yoon1k_kis_rebalance.py --live --execute     # 실계좌 실주문
+  PYTHONPATH=src .venv/bin/python .../yoon1k_kis_rebalance.py --per-sleeve         # 통화독립(드리프트)
 """
 from __future__ import annotations
 
@@ -165,15 +171,20 @@ def target_age_days(data_through, today=None) -> int:
     return int((t1 - t0).days)
 
 
-def gather_sleeve(cfg_id, currency, exch, data, order, *, max_stale_days=None):
+def gather_sleeve(cfg_id, currency, exch, data, order, *, parent, max_stale_days=None):
     """슬리브 현재 상태(목표·보유·현재가·예수금·계좌평가)를 수집한다. 주문 없음.
 
     반환 dict 또는 실패 시 None. account_value 는 통화 비중·총자본 산출과
     50/50 배정에 쓰인다(통화 리밸런싱은 두 슬리브 평가액을 모두 알아야 한다).
-    max_stale_days 지정 시 목표 기준일이 그보다 오래면 None(주문 거부=stale 가드)."""
-    journal = ROOT / "var" / "paper_trading" / f"{cfg_id}_journal.jsonl"
+    max_stale_days 지정 시 목표 기준일이 그보다 오래면 None(주문 거부=stale 가드).
+
+    저널은 `{parent}__{cfg_id}_journal.jsonl`(parent=--strategy)에서만 읽는다 —
+    같은 sub config(yoon1j_lp/yoon1j_kr 등)를 top_k·universe가 다른 여러 계층
+    전략이 공유하므로, prefix 없는 파일을 읽으면 다른 전략의(override 다른) 목표를
+    실주문에 쓰는 사고가 난다. 없으면 실패(자동 폴백 없음 — 실거래 안전장치)."""
+    journal = ROOT / "var" / "paper_trading" / f"{parent}__{cfg_id}_journal.jsonl"
     if not journal.exists():
-        print(f"[{cfg_id}] 저널 없음 → paper_trade.py --strategy {cfg_id} 먼저 실행\n")
+        print(f"[{cfg_id}] 저널 없음({journal.name}) → paper_trade.py --strategy {parent} 먼저 실행\n")
         return None
     snap = load_latest_target(journal)
     if max_stale_days is not None and snap.get("data_through"):
@@ -209,7 +220,7 @@ def gather_sleeve(cfg_id, currency, exch, data, order, *, max_stale_days=None):
     }
 
 
-def execute_sleeve(st, min_tv, execute, budget_cash=None, verify=False):
+def execute_sleeve(st, min_tv, execute, budget_cash=None, verify=False, live=False):
     """수집된 상태로 rebalance_plan → 출력(+ --execute 시 제출).
 
     budget_cash=배정 현금(통합증거금: 50/50 배정 달성용 환전후 가정 현금). None=자체 예수금.
@@ -239,10 +250,12 @@ def execute_sleeve(st, min_tv, execute, budget_cash=None, verify=False):
         if execute:
             try:
                 if domestic:
-                    resp = order.domestic_order(o["symbol"], o["side"], o["qty"], price=0.0)
+                    resp = order.domestic_order(o["symbol"], o["side"], o["qty"], price=0.0,
+                                                confirm_real=live)
                 else:
                     resp = order.order(o["symbol"], o["side"], o["qty"],
-                                       exchange=exch, price=float(o["price"]))
+                                       exchange=exch, price=float(o["price"]),
+                                       confirm_real=live)
                 ok = str(resp.get("rt_cd")) == "0"
                 print(f"  → {'제출OK' if ok else '거부'}: {str(resp.get('msg1'))[:40]}")
                 submitted += int(ok)
@@ -282,7 +295,11 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--strategy", default="yoon2")
-    ap.add_argument("--execute", action="store_true", help="모의 주문 실제 제출")
+    ap.add_argument("--execute", action="store_true", help="주문 실제 제출(모의 또는 --live 시 실계좌)")
+    ap.add_argument("--live", action="store_true",
+                    help="실계좌(KIS_APP_KEY/SECRET/ACCOUNT)로 조회/주문. --execute 없이 --live만 주면 "
+                         "실계좌 잔고·시세 조회만 하고 주문은 안 나감(필드 검증용). "
+                         "실주문은 --live --execute 둘 다 필요.")
     ap.add_argument("--per-sleeve", action="store_true",
                     help="통화별 독립 예수금 사이징(통화 리밸런싱 안 함=드리프트). "
                          "기본은 통합증거금(총자본 기준 통화 목표비중 복원). A3 재백테스트상 "
@@ -311,18 +328,26 @@ def main(argv=None) -> int:
     stale_guard = None if args.allow_stale else args.max_stale_days
 
     try:
-        data = KISClient.from_env("KIS", env="real")          # 시세=실키
-        order = KISClient.from_env("KIS_MOCK", env="mock")    # 국내/해외 모의 주문
+        data = KISClient.from_env("KIS", env="real")          # 시세=항상 실키
+        order = (KISClient.from_env("KIS", env="real") if args.live
+                else KISClient.from_env("KIS_MOCK", env="mock"))
     except KISConfigError as e:
         print(f"[자격증명 오류] {e}")
-        print("필요: 시세 KIS_APP_KEY/SECRET/ACCOUNT(실), 주문 KIS_MOCK_APP_KEY/SECRET/ACCOUNT(모의)")
+        print("필요: 시세 KIS_APP_KEY/SECRET/ACCOUNT(실). 주문은 --live 없으면 "
+              "KIS_MOCK_APP_KEY/SECRET/ACCOUNT(모의), --live면 KIS_APP_KEY/SECRET/ACCOUNT(실).")
         return 1
 
     cfg = json.loads((ROOT / "configs" / "strategies" / f"{args.strategy}.json")
                      .read_text("utf-8"))
-    mode = "EXECUTE(모의 제출)" if args.execute else "DRY-RUN(미제출)"
+    if args.live:
+        acct_mode = "EXECUTE(실계좌 실주문)" if args.execute else "DRY-RUN(실계좌 조회만·주문 없음)"
+        print("!" * 64)
+        print(f"!!! --live: 실계좌({order.cano}-{order.acnt_prdt}) 대상 !!!")
+        print("!" * 64)
+    else:
+        acct_mode = "EXECUTE(모의 제출)" if args.execute else "DRY-RUN(미제출)"
     margin = "·통합증거금(통화 목표비중 복원)" if integrated else "·통화독립(드리프트)"
-    print(f"=== {args.strategy} · KIS 모의 리밸런스 · {mode}{margin} ===")
+    print(f"=== {args.strategy} · KIS 리밸런스 · {acct_mode}{margin} ===")
     print(f"시세 도메인 {data.base} · 주문 도메인 {order.base}")
     today = pd.Timestamp.today().normalize()
     print("권장 실행창(시장별·주문가 stale 회피): "
@@ -336,7 +361,7 @@ def main(argv=None) -> int:
         exch = None if cur == "KRW" else "AMEX"
         oc = order
         st = gather_sleeve(sub["config"], cur, exch, data, oc,
-                           max_stale_days=stale_guard)
+                           parent=args.strategy, max_stale_days=stale_guard)
         if st is not None:
             states[sub["config"]] = st
 
@@ -399,8 +424,8 @@ def main(argv=None) -> int:
         eff_execute = args.execute and (
             args.only_currency is None or st["currency"] == args.only_currency)
         total += execute_sleeve(st, min_tv, eff_execute, budget_cash=budgets.get(sid),
-                                verify=args.verify)
-    print(f"=== 총 {total}건 ({mode}) ===")
+                                verify=args.verify, live=args.live)
+    print(f"=== 총 {total}건 ({acct_mode}) ===")
     return 0
 
 

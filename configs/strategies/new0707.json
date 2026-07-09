@@ -1,0 +1,60 @@
+{
+  "version": "new0707-v1",
+  "interval": "1d",
+  "period": "max",
+  "asset_class": "crypto",
+  "exchange": "binance",
+  "since": "2017-08-17",
+  "cycle": {
+    "sma_len": 10,
+    "accel_lookback": 5,
+    "vol_base_window": 60,
+    "z_window": 60,
+    "grid_bins": 3,
+    "min_bin_history": 120
+  },
+  "state_weights": [
+    [1.000, 0.700, 0.400],
+    [0.550, 0.775, 0.475],
+    [0.625, 0.850, 0.925]
+  ],
+  "sizing": {
+    "max_weight": 1.0,
+    "min_weight": 0.0,
+    "rebalance_threshold": 0.05,
+    "max_trade_weight_per_bar": 0.25
+  },
+  "costs": {
+    "fee_bps_per_side": 5.0,
+    "slippage_bps": 5.0
+  },
+  "train_frac": 0.6,
+  "validation_frac": 0.2,
+  "synthetic_bars": 3000,
+  "seed": 7,
+  "dashboard": {
+    "default_indicators": [
+      "actual_weight",
+      "target_weight",
+      "accel_deg",
+      "vol_z"
+    ],
+    "indicator_labels": {
+      "sma10": "SMA10",
+      "slope_pct": "SMA10 기울기 %(1봉)",
+      "accel_pct": "기울기 가속도 %(5봉 변화)",
+      "accel_z": "가속도 z-score",
+      "accel_deg": "가속도 각도(°)",
+      "vol_ratio": "거래량/60봉평균 배율",
+      "vol_z": "거래량 서지 z-score",
+      "accel_bin": "가속도 분위(0=최대감속)",
+      "volsurge_bin": "거래량 서지 분위(0=한산)",
+      "accel_rank": "가속도 percentile(0~1)",
+      "volsurge_rank": "거래량 서지 percentile(0~1)",
+      "target_weight": "목표 비중",
+      "actual_weight": "실제 비중"
+    }
+  },
+  "_comment": "최근 10봉 SMA10 기울기 가속도 × 거래량 서지 2D 상태 가중치 사이징(long-only). 2026-07-07 설계: 애초 계획한 '직전 10봉 프렉탈(유사패턴 투영/자기연장)' 축은 new0707_study.py에서 기각(analog IC 부호 불일치, self는 이상치 구동으로 quantile 중앙값 기준 재현 불가) — accel×vol 상태그리드만 채택.",
+  "_comment_state_weights": "행=accel_bin(0=최대감속), 열=volsurge_bin(0=한산). reports/profile_sizing/new0707_study.json 근거: 27칸(9셀×3horizon) 전부 fwd return 양수(BTC 강세드리프트 지배, 숏/현금 대상 셀 없음)이나 FDR 유의 셀은 0/27 — 개별 셀 통계적 확정 아님. 3horizon 평균 순위(1~9)를 0.4~1.0에 선형 매핑한 방향성 tilt: (0,0) 감속+한산(눌림목류) 최고=1.00, (2,2) 가속+거래량확인(모멘텀+볼륨) 2위=0.925, (0,2) 감속+거래량급증(소진 추정) 최저=0.40. 스윕 산출물 아님 — 재튜닝 시 스터디 재실행 필수. live_eligible=false, 페이퍼/추가 검증 전 보류."
+}

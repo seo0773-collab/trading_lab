@@ -4,98 +4,98 @@
     "candidate": "final0706 (원본 50/50)",
     "months": 233.2,
     "total_contributed": 43800000.0,
-    "lump_total_return": 11.692277870957785,
-    "dca_final_value": 251214443.81938627,
-    "dca_total_return": 4.735489584917495,
-    "dca_account_mdd": -0.127666148145816,
-    "nav_mdd": -0.16397808392604796
+    "lump_total_return": 11.099446225470142,
+    "dca_final_value": 239480505.77028832,
+    "dca_total_return": 4.467591455942656,
+    "dca_account_mdd": -0.12766613278894412,
+    "nav_mdd": -0.1639780735351446
   },
   {
     "phase": "all",
     "candidate": "final0706 미국장 단일",
     "months": 233.2,
     "total_contributed": 43800000.0,
-    "lump_total_return": 10.968150174255507,
-    "dca_final_value": 193571212.1510068,
-    "dca_total_return": 3.419434067374584,
-    "dca_account_mdd": -0.17539181048180996,
-    "nav_mdd": -0.17817494023849756
+    "lump_total_return": 10.875080264882351,
+    "dca_final_value": 192065597.5962124,
+    "dca_total_return": 3.385059305849598,
+    "dca_account_mdd": -0.17539158575587876,
+    "nav_mdd": -0.17817471216281067
   },
   {
     "phase": "all",
     "candidate": "final0706_qld (core63.5%+QLD36.5%)",
     "months": 233.2,
     "total_contributed": 43800000.0,
-    "lump_total_return": 35.431649727621135,
-    "dca_final_value": 561522267.3733497,
-    "dca_total_return": 11.820143090715746,
-    "dca_account_mdd": -0.28903308920296744,
-    "nav_mdd": -0.3005627267626855
+    "lump_total_return": 33.92273478797522,
+    "dca_final_value": 538265389.7500747,
+    "dca_total_return": 11.289164149545085,
+    "dca_account_mdd": -0.2890330660766538,
+    "nav_mdd": -0.3005627035860492
   },
   {
     "phase": "test",
     "candidate": "final0706 (원본 50/50)",
     "months": 42.6,
     "total_contributed": 10600000.0,
-    "lump_total_return": 1.9349322546245644,
-    "dca_final_value": 24265643.18318403,
-    "dca_total_return": 1.2892116210550975,
-    "dca_account_mdd": -0.09733958320986502,
-    "nav_mdd": -0.11998637678694979
+    "lump_total_return": 1.8107336970443093,
+    "dca_final_value": 23157990.84686133,
+    "dca_total_return": 1.1847161176284273,
+    "dca_account_mdd": -0.09734934413529606,
+    "nav_mdd": -0.11998631271864746
   },
   {
     "phase": "test",
     "candidate": "final0706 미국장 단일",
     "months": 42.6,
     "total_contributed": 10600000.0,
-    "lump_total_return": 0.8087816450230108,
-    "dca_final_value": 15818016.93310682,
-    "dca_total_return": 0.49226574840630377,
-    "dca_account_mdd": -0.09396619412866691,
-    "nav_mdd": -0.09934787302934267
+    "lump_total_return": 0.8157710796722959,
+    "dca_final_value": 15737082.262534425,
+    "dca_total_return": 0.48463040212588915,
+    "dca_account_mdd": -0.09396617006643415,
+    "nav_mdd": -0.09934789354429374
   },
   {
     "phase": "test",
     "candidate": "final0706_qld (core63.5%+QLD36.5%)",
     "months": 42.6,
     "total_contributed": 10600000.0,
-    "lump_total_return": 2.906509945801777,
-    "dca_final_value": 27572842.33626833,
-    "dca_total_return": 1.6012115411573897,
-    "dca_account_mdd": -0.19359372099698124,
-    "nav_mdd": -0.22324918850278264
+    "lump_total_return": 2.7991455167987493,
+    "dca_final_value": 26539710.166407157,
+    "dca_total_return": 1.5037462421138827,
+    "dca_account_mdd": -0.1937436360024003,
+    "nav_mdd": -0.2232492594652392
   },
   {
     "phase": "recent_3y",
     "candidate": "final0706 (원본 50/50)",
-    "months": 36.0,
+    "months": 35.9,
     "total_contributed": 9200000.0,
-    "lump_total_return": 1.6894529780823762,
-    "dca_final_value": 19791076.915507525,
-    "dca_total_return": 1.1512040125551657,
-    "dca_account_mdd": -0.09533592951857439,
-    "nav_mdd": -0.11998637678694979
+    "lump_total_return": 1.5724793813138995,
+    "dca_final_value": 18883946.33778035,
+    "dca_total_return": 1.0526028628022117,
+    "dca_account_mdd": -0.09534597827412084,
+    "nav_mdd": -0.11998631271864746
   },
   {
     "phase": "recent_3y",
     "candidate": "final0706 미국장 단일",
-    "months": 36.0,
+    "months": 35.9,
     "total_contributed": 9200000.0,
-    "lump_total_return": 0.7310640926506609,
-    "dca_final_value": 13126818.123373762,
-    "dca_total_return": 0.4268280568884524,
-    "dca_account_mdd": -0.0628712431635452,
-    "nav_mdd": -0.09934787302934267
+    "lump_total_return": 0.7262696930502228,
+    "dca_final_value": 13042043.11593477,
+    "dca_total_return": 0.41761338216682287,
+    "dca_account_mdd": -0.06287126269270626,
+    "nav_mdd": -0.09934789354429385
   },
   {
     "phase": "recent_3y",
     "candidate": "final0706_qld (core63.5%+QLD36.5%)",
-    "months": 36.0,
+    "months": 35.9,
     "total_contributed": 9200000.0,
-    "lump_total_return": 2.0200785799904923,
-    "dca_final_value": 20891449.530192345,
-    "dca_total_return": 1.2708097315426463,
-    "dca_account_mdd": -0.18095892800403668,
-    "nav_mdd": -0.22324918850278253
+    "lump_total_return": 1.9094177052537793,
+    "dca_final_value": 20055023.90182674,
+    "dca_total_return": 1.1798939023724717,
+    "dca_account_mdd": -0.18103999975112195,
+    "nav_mdd": -0.2232492594652392
   }
 ]

@@ -1,0 +1,40 @@
+{
+  "version": "bb-martingale-v1",
+  "interval": "1d",
+  "period": "max",
+  "bb": {
+    "length": 20,
+    "mult": 2.5,
+    "offset": 0
+  },
+  "martingale": {
+    "add_step": 0.03,
+    "mult": 1.5,
+    "max_levels": 5,
+    "base_lot_fraction": 0.05
+  },
+  "costs": {
+    "fee_bps_per_side": 20.103,
+    "slippage_bps": 5.0
+  },
+  "regime_gate": {
+    "enabled": true,
+    "adx_threshold": 25.0,
+    "adx_slope_lookback": 10
+  },
+  "train_frac": 0.6,
+  "validation_frac": 0.2,
+  "synthetic_bars": 1500,
+  "seed": 7,
+  "dashboard": {
+    "default_indicators": ["basis", "upper", "lower", "adx", "regime_ok"],
+    "indicator_labels": {
+      "basis": "BB 중심선(SMA20)",
+      "upper": "BB 상단(+2.5SD)",
+      "lower": "BB 하단(-2.5SD)",
+      "adx": "ADX(14)",
+      "regime_ok": "레짐 게이트(1=거래허용, 0=추세가속 정지)"
+    }
+  },
+  "_comment": "bb_crossing_sweep.py 스윕 최적치(length=20,mult=2.5,offset=0)를 밴드이탈=플립 방식으로 재정의해 항상 롱/숏 유지. 물타기(add_step/mult/max_levels)는 손절 없이 최대 단계로만 리스크 캡 — mult=3.0류 공격적 설정은 파산율 25%+ 실측(reports/bb_martingale_sweep.md). ADX 레짐게이트는 신규 진입/물타기/플립만 정지(기존 포지션 유지) — 실측상 Sharpe 개선은 불명확했음(reports/bb_martingale_regime_sweep.md), 파산율만 소폭 감소. live_eligible=false: 파산(자본<=0) 가능 구조라 페이퍼 검증 전 보류."
+}

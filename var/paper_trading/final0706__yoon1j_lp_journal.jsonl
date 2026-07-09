@@ -1,0 +1,1 @@
+{"run_at": "2026-07-08T09:54:17", "strategy": "yoon1j_lp", "parent_strategy": "final0706", "data_through": "2026-07-07", "last_rebal_date": "2026-07-07", "exposure": 1.0001, "cash": -0.0001, "market_regime": "정상", "n_holdings": 3, "targets": {"VGT": 0.3333, "IYH": 0.3333, "FENY": 0.3333}}
