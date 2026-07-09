@@ -76,7 +76,11 @@ class Yoon1kHandler:
                 frames["__BENCH__"] = pd.concat(bcols, axis=1)
             gate = (config.get("currency_allocation") or {}).get("risk_gate") or {}
             if str(gate.get("source", "trend")).lower() != "trend" and gate.get("enabled", False):
-                needed = set(gate.get("symbols", [])) | set(gate.get("vix_symbols", []))
+                needed = (
+                    set(gate.get("symbols", []))
+                    | set(gate.get("vix_symbols", []))
+                    | set(gate.get("small_cap_symbols", []))
+                )
                 if gate.get("safe_asset"):
                     needed.add(str(gate["safe_asset"]))
                 gcols = {}
@@ -492,6 +496,22 @@ class Yoon1kHandler:
                     vix_flag = cls._vix_weak(raw, idx, gate)
                     weak = weak & vix_flag
                     severity = severity.where(vix_flag, 0.0)
+            elif source == "credit_or_small_cap":
+                # 신용스프레드(HYG/IEF)와 소형주 상대강도(IWM/SPY 붕괴) 둘 중 하나만
+                # 켜져도 발동 — 리서치(reports/profile_sizing/
+                # final0706_gate_new_signal_search.md)에서 소형주 상대강도가 신용
+                # 스프레드보다 리드타임이 훨씬 빠르고(중앙값 -80일 vs -48일) OR
+                # 결합이 단독 신호보다 MDD·Sharpe 모두 우수함을 실측 확인.
+                credit_weak = cls._credit_spread_severity(raw, idx, gate) > 0.0
+                sc_symbols = gate.get("small_cap_symbols", ["IWM", "SPY"])
+                sc_gate = gate.get("small_cap_gate") or {}
+                small_cap_weak = cls._ratio_weak(
+                    raw, idx, sc_symbols,
+                    lookback=int(sc_gate.get("lookback", gate.get("lookback", 10))),
+                    sma_lookback=int(sc_gate.get("sma_lookback", gate.get("sma_lookback", 20))),
+                    threshold=float(sc_gate.get("threshold", gate.get("threshold", -0.02))),
+                )
+                weak = credit_weak | small_cap_weak
             else:
                 lb = int(gate.get("lookback", 63))
                 sma_lb = int(gate.get("sma_lookback", 200))
@@ -587,6 +607,27 @@ class Yoon1kHandler:
         vix3m = raw["__GATE__"][vix3m_sym]["close"].reindex(idx).ffill()
         floor = float(gate.get("vix_floor", 18.0))
         return ((vix > vix3m) & (vix > floor)).fillna(False)
+
+    @staticmethod
+    def _ratio_weak(
+        raw: pd.DataFrame, idx: pd.DatetimeIndex, symbols: list[str],
+        *, lookback: int, sma_lookback: int, threshold: float,
+    ) -> pd.Series:
+        """두 심볼 종가비율의 모멘텀 붕괴 이진 플래그(`_credit_spread_severity`의
+        이진판만 필요한 범용판 — 소형주 상대강도(IWM/SPY) 등 새 비율 신호에 재사용).
+        """
+        if "__GATE__" not in raw.columns.get_level_values(0) or len(symbols) != 2:
+            return pd.Series(False, index=idx)
+        sym_a, sym_b = symbols
+        gate_cols = raw["__GATE__"].columns.get_level_values(0)
+        if sym_a not in gate_cols or sym_b not in gate_cols:
+            return pd.Series(False, index=idx)
+        pa = raw["__GATE__"][sym_a]["close"].reindex(idx).ffill()
+        pb = raw["__GATE__"][sym_b]["close"].reindex(idx).ffill()
+        ratio = (pa / pb).reindex(idx).ffill()
+        mom = ratio.pct_change(lookback)
+        below_sma = ratio < ratio.rolling(sma_lookback).mean()
+        return ((mom < threshold) & below_sma).fillna(False)
 
     @classmethod
     def _buffett_change_scaled_revert_wkr(

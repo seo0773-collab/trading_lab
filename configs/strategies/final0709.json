@@ -1,0 +1,108 @@
+{
+  "version": "final0709",
+  "_comment": "final0706 파생(2026-07-09, 사용자 요청): 위험게이트만 확장한 실험 — 나머지 구조(US yoon1j_lp+KR yoon1j_kr, 63일 통화틸트, safe_sleeve.profile_scored)는 final0706과 완전히 동일. 기존 게이트는 신용스프레드(HYG/IEF)만 봤는데, 리서치(reports/profile_sizing/final0706_gate_new_signal_search.md, scripts/profile_sizing/final0706_gate_new_signal_search.py)에서 소형주 상대강도(IWM/SPY 붕괴)가 리드타임이 훨씬 빠르고(중앙값 -80일 vs 신용스프레드 -48일, 22개 드로다운 에피소드 21/22 적중) 신용스프레드와 OR로 묶으면 단독보다 MDD·Sharpe 모두 개선됨을 실측 확인(오버레이 백테스트: MDD -17.13%→-11.20%, Sharpe 1.167→1.228, 부트스트랩 P(MDD더얕음) 94.3%·P(Sharpe개선) 83.8%, 이전에 기각된 vix_or_credit_gate보다 확실히 우수). 신용게이트 소스를 credit_or_small_cap으로 바꿔 실제 config로 검증. [검증완료 2026-07-09] 공식 파이프라인(scripts/profile_sizing/final0709_validate.py): 권위구간(2011~) CAGR 14.04%→14.38%/MDD -16.15%→-11.15%/Sharpe 1.148→1.229(3지표 동시개선), 부트스트랩 P(Sharpe개선)89.6%·P(MDD더얕음)88.8%. 롤링3년(16윈도우) MDD 15/16·Sharpe 13/16 우위(위기표본 편중 없음). 비용민감도: 발동빈도 294→677일로 2배 이상 늘어도 왕복25bp까지 우위 유지. 차기 base 후보로 유력하나 즉시 승격은 보류(final0706 페이퍼 판정과 함께 재논의). live_eligible=false. 상세: docs/strategy/specs/final0709.md, reports/profile_sizing/final0709_validate.md.",
+  "interval": "1d",
+  "period": "max",
+  "base_currency": "KRW",
+  "fx_symbol": "KRW=X",
+  "rebalance_freq": "monthly",
+  "currency_allocation": {
+    "kind": "relative_momentum_fx2_overlay",
+    "lookback": 63,
+    "signal_lag": 1,
+    "neutral": 0.5,
+    "tilt": 0.125,
+    "scale": 0.1,
+    "band": [0.4, 0.6],
+    "risk_gate": {
+      "enabled": true,
+      "source": "credit_or_small_cap",
+      "symbols": ["HYG", "IEF"],
+      "small_cap_symbols": ["IWM", "SPY"],
+      "lookback": 10,
+      "sma_lookback": 20,
+      "threshold": -0.02,
+      "off_scale": 0.5,
+      "min_consecutive": 2,
+      "safe_asset": "IEF"
+    }
+  },
+  "sub_strategies": [
+    {
+      "config": "yoon1j_lp",
+      "currency": "USD",
+      "weight": 0.5,
+      "overrides": {
+        "top_k": 3,
+        "hold_buffer": 2,
+        "universe": ["VGT", "XLF", "IYH", "FENY", "FIDU", "FSTA", "IYC", "XLU", "XLB", "FREL", "FCOM"],
+        "safe_sleeve": {
+          "enabled": true,
+          "symbols": ["TLT", "IAU"],
+          "ratio": 1.0,
+          "max": 0.4,
+          "ma_len": 100,
+          "profile_scored": true
+        }
+      }
+    },
+    {
+      "config": "yoon1j_kr",
+      "currency": "KRW",
+      "weight": 0.5,
+      "overrides": {
+        "top_k": 3,
+        "hold_buffer": 2,
+        "safe_sleeve": {
+          "enabled": true,
+          "symbols": ["148070.KS", "132030.KS"],
+          "ratio": 1.0,
+          "max": 0.4,
+          "ma_len": 100,
+          "profile_scored": true
+        }
+      }
+    }
+  ],
+  "benchmark_symbols": {
+    "USD": "SPY",
+    "KRW": "069500.KS"
+  },
+  "benchmark_label": "50/50 SPY원화+KODEX200",
+  "train_frac": 0.6,
+  "validation_frac": 0.2,
+  "synthetic_symbols": 6,
+  "synthetic_bars": 2000,
+  "seed": 7,
+  "dashboard": {
+    "default_indicators": [
+      "sleeve_yoon1j_lp",
+      "sleeve_yoon1j_kr",
+      "target_w_yoon1j_lp",
+      "target_w_yoon1j_kr",
+      "target_w___CASH__"
+    ],
+    "indicator_labels": {
+      "sleeve_yoon1j_lp": "미국 슬리브 저가(원화환산, top3)",
+      "sleeve_yoon1j_kr": "한국 슬리브(원화, top3)",
+      "target_w_yoon1j_lp": "목표 USD 슬리브 비중",
+      "target_w_yoon1j_kr": "목표 KRW 슬리브 비중",
+      "target_w___CASH__": "목표 현금 비중(신용스프레드 OR 소형주 게이트)"
+    },
+    "panels": [
+      {
+        "kind": "sleeve_weights",
+        "type": "stacked_area",
+        "x": "time",
+        "label": "2단계 슬리브 평가금액 비중",
+        "default": true
+      },
+      {
+        "kind": "perf_vs_bnh",
+        "type": "table",
+        "label": "벤치(50/50 패시브) 대비 성과",
+        "default": true
+      }
+    ]
+  }
+}

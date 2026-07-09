@@ -82,3 +82,50 @@ MDD -30% 상한과의 교차점을 그리드 30%/40% 사이에서 선형보간(3
 `final0706`이 승격(페이퍼 3개월 + KIS 실수수료 확정)되기 전까지는
 `live_eligible=false` 유지. 승격 이후에도 이 파생은 워크포워드/롤링 안정성 검증을
 별도로 거친 뒤 검토한다.
+
+**2026-07-09**: 이 config는 `core_strategy` 참조 구조라 자체 `safe_sleeve` 설정이
+없고 런타임에 `configs/strategies/final0706.json`을 그대로 읽는다. final0706
+베이스에 승격된 `safe_sleeve.profile_scored=true`([[final0706-strategy]] 참조)를
+이 파일 수정 없이 자동 상속한다.
+
+## 7. QLD 오버레이의 위험게이트 추종 (`gate_follow`, 2026-07-09)
+
+**문제 지적(사용자)**: `final0706_safe_scored`(→ base 승격)는 안전자산 슬리브가
+추세 게이트 ON 시 방어 자산으로 전환되는데, `final0706_qld`의 QLD 36.5%
+오버레이는 core의 신용스프레드 위험게이트와 무관하게 **항상 고정 비중**이었다
+— core가 노출 0.5배로 줄이고 IEF로 대피해도 QLD 슬리브는 그대로 남아있는
+구조적 공백이었다.
+
+**변경**: `Yoon1kLeverageMixHandler`(`src/trading_lab/strategies/yoon1k_leverage_mix.py`)에
+overlay별 `gate_follow: true` 옵션을 추가했다. core가 이미 계산해 자기
+`forecast["target_w___CASH__"]`에 노출하는 신호(게이트 발동 시 `1-exposure`,
+final0706 기준 발동 시 0.5)를 그대로 재사용해 QLD 목표비중도 동일 비율로
+줄이고, 줄인 만큼을 core와 같은 안전자산(`risk_gate.safe_asset`, 여기선
+IEF)으로 돌린다. 게이트 로직 자체는 재구현하지 않았다(신호만 재사용) — core가
+없거나 신호가 없는 다른 leverage_mix 전략(`yoon1k_levmix`/`yoon1a`/`yoon2a`)은
+`gate_follow`를 켜지 않으면 기존 고정비중 동작이 그대로 보존된다.
+
+config: `leverage_mix.overlays[0].gate_follow = true` (`configs/strategies/final0706_qld.json`).
+선택 파라미터: `gate_follow_frac`(기본 1.0, 게이트 강도 대비 축소 비율),
+`gate_safe_asset`(기본은 core의 `risk_gate.safe_asset`을 자동 상속).
+
+**실측** (`scripts/profile_sizing/final0706_qld_gate_follow_validate.py`,
+2007-01-29~2026-07, phase="all", 달력 기준 CAGR):
+
+| 구성 | CAGR | MDD | Sharpe |
+| --- | ---: | ---: | ---: |
+| 고정비중(변경 전) | 20.09% | -30.02% | 1.152 |
+| gate_follow=true(변경 후) | **20.50%** | **-28.42%** | **1.198** |
+
+세 지표 모두 개선(트레이드오프 없음). 페어드 부트스트랩(8000회, block=20):
+P(Sharpe 개선) 87.4% · P(CAGR 개선) 72.1% · P(MDD 더 얕음) 76.7% — 방향이
+일관돼 `gate_follow=true`를 기본값으로 채택했다.
+
+> 위 20.09%/20.50%는 이 표를 만든 실측 스크립트와 동일한 phase="all"(연환산
+> 버그 수정 후 달력 기준) 수치이며, 문서 상단 "권위 정정치"(2011-01~ 구간)
+> CAGR 22.51%와는 표본 구간이 달라 직접 비교 불가 — gate_follow 전/후는
+> **동일 구간·동일 코드 경로**로 비교했으므로 상대 비교는 유효하다.
+
+대시보드에서는 `sleeve_weights` 패널에 `__CASH__` 레그가 자동으로 잡혀
+QLD 게이트 대피 국면이 면적으로 보인다(`leg___CASH__` 라벨: "QLD 게이트
+대피(IEF)").

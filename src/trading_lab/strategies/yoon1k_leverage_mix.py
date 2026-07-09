@@ -60,6 +60,13 @@ class Yoon1kLeverageMixHandler(Yoon1kHandler):
         core = (core_art.equity / core_art.equity.iloc[0]).rename(
             str(config.get("core_strategy", "yoon1k"))
         )
+        # core가 자체 위험게이트(신용스프레드 등)로 만든 현금/안전자산 대피 신호.
+        # phase="all"로 뽑은 core_art라 전체 구간에 걸쳐 있다 — 게이트 로직을
+        # 재구현하지 않고 core가 이미 계산한 신호를 그대로 재사용한다.
+        core_cash_w = core_art.forecast.get("target_w___CASH__")
+        core_exposure = (
+            (1.0 - core_cash_w).clip(0.0, 1.0) if core_cash_w is not None else None
+        )
         mix = config.get("leverage_mix") or {}
         core_weight = float(mix.get("core_weight", 1.0))
         weights = []
@@ -73,6 +80,11 @@ class Yoon1kLeverageMixHandler(Yoon1kHandler):
             sub_trades.append(core_art.trades)
 
         fx = self._fx(raw, str(config.get("fx_symbol", core_cfg.get("fx_symbol", ""))))
+        core_gate = ((core_cfg.get("currency_allocation") or {}).get("risk_gate")) or {}
+        default_safe_asset = core_gate.get("safe_asset")
+        # overlay별 "gate_follow": true면 core 게이트 발동 강도만큼 그 overlay
+        # 비중도 줄이고, 줄인 만큼을 안전자산(기본은 core와 동일한 safe_asset)으로 돌린다.
+        gate_follow: dict[str, tuple[float, str | None]] = {}
         for overlay in mix.get("overlays", []):
             sym = str(overlay["symbol"]).upper()
             close = raw["__OVERLAY__"][sym]["close"].dropna().astype(float)
@@ -81,7 +93,13 @@ class Yoon1kLeverageMixHandler(Yoon1kHandler):
                 nav = self._to_base(nav, fx).rename(sym)
             navs.append(nav)
             weights.append(float(overlay.get("weight", 0.0)))
-            labels.append(str(overlay.get("label", sym)))
+            label = str(overlay.get("label", sym))
+            labels.append(label)
+            if overlay.get("gate_follow", False):
+                gate_follow[label] = (
+                    float(overlay.get("gate_follow_frac", 1.0)),
+                    overlay.get("gate_safe_asset", default_safe_asset),
+                )
 
         if not navs:
             raise ValueError("leverage_mix must include a positive core or overlay weight")
@@ -93,12 +111,45 @@ class Yoon1kLeverageMixHandler(Yoon1kHandler):
         wsum = sum(weights) or 1.0
         weights = [w / wsum for w in weights]
         freq = str(config.get("rebalance_freq", mix.get("rebalance_freq", "monthly")))
-        values = self._combine_values(
-            [(nav.reindex(idx), weight) for nav, weight in zip(navs, weights)],
-            idx,
-            freq,
-            labels,
-        )
+
+        if gate_follow and core_exposure is not None:
+            exposure = core_exposure.reindex(idx).ffill().fillna(1.0)
+            target = pd.DataFrame(
+                {label: w for label, w in zip(labels, weights)}, index=idx,
+            )
+            cash_w = pd.Series(0.0, index=idx)
+            safe_sym: str | None = None
+            for label, (frac, sym) in gate_follow.items():
+                base_w = weights[labels.index(label)]
+                reduced = (base_w * (1.0 - frac * (1.0 - exposure))).clip(lower=0.0)
+                cash_w = cash_w + (target[label] - reduced)
+                target[label] = reduced
+                if sym and safe_sym is None:
+                    safe_sym = sym
+            gate_cols = (
+                raw["__GATE__"].columns.get_level_values(0)
+                if "__GATE__" in raw.columns.get_level_values(0)
+                else []
+            )
+            if safe_sym and safe_sym in gate_cols:
+                px = raw["__GATE__"][safe_sym]["close"].reindex(idx).ffill()
+                cash_nav = (px / px.dropna().iloc[0]).rename("__CASH__")
+            else:
+                cash_nav = pd.Series(1.0, index=idx, name="__CASH__")
+            navs.append(cash_nav)
+            labels.append("__CASH__")
+            weights.append(0.0)
+            target["__CASH__"] = cash_w
+            values = self._combine_values_dynamic(
+                [nav.reindex(idx).ffill() for nav in navs], target, idx, freq, labels,
+            )
+        else:
+            values = self._combine_values(
+                [(nav.reindex(idx), weight) for nav, weight in zip(navs, weights)],
+                idx,
+                freq,
+                labels,
+            )
         combo = values.sum(axis=1)
 
         window = self._slice(idx, phase, config)

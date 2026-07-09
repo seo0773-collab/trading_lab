@@ -1,6 +1,6 @@
 {
   "version": "final0706",
-  "_comment": "yoon2 계열 최종 확정형(2026-07-06) — yoon2_final_fx_credit_gate의 검증 완료 상태를 동결한 운영 스냅샷. 구조: 미국 yoon1j_lp(VGT 유니버스, top_k=3, hold_buffer=2) + 한국 yoon1j_kr(top_k=3, hold_buffer=2), 원/달러 상위 배분은 63일 상대모멘텀 동적 틸트(40~60% 밴드), 위험 게이트는 신용스프레드 대리(HYG/IEF 10일 모멘텀<-2%&20일선 아래, 2거래일 연속 발동 확인 후 노출 0.5배, 발동분은 현금 대신 IEF로 대피). 확정 근거(전부 실측): ① 22개 과거 드로다운 에피소드 리드타임 진단에서 신용스프레드가 기존 추세확인형 게이트(중앙값 사후 +19일)보다 훨씬 선행(중앙값 -48일) ② 240개 파라미터 그리드에서 MDD 개선 92%(220/240) 재현 ③ min_consecutive=2 노이즈필터로 발동일수 -26%·에피소드 -31% ④ safe_asset=IEF 대피로 CAGR 16.84%/MDD -16.40%/Sharpe 1.242(vs 정적 50/50 15.11%/-16.94%/1.165, vs 동적틸트만 16.27%/-17.13%/1.189), 부트스트랩 P(Sharpe>) 88%·P(CAGR>) 80%·P(MDD 더 얕음) 75% ⑤ VIX AND결합·연속형 노출축소·off_scale 재그리드 후보는 전부 실측 후 기각(워크포워드 약세 또는 회전율 급증으로 비용 민감도 취약) ⑥ 미국 섹터 top3 선택의 상관계수 진단·상관 페널티 선택·top_k 스윕까지 검증했으나 현재 top_k=3/hold_buffer=2 구성을 뒤집을 만한 강건한 개선안은 못 찾음 ⑦ 코드 재검토로 risk_gate continuous 블록의 변수명 충돌(실사용 경로엔 영향 없음) 수정. 개선분의 대부분이 2020-02 코로나 크래시 1건에 집중된다는 표본 한계는 유효(reports/profile_sizing/yoon2_final_fx_leading_signals.md, yoon2_final_fx_credit_gate_validate.md, yoon2_final_fx_credit_gate_denoise.md, yoon2_final_fx_credit_gate_v2.md, yoon2_final_fx_credit_gate_regrid_validate.md, yoon1j_topk_correlation_audit.md, yoon1j_decorrelate_validate.md, yoon1j_topk_sweep.md). yoon2_final_fx_credit_gate는 실험 계속용으로 보존, 본 config는 동결 — 변경하려면 새 파생을 만들 것. live_eligible=false(페이퍼 전진검증 + KIS 실수수료 확정 후 승격 판단). [정정 2026-07-07, 주석만 수정·파라미터 불변] 위 CAGR 16.84%/Sharpe 1.242 등 절대 수치는 봉수 연환산 버그+.KS 데이터 갭(2007-02~2009-04 결측, 2008년 0봉)으로 과대표기 — 권위 정정치=CAGR 14.39%/MDD -16.40%/Sharpe 1.176(달력 연환산·2011-01~), 2011~2024(2025~26 랠리 제외)=9.84%/0.919. 상대 비교(게이트 유무·부트스트랩)는 유효. 진단=reports/profile_sizing/final0706_data_gap_diagnosis.md, 정정판=final0706_benchmark_compare_v2.md, 개선계획=docs/strategy/plans/final0706_improvement.md.",
+  "_comment": "yoon2 계열 최종 확정형(2026-07-06) — yoon2_final_fx_credit_gate의 검증 완료 상태를 동결한 운영 스냅샷. 구조: 미국 yoon1j_lp(VGT 유니버스, top_k=3, hold_buffer=2) + 한국 yoon1j_kr(top_k=3, hold_buffer=2), 원/달러 상위 배분은 63일 상대모멘텀 동적 틸트(40~60% 밴드), 위험 게이트는 신용스프레드 대리(HYG/IEF 10일 모멘텀<-2%&20일선 아래, 2거래일 연속 발동 확인 후 노출 0.5배, 발동분은 현금 대신 IEF로 대피). 확정 근거(전부 실측): ① 22개 과거 드로다운 에피소드 리드타임 진단에서 신용스프레드가 기존 추세확인형 게이트(중앙값 사후 +19일)보다 훨씬 선행(중앙값 -48일) ② 240개 파라미터 그리드에서 MDD 개선 92%(220/240) 재현 ③ min_consecutive=2 노이즈필터로 발동일수 -26%·에피소드 -31% ④ safe_asset=IEF 대피로 CAGR 16.84%/MDD -16.40%/Sharpe 1.242(vs 정적 50/50 15.11%/-16.94%/1.165, vs 동적틸트만 16.27%/-17.13%/1.189), 부트스트랩 P(Sharpe>) 88%·P(CAGR>) 80%·P(MDD 더 얕음) 75% ⑤ VIX AND결합·연속형 노출축소·off_scale 재그리드 후보는 전부 실측 후 기각(워크포워드 약세 또는 회전율 급증으로 비용 민감도 취약) ⑥ 미국 섹터 top3 선택의 상관계수 진단·상관 페널티 선택·top_k 스윕까지 검증했으나 현재 top_k=3/hold_buffer=2 구성을 뒤집을 만한 강건한 개선안은 못 찾음 ⑦ 코드 재검토로 risk_gate continuous 블록의 변수명 충돌(실사용 경로엔 영향 없음) 수정. 개선분의 대부분이 2020-02 코로나 크래시 1건에 집중된다는 표본 한계는 유효(reports/profile_sizing/yoon2_final_fx_leading_signals.md, yoon2_final_fx_credit_gate_validate.md, yoon2_final_fx_credit_gate_denoise.md, yoon2_final_fx_credit_gate_v2.md, yoon2_final_fx_credit_gate_regrid_validate.md, yoon1j_topk_correlation_audit.md, yoon1j_decorrelate_validate.md, yoon1j_topk_sweep.md). yoon2_final_fx_credit_gate는 실험 계속용으로 보존, 본 config는 동결 — 변경하려면 새 파생을 만들 것. live_eligible=false(페이퍼 전진검증 + KIS 실수수료 확정 후 승격 판단). [정정 2026-07-07, 주석만 수정·파라미터 불변] 위 CAGR 16.84%/Sharpe 1.242 등 절대 수치는 봉수 연환산 버그+.KS 데이터 갭(2007-02~2009-04 결측, 2008년 0봉)으로 과대표기 — 권위 정정치=CAGR 14.39%/MDD -16.40%/Sharpe 1.176(달력 연환산·2011-01~), 2011~2024(2025~26 랠리 제외)=9.84%/0.919. 상대 비교(게이트 유무·부트스트랩)는 유효. 진단=reports/profile_sizing/final0706_data_gap_diagnosis.md, 정정판=final0706_benchmark_compare_v2.md, 개선계획=docs/strategy/plans/final0706_improvement.md. [승격 2026-07-09] 안전자산 슬리브에 safe_sleeve.profile_scored=true 반영 — final0706_safe_scored 파생(2026-07-08)에서 검증된 개선(부트스트랩 8000회: P(Sharpe 우위) 82.9%·P(CAGR 우위) 88.5%·P(MDD 더 얕음) 60.1%, 전 구간·전 지표 일관된 방향, 개선폭은 작음)을 베이스로 승격. 추세 게이트(종가>MA100) 자체는 불변, ON인 안전자산 간 배분만 균등→profile-sizing 점수 비례로 변경. final0706_qld는 core_strategy 참조 구조라 이 변경을 자동 상속. 2026-07-07 개시한 페이퍼 트레이딩 파라미터가 이 시점부터 바뀜(base 동결 정책의 예외적 승격, 사용자 명시적 지시로 진행) — final0706_safe_scored는 이제 base와 동일 구성이라 중복.",
   "interval": "1d",
   "period": "max",
   "base_currency": "KRW",
@@ -34,7 +34,15 @@
       "overrides": {
         "top_k": 3,
         "hold_buffer": 2,
-        "universe": ["VGT", "XLF", "IYH", "FENY", "FIDU", "FSTA", "IYC", "XLU", "XLB", "FREL", "FCOM"]
+        "universe": ["VGT", "XLF", "IYH", "FENY", "FIDU", "FSTA", "IYC", "XLU", "XLB", "FREL", "FCOM"],
+        "safe_sleeve": {
+          "enabled": true,
+          "symbols": ["TLT", "IAU"],
+          "ratio": 1.0,
+          "max": 0.4,
+          "ma_len": 100,
+          "profile_scored": true
+        }
       }
     },
     {
@@ -43,7 +51,15 @@
       "weight": 0.5,
       "overrides": {
         "top_k": 3,
-        "hold_buffer": 2
+        "hold_buffer": 2,
+        "safe_sleeve": {
+          "enabled": true,
+          "symbols": ["148070.KS", "132030.KS"],
+          "ratio": 1.0,
+          "max": 0.4,
+          "ma_len": 100,
+          "profile_scored": true
+        }
       }
     }
   ],

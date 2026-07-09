@@ -1,0 +1,19 @@
+{
+  "fixed": {
+    "cagr": 0.2009318997709244,
+    "max_drawdown": -0.30015950249882317,
+    "sharpe": 1.1519263539197264,
+    "total_return": 34.15239246957691
+  },
+  "gate_follow": {
+    "cagr": 0.20500797957456007,
+    "max_drawdown": -0.28421137706854294,
+    "sharpe": 1.1984520832077707,
+    "total_return": 36.546014053156355
+  },
+  "bootstrap_gate_vs_fixed": {
+    "sharpe_gate_gt_fixed": 0.874,
+    "cagr_gate_gt_fixed": 0.72125,
+    "mdd_gate_shallower": 0.767
+  }
+}
